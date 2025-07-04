@@ -8424,11 +8424,11 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         print(get_automod(interaction.guild.id))
         await interaction.followup.send(f"실행된 서버의 검열 기능 설정을 콘솔에 출력했습니다.")
 
-@bot.tree.command(name = "임시명령2", description = "개발용")
+@bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
 @app_commands.describe(
+    프롬프트="프롬프트 (조언 받고 싶은 내용)",
     시작메시지="AI에게 참고용으로 첨부할 메시지의 시작 메시지 링크",
     종료메시지="AI에게 참고용으로 첨부할 메시지의 종료 메시지 링크",
-    프롬프트="프롬프트 (조언 받고 싶은 내용)",
     역할="자신이 이 서버에서 하는 역할",
 )
 @app_commands.choices(
@@ -8444,7 +8444,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         app_commands.Choice(name="일반 유저", value="일반 유저"),
     ]
 )
-async def 임시명령2(interaction: discord.Interaction, 시작메시지: str, 종료메시지: str, 프롬프트: str, 역할: str):
+async def 임시명령2(interaction: discord.Interaction, 프롬프트: str, 시작메시지: str, 종료메시지: str, 역할: str):
     if interaction.user.id != 1063676895000018944 and interaction.user.id != 1305492487137267722 and interaction.user.id != 1355698620606709902 : 
         await interaction.response.send_message("권한이 부족합니다.")
         return
