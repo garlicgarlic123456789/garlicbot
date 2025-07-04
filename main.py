@@ -11121,7 +11121,7 @@ async def delete_confidential_messages(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed, ephemeral=True)
 '''
 
-@bot.tree.command(name="멘션지연", description="특정 사용자가 특정 메시지를 보냈을 때 멘션하도록 예약합니다.")
+@bot.tree.command(name="멘션지연", description="특정 사용자가 메시지를 보냈을 때 멘션하도록 예약합니다.")
 async def mention_delay(interaction: discord.Interaction, user: discord.Member, content: str):
     if user.bot  :
         await interaction.response.send_message("**[오류!]** user_bot")
