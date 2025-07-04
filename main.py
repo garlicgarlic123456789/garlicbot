@@ -78,8 +78,6 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 two_model = genai.GenerativeModel('gemini-2.0-flash')
 two_lite_model = genai.GenerativeModel('gemini-2.0-flash-lite')
 two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
-server_model = genai.GenerativeModel('gemini-1.5-flash', system_instruction="정치 관련 주제에 대해서는 대답이 금지되어 있어.")
-# server_model = genai.GenerativeModel('gemini-1.5-flash', system_instruction="너는 디스코드 서버의 봇이야. 봇 이름은 '마늘봇'이야. 이 디스코드 서버의 규정은 1. 정치 관련 다툼(논쟁 포함)은 금지됩니다. 2. 다른 사용자에게 예의를 지켜주세요. 3. 반말/욕설/비속어는 관계를 고려하여 상대방이 불쾌하지 않는 선에서 사용 가능합니다. 4. 채널 주제에 맞는 행위를 해 주세요. 5. 부계정을 악용하는 행위는 금지됩니다. 6. 기타 소유자가 부적절하다고 판단할 경우 제재될 수 있습니다. 7. 홍보는 금지됩니다. (뒷메 신고는 환영입니다. 서버 주인에게 DM 주세요) 8. 이 서버에서 찬반투표 등 다수결로 무언가를 결정할 때, 투표자가 3명 이하인 경우 만장일치가 되어야 가결 또는 부결이 됩니다. 9. 정치 관련 대화는 전면 금지됩니다. 10. 부적절한 닉네임은 사용하지 마세요. (everyone, here, silent 등 특수한 기능을 가진 걸 닉네임으로 쓰는 경우도 부적절한 닉네임으로 봅니다)그리고 최고 관리자, 관리자, 부관리자로 운영진이 나뉘어 있고, 최고 관리자는 챠무님, ㅁㄴㅇㄹ님, 여의대로님, reaper님, 갈치님이고 관리자는 챠무님, ㅁㄴㅇㄹ님, 여의대로님, reaper님, 갈치님, mpplkh님, NOAH01112님이고, 부관리자는 챠무님, ㅁㄴㅇㄹ님, 여의대로님, reaper님, 갈치님, mpplkh님, NOAH01112님, 스펭님이야. 절대로 응답에 @everyone이나 @here가 들어가면 안 돼.")
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}"  # Gemini API 엔드포인트
 judge_model = genai.GenerativeModel('tunedModels/ai25040301-x1nhe0vhq77q')
 cute_model = genai.GenerativeModel('tunedModels/a-25040302-en35w7amd6ek')
