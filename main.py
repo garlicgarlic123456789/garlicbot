@@ -11388,6 +11388,7 @@ punishment_list = [
     app_commands.Choice(name = "철도 여행지 (전국)", value = "철도 여행지 전국"),
     app_commands.Choice(name = "유저 추천", value = "유저 추천"),
     app_commands.Choice(name = "벌칙 추천", value = "벌칙 추천"),
+    app_commands.Choice(name = "홀짝 추천", value = "홀짝 추천"),
 ])
 async def train_random(interaction: discord.Interaction, 종류: str) :
     global train_random_list, train_random_list_seoul
@@ -11446,6 +11447,14 @@ async def train_random(interaction: discord.Interaction, 종류: str) :
         global punishment_list
         temp = random.randint(0, len(punishment_list) - 1)
         await interaction.followup.send(f"추천된 벌칙: {punishment_list[temp]}")
+        return
+    elif 종류 == "홀짝 추천" : 
+        temp = random.randint(0, 1)
+        if temp == 0 : 
+            temp = "홀"
+        else : 
+            temp = "짝"
+        await interaction.followup.send(f"추천 결괴: {temp}")
         return
 
 # add_blockhistory(user_id, admin_id, reason, blocktype, addinfo)
