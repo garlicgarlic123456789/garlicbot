@@ -11571,7 +11571,7 @@ async def check_all_bot_admin_perm(interaction):
 
 @bot.tree.command(name="보안점검", description="서버의 권한 설정을 검토합니다.")
 @app_commands.default_permissions(administrator=True)
-async def security_check(interaction: discord.Interaction, 관리진역할: discord.Role, 인증역할: Optional[discord.Role] = None):
+async def security_check(interaction: discord.Interaction, 인증역할: Optional[discord.Role] = None):
     await interaction.response.defer()
 
     status, until, reason = is_blocked(interaction.user)
