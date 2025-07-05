@@ -4397,7 +4397,7 @@ exp_shop = [
 '''
 
 @bot.tree.command(name = "경험치샵구매", description = "경험치로 특정 상품을 구매합니다.")
-@app_commands.choices(상품명 = [app_commands.Choice(name = "파일 첨부 권한", value = "file"), app_commands.Choice(name = "투표 생성 권한", value = "vote"), app_commands.Choice(name = "비공개 스레드 생성 권한", value = "private_thread"), app_commands.Choice(name = "마늘이 답변 추가권", value = "add_answer"), app_commands.Choice(name = "경고 차감권", value = "unwarn"), app_commands.Choice(name = "메시지 고정권", value = "pin")])
+@app_commands.choices(상품명 = [app_commands.Choice(name = "파일 첨부 권한", value = "file"), app_commands.Choice(name = "투표 생성 권한", value = "vote"), app_commands.Choice(name = "비공개 스레드 생성 권한", value = "private_thread")])
 async def buy_shop(interaction: discord.Interaction, 상품명: str):
     if interaction.guild.id != using_server :
         embed = discord.Embed(
@@ -4526,8 +4526,7 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             )
             await interaction.followup.send(embed = embed)
             return
-            
-        
+'''
 @bot.tree.command(name = "경험치샵", description = "경험치샵을 확인합니다.")
 async def view_shop(interaction: discord.Interaction) :
     if interaction.guild.id != using_server :
@@ -4566,6 +4565,7 @@ async def view_shop(interaction: discord.Interaction) :
     )
     
     await interaction.followup.send(embed = embed)
+'''
 
 class GambleButton(discord.ui.View):
     def __init__(self, author: discord.Member, xp_amount: int, choice: str):
