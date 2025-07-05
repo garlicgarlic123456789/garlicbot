@@ -8294,7 +8294,7 @@ class TicketButtonEmergency(Button):
     def __init__(self):
         super().__init__(label="긴급 티켓 생성", style=discord.ButtonStyle.danger, custom_id="create_ticket")
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
@@ -8322,13 +8322,15 @@ class TicketButtonEmergency(Button):
             color = discord.Color.red()
         )
         await channel.send(embed = embed)
+        button.disabled = True
+        await interaction.message.edit(view=self)
 
 class TicketView(View):
     def __init__(self):
         super().__init__(timeout=None)  # persistent view
         self.add_item(TicketButton())
         self.add_item(TicketButtonLink())
-        # self.add_item(TicketButtonEmergency())
+        self.add_item(TicketButtonEmergency())
 
 TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
@@ -8371,12 +8373,18 @@ async def on_ready():
 아래와 같은 문의/신고는 티켓이 아닌 다른 수단으로 문의/신고하시기 바랍니다.
 
 - 서버 주인에게 비공개 문의/신고: <@1305492487137267722> DM
-- 연합 문의: <@1305492487137267722> DM
-- 마늘봇 관련 문의: <#1346109720678629416> 또는 <#1388551689057079347> (두 채널 중 적절한 채널 이용)
+- 연합 문의: <#1330503013302927471>
+- 마늘봇 관련 문의: <#1388551689057079347>
 
-티켓을 열더라도 관리자가 멘션되지 않고 관리자에게 티켓 보기 권한만 부여되므로, 티켓 처리에는 시간이 소요될 수 있으며, 재촉성 멘션을 할 경우 제재될 수 있습니다.
+티켓을 열더라도 운영진이 멘션되지 않고 운영진에게 티켓 보기 권한 부여 및 로그 채널에 로그만 전송되므로, 티켓 처리에는 시간이 소요될 수 있으며, 재촉성 멘션을 할 경우 제재될 수 있습니다.
 
-이 티켓이 제대로 동작하지 않는 경우 위의 tickets v2를 이용해 주세요.""",
+티켓 유형 안내: 
+
+- 간편 티켓: 관련한 정보 첨부 없이 바로 문의/신고가 가능한 티켓입니다.
+- 티켓: 관련 메시지 링크 첨부 후 문의/신고가 가능한 티켓입니다.
+- 긴급 티켓: 테러 등 긴급 상황에 모든 운영진은 멘션할 수 있는 티켓입니다.
+
+이 티켓이 제대로 동작하지 않는 경우 위로 스크롤하여 tickets v2를 이용해 주세요.""",
             color=int("a5f0ff", 16)
         )
         message = await channel.send(embed=embed, view=TicketView())
