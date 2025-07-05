@@ -6263,7 +6263,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed = embed)
             return
         chain = create_chain1(messages_list)
-        output = chain.invoke({"messages": messages_list})
+        output = await asyncio.to_thread(chain.invoke, {"messages": messages_list})
         print(output)
         
         # output이 빈 문자열이거나 None인 경우
@@ -6342,7 +6342,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         print(blockhistory)
 
         chain = create_chain2(messages_list)
-        output = chain.invoke({"messages": output_dict, "before_blockhistory": blockhistory})
+        output = await asyncio.to_thread(chain.invoke, {"messages": output_dict, "before_blockhistory": blockhistory})
         print(output)
 
         # output이 빈 문자열이거나 None인 경우
