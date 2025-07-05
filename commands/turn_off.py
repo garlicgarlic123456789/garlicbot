@@ -20,7 +20,7 @@ def setup(bot):
         if interaction.user.id != developer :
             embed = discord.Embed(
                 title="오류",
-                description="명령어 사용 권한이 부족합니다. 개발자(이)여야 합니다.",
+                description="권한이 부족합니다. 다음 권한이 필요합니다: `개발자`",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=embed, ephemeral=False)
