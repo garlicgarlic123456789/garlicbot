@@ -11626,7 +11626,7 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     # 위험 권한 상태 메시지
     if dangerous_perms_found:
         status_msg = f"일반 사용자에게 위험한 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다: " + \
-                     "\n".join(f"• {perm}" for perm in dangerous_perms_found)
+                     ", ".join(f"{perm}" for perm in dangerous_perms_found)
         dangerous = True
     else:
         status_msg = "일반 사용자에게 위험한 권한이 부여되어 있지 않습니다."
