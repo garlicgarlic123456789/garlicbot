@@ -620,7 +620,7 @@ def update_anonymous_setting(server_id: int, onoff: bool, log_channel):
         c.execute("UPDATE anonymous SET onoff = ?, log_channel = ? WHERE server_id = ?", (onoff, log_channel, server_id))
     else:
         # 없으면 삽입
-        c.execute("INSERT INTO anonymous (server_id, onoff, log_channel) VALUES (?, ?)", (server_id, onoff, log_channel))
+        c.execute("INSERT INTO anonymous (server_id, onoff, log_channel) VALUES (?, ?, ?)", (server_id, onoff, log_channel))
 
 def get_anonymous_setting(server_id: int) : 
     c.execute("""
@@ -10290,7 +10290,7 @@ async def restore(interaction: discord.Interaction, 백업이름: str):
     await interaction.followup.send(f"`{백업이름}` 복원이 완료되었습니다.")
 
 @bot.tree.command(name = "익명채팅설정", description = "익명 채팅을 사용 여부와 로그 채널을 설정합니다.")
-@app_commands.default_permissions(manage_server=True)
+@app_commands.default_permissions(administrator=True)
 @app_commands.describe(사용여부 = "기능을 사용할지 여부", 로그채널 = "익명 채팅 로그 채널 (로그 채널을 비활성화하려는 경우 비워두기)")
 @app_commands.choices(
     사용여부 = [
@@ -10342,6 +10342,7 @@ async def chat1(interaction: discord.Interaction, 내용: str):
             color = discord.Color.red()
         )
         await interaction.followup.send(embed = embed)
+        return
 
     status, until, reason = is_blocked(interaction.user)
     
@@ -10392,14 +10393,15 @@ async def chat1(interaction: discord.Interaction, 내용: str):
     )
     await interaction.channel.send(embed = embed)
 
-    log = await bot.get_channel(log_channel)
+    if log_channel is not None : 
+        log = bot.get_channel(log_channel)
 
-    embed = discord.Embed(
-        title=f"익명 채팅", # name
-        description=f"<@{user}> 사용자가 <#{channel}>에 다음과 같은 내용의 메시지를 익명으로 보냈습니다: \n\n{content}",
-        color=int("a5f0ff", 16)
-    )
-    await log.send(embed = embed)
+        embed = discord.Embed(
+            title=f"익명 채팅", # name
+            description=f"<@{user}> 사용자가 <#{channel}>에 다음과 같은 내용의 메시지를 익명으로 보냈습니다: \n\n{content}",
+            color=int("a5f0ff", 16)
+        )
+        await log.send(embed = embed)
     embed = discord.Embed(
         title=f"성공", # name
         description=f"작업이 성공적으로 처리되었습니다.",
