@@ -6502,9 +6502,9 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             return
         
         description = ""
-        
-        for i, j in output_dict : 
-            description += f"- <@{i}>: {j['punish']} (관련 메시지: {j['message_content']})\n"
+        for h in output_dict : 
+            for i, j in h : 
+                description += f"- <@{i}>: {j['punish']} (관련 메시지: {j['message_content']})\n"
         
         print(description)
 
