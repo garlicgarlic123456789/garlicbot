@@ -8601,9 +8601,7 @@ async def 요약(
     try:
         # "YYYY-MM-DD HH:MM:SS" 형식 예: "2025-01-01 12:00:00"
         start_time = datetime.strptime(시작시각, "%Y-%m-%d %H:%M:%S")
-        # Discord는 보통 UTC 기준으로 쓰이므로, timezone을 설정해 주는 편이 좋습니다.
-        # 여기서는 예시로 UTC로 가정
-        start_time = start_time.replace(tzinfo=timezone.utc)
+        start_time = start_time.replace(tzinfo=kst)
     except ValueError:
         # 시간 형식이 맞지 않으면 에러 메시지
         await interaction.followup.send(
