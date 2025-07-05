@@ -11454,7 +11454,7 @@ async def train_random(interaction: discord.Interaction, 종류: str) :
             temp = "홀"
         else : 
             temp = "짝"
-        await interaction.followup.send(f"추천 결괴: {temp}")
+        await interaction.followup.send(f"추천 결과: {temp}")
         return
 
 # add_blockhistory(user_id, admin_id, reason, blocktype, addinfo)
