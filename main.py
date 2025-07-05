@@ -11627,6 +11627,7 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
     # 임베드 생성
     embed = discord.Embed(
         title="서버 보안 점검 결과",
+        description = "서버 보안 점검 결과는 다음과 같습니다. [자세히 알아보기](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link)",
         color=discord.Color.red() if dangerous_perms_found else int("a5f0ff", 16)
     )
 
@@ -11647,7 +11648,26 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
         all_bot_admin_msg = "모든 봇에게 관리자 권한을 주고 있지 않습니다."
     
     
-    embed.add_field(name = "역할 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}")
+    embed.add_field(name = "역할 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}", inline = False)
+
+    check_role = 인증역할 if 인증역할 else interaction.guild.default_role
+
+    dangerous_perms_found = []
+
+    for channel in interaction.guild.channels:
+        overwrites = channel.overwrites_for(check_role)
+        for perm, perm_name in dangerous_permissions.items():
+            if getattr(overwrites, perm, None):  # 채널에서 명시적으로 허용된 권한만 체크
+                dangerous_perms_found.append(f"{channel.mention}: {perm_name}")
+
+    if dangerous_perms_found:
+        status_msg = f"일반 사용자에게 위험한 채널 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다:\n" + \
+                     ", ".join(f"{perm}" for perm in dangerous_perms_found)
+        dangerous = True
+    else:
+        status_msg = "일반 사용자에게 위험한 채널 권한이 부여되어 있지 않습니다."
+    
+    embed.add_field(name = "채널 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}", inline = False)
 
     if dangerous : 
         embed.color = discord.Color.red()
