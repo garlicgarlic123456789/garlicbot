@@ -6171,7 +6171,7 @@ async def 오리실험(interaction: discord.Interaction, 유저명1: discord.Use
 
 def create_chain1(message) : 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """유저 입력에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. 양식에 없는 말은 만들어내지 마세요.
+        ("system", """입력에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요.
 
 1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
 2. 분위기를 흐리는 행위도 금지입니다.
@@ -6194,7 +6194,7 @@ def create_chain1(message) :
         ("human", "{messages}")
     ])
     llm = ChatOpenAI(
-        temperature=0.2,
+        temperature=0.1,
         model="gpt-4.1-nano",
     )
     output_parser = StrOutputParser()
