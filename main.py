@@ -8335,7 +8335,6 @@ class TicketView(View):
 TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
 async def on_ready():
-    await bot.wait_until_ready()
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
     guild = bot.get_guild(using_server)
