@@ -6207,15 +6207,18 @@ def create_chain2(message) :
 
 양식: 참고로, 제재 수위(punish)는 주의, 경고 *개, 타임아웃 *분/시간/일, 차단 중 하나입니다. 타임아웃은 28일까지 가능하나, 일반적으로 5일 이상 타임아웃이 필요할 시에는 차단을 합니다.
 {{
-    "유저id" : {{
+    {{
+        "user_id": "유저 ID",
         "message_content": "해당 유저가 보낸 메시지",
         "punish": "제재 수위",
     }},
-    "유저id" : {{
+    {{
+        "user_id": "유저 ID",
         "message_content": "해당 유저가 보낸 메시지",
         "punish": "제재 수위",
     }},
-    "유저id" : {{
+    {{
+        "user_id": "유저 ID",
         "message_content": "해당 유저가 보낸 메시지",
         "punish": "제재 수위",
     }},
@@ -6226,27 +6229,33 @@ def create_chain2(message) :
 거기다가 또 유저 id가 3인 유저는 "섹스하고싶다"라고 섹드립을 했는데 경고 1개면 충분하고, 유저 id가 4인 유저는 "씨발새끼야 꺼져"라며 지속적으로 다툼을 유발하는 행위를 해서 차단이 필요한 경우
 근데 유저 id가 5인 유저는 "섹스하고싶다"라고 하기는 했으나, 이전에 제재된 내역이 없다보니 실수로 규정을 모르고 그랬을 수 있어서 주의면 충분한 경우
 {{
-    "1" : {{
+    {{
+        "user_id": "1",
         "message_content": "섹스",
         "punish": "타임아웃 10분",
     }},
-    "1" : {{
+    {{
+        "user_id": "1",
         "message_content": "노무현",
         "punish": "타임아웃 10분",
     }},
-    "2" : {{
+    {{
+        "user_id": "2",
         "message_content": "노알라",
         "punish": "타임아웃 30분",
     }},
-    "3" : {{
+    {{
+        "user_id": "3",
         "message_content": "섹스하고싶다",
         "punish": "꼉고 1개"
     }},
-    "4" : {{
+    {{
+        "user_id": "4",
         "message_content": "씨발새끼야 꺼져",
         "punish": "차단",
     }},
-    "5": {{
+    {{
+        "user_id": "6",
         "message_content": "섹스하고싶다",
         "punish": "주의",
     }}
@@ -6502,9 +6511,8 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             return
         
         description = ""
-        for h in output_dict : 
-            for i, j in h : 
-                description += f"- <@{i}>: {j['punish']} (관련 메시지: {j['message_content']})\n"
+        for i in output_dict : 
+            description += f"- <@{i['user_id']}>: {i['punish']} (관련 메시지: {i['message_content']})\n"
         
         print(description)
 
