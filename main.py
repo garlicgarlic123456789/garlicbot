@@ -6267,7 +6267,7 @@ def create_chain2(message) :
     ])
     llm = ChatOpenAI(
         temperature=0.1,
-        model="gpt-4.1-nano",
+        model="gpt-4.1-mini",
     )
     output_parser = StrOutputParser()
     chain = prompt | llm | output_parser
