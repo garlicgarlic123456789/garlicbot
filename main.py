@@ -8598,13 +8598,6 @@ async def 요약(
         )
         await interaction.followup.send(embed=embed, ephemeral=False)
         return
-    """
-    /요약 <구분> <시작시각> 명령어:
-    - <구분>은 현재 "관리 권한 사용"만 존재(선택지)
-    - <시작시각> 이후의 제재 로그(타임아웃/해제, 추방, 차단/해제)를 모두 불러와서
-      유저별로 Embed에 정리해 보여줍니다.
-    """
-    # 1. 입력받은 시간 문자열을 datetime으로 파싱
     try:
         # "YYYY-MM-DD HH:MM:SS" 형식 예: "2025-01-01 12:00:00"
         start_time = datetime.strptime(시작시각, "%Y-%m-%d %H:%M:%S")
@@ -8619,19 +8612,12 @@ async def 요약(
         )
         return
 
-    # 2. 서버(Guild) 객체 가져오기
     guild = interaction.guild
     if guild is None:
         # DM 등 길드가 없는 곳에서 사용 시
         await interaction.followup.send("이 명령어는 서버(길드)에서만 사용 가능합니다.")
         return
-
-    # 3. 확인하고자 하는 감사 로그 액션들을 정의
-    #    - 타임아웃(member_update, communication_disabled_until 업데이트)
-    #    - 타임아웃 해제(member_update, communication_disabled_until 제거)
-    #    - 추방(kick)
-    #    - 차단(ban)
-    #    - 차단해제(unban)
+    
     relevant_actions = [
         discord.AuditLogAction.kick,
         discord.AuditLogAction.ban,
