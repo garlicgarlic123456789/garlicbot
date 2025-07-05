@@ -8294,7 +8294,7 @@ class TicketButtonEmergency(Button):
     def __init__(self):
         super().__init__(label="긴급 티켓 생성", style=discord.ButtonStyle.danger, custom_id="create_ticket_emergency")
 
-    async def callback(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
@@ -8322,8 +8322,6 @@ class TicketButtonEmergency(Button):
             color = discord.Color.red()
         )
         await channel.send(embed = embed)
-        button.disabled = True
-        await interaction.message.edit(view=self)
 
 class TicketView(View):
     def __init__(self):
