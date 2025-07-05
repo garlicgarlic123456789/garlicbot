@@ -8820,7 +8820,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         app_commands.Choice(name="일반 유저", value="일반 유저"),
     ]
 )
-async def 서버조언(interaction: discord.Interaction, 프롬프트: str, 시작메시지: str, 종료메시지: str, 역할: str):
+async def 서버조언(interaction: discord.Interaction, 프롬프트: str, 시작메시지: str, 종료메시지: str, 역할: str = "*(입력되지 않음)*"):
     if interaction.user.id != 1063676895000018944 and interaction.user.id != 1305492487137267722 and interaction.user.id != 1355698620606709902 : 
         await interaction.response.send_message("권한이 부족합니다. 다음 권한이 필요합니다: `사용자: 1063676895000018944` 또는 `사용자: 1305492487137267722` 또는 `사용자: 1355698620606709902`")
         return
