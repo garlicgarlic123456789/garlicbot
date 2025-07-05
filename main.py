@@ -6185,14 +6185,14 @@ def create_chain1(message) :
 
 예: 유저 id가 1인 유저가 "섹스"라고 성적인 말을 했고, 유저 id가 2인 유저가 "노무현"이라고 정치인 언급을 한 경우:
 {{
-    1: "섹스",
-    2: "노무현",
+    "1": "섹스",
+    "2": "노무현",
 }}
         """),
         ("human", "{messages}")
     ])
     llm = ChatOpenAI(
-        temperature=0.7,
+        temperature=0.2,
         model="gpt-4.1-nano",
     )
     output_parser = StrOutputParser()
@@ -6325,13 +6325,83 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         chain = create_chain1(messages_list)
         output = chain.invoke({"messages": messages_list})
         print(output)
-        embed = discord.Embed(
-            title = "성공",
-            description = "개발 중",
-            color = int("a5f0ff", 16)
-        )
-        await interaction.followup.send(embed = embed)
-        return
+        
+        # output이 빈 문자열이거나 None인 경우
+        if not output or output.strip() == "":
+            embed = discord.Embed(
+                title="완료",
+                description="규정 위반 메시지가 없습니다.",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # JSON 파싱 시도
+        try:
+            import json
+            output_dict = json.loads(output)
+        except json.JSONDecodeError:
+            # JSON 파싱 실패 시 빈 결과로 처리
+            embed = discord.Embed(
+                title="오류",
+                description="오류가 발생했습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # 빈 딕셔너리인 경우
+        if not output_dict:
+            embed = discord.Embed(
+                title="완료",
+                description="규정 위반 메시지가 없습니다.",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        user_list = list(output_dict.keys())
+
+        for i in range(len(user_list)) : 
+            user_list[i] = int(user_list[i])
+
+        # 제재할 건이 있는 유저들의 이전 제재 내역 불러오기 (최대 15건)
+        blockhistory = {}
+
+        for i in user_list : 
+            c.execute(
+                "SELECT type, reason, addinfo FROM blockhistory WHERE user_id = ? AND server_id = ? ORDER BY id DESC", 
+                (i, interaction.guild.id)
+            )
+
+            results = c.fetchall()
+
+            recent_block = results[:15]
+            if len(recent_block) == 0 :
+                blockhistory[i] = "최근 제재 내역 없음"
+                continue
+                
+            blockhistory[i] = ""
+
+            for j in recent_block :
+                if j[0] == "timeout" : 
+                    blockhistory[i] += f"{j[2]}초 동안 타임아웃. 사유: {j[1]}\n"
+                elif j[0] == "untimeout" : 
+                    blockhistory[i] += f"타임아웃 해제. 사유: {j[1]}\n"
+                elif j[0] == "warn" : 
+                    blockhistory[i] += f"경고 {j[2]}개 부여. 사유: {j[1]}\n"
+                elif j[0] == "unwarn" : 
+                    blockhistory[i] += f"경고 {j[2]}개 차감. 사유: {j[1]}\n"
+                elif j[0] == "kick" : 
+                    blockhistory[i] += f"서버에서 추방. 사유: {j[1]}\n"
+                elif j[0] == "ban" : 
+                    blockhistory[i] += f"서버에서 차단. 사유: {j[1]}\n"
+                elif j[0] == "unban" : 
+                    blockhistory[i] += f"서버에서 차단 해제. 사유: {j[1]}\n"
+        
+        print(blockhistory)
+
+
     elif 버전 == "버전 2" : 
         프롬프트 = """
 아래 디스코드 서버 대화에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. (단, 규정 위반 메시지가 하나도 없을시 문자열 답변에 'None'만 딱 작성하세요) 양식에 없는 말은 만들어내지 마세요.
