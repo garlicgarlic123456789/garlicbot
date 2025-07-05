@@ -11633,7 +11633,7 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
 
     # 위험 권한 상태 메시지
     if dangerous_perms_found:
-        status_msg = f"일반 사용자에게 위험한 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다:\n" + \
+        status_msg = f"일반 사용자에게 위험한 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다: " + \
                      "\n".join(f"• {perm}" for perm in dangerous_perms_found)
         dangerous = True
     else:
@@ -11661,7 +11661,7 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
                 dangerous_perms_found.append(f"{channel.mention}: {perm_name}")
 
     if dangerous_perms_found:
-        status_msg = f"일반 사용자에게 위험한 채널 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다:\n" + \
+        status_msg = f"일반 사용자에게 위험한 채널 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다: " + \
                      ", ".join(f"{perm}" for perm in dangerous_perms_found)
         dangerous = True
     else:
