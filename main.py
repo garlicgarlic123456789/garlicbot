@@ -11553,6 +11553,22 @@ async def 채팅시간확인(interaction: discord.Interaction, 시작시각: str
     except Exception as e:
         await interaction.followup.send(f"오류가 발생했습니다: {str(e)}")
 
+async def check_all_bot_admin_perm(interaction):
+    # 모든 역할을 순회
+    for role in interaction.guild.roles:
+        # 관리자 권한이 없으면 패스
+        if not role.permissions.administrator:
+            continue
+
+        # 이 역할이 부여된 멤버들 가져오기
+        members_with_role = [member for member in interaction.guild.members if role in member.roles]
+
+        # 조건 1: 역할이 부여된 봇 계정이 5명 이상인지 확인
+        if len(members_with_role) >= 5 and all(member.bot for member in members_with_role):
+            return True  # 조건을 만족하는 역할이 존재
+
+    return False  # 끝까지 돌았는데 조건을 만족하는 역할이 없음
+
 @bot.tree.command(name="보안점검", description="서버의 권한 설정을 검토합니다.")
 @app_commands.default_permissions(administrator=True)
 async def security_check(interaction: discord.Interaction, 관리진역할: discord.Role, 인증역할: Optional[discord.Role] = None):
@@ -11564,6 +11580,9 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
         return
+    
+    dangerous = False
+    warning = False
     
     # 권한 확인이 필요한 목록
     dangerous_permissions = {
@@ -11602,52 +11621,40 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
     # 관리진 역할보다 상위 역할 확인
     higher_roles = [role.mention for role in interaction.guild.roles 
                     if role.position > 관리진역할.position]
+    
+    description = ""
 
     # 임베드 생성
     embed = discord.Embed(
-        title="🔒 서버 보안 점검 결과",
+        title="서버 보안 점검 결과",
         color=discord.Color.red() if dangerous_perms_found else int("a5f0ff", 16)
     )
 
     # 위험 권한 상태 메시지
     if dangerous_perms_found:
-        status_msg = f"**[경고!]** 일반 사용자에게 위험한 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다:\n" + \
+        status_msg = f"일반 사용자에게 위험한 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다:\n" + \
                      "\n".join(f"• {perm}" for perm in dangerous_perms_found)
+        dangerous = True
     else:
         status_msg = "일반 사용자에게 위험한 권한이 부여되어 있지 않습니다."
+    
+    all_bot_admin = await check_all_bot_admin_perm(interaction)
 
-    embed.add_field(
-        name="권한 점검 결과",
-        value=status_msg,
-        inline=False
-    )
+    if all_bot_admin : 
+        all_bot_admin_msg = "모든 봇에게 관리자 권한을 주는 것은 비권장사항입니다. 봇별로 개별적으로 권한을 다르게 부여하시기 바랍니다."
+        warning = True
+    else : 
+        all_bot_admin_msg = "모든 봇에게 관리자 권한을 주고 있지 않습니다."
+    
+    
+    embed.add_field(name = "역할 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}")
 
-    # 관리자 권한 정보
-    admin_roles_msg = ("관리자 권한은 다음 역할에 부여되어 있습니다. "
-                       "항상 신뢰할 수 있는 사용자에게만 부여해주세요.\n"
-                       f"부여된 역할: {', '.join(admin_roles) if admin_roles else '없음'}")
-    embed.add_field(
-        name="관리자 권한 현황",
-        value=admin_roles_msg,
-        inline=False
-    )
-
-    # 관리진 역할 상위 역할 경고 메시지
-    if higher_roles:
-        higher_roles_msg = ("**[주의!]** 관리진 역할보다 상위 역할이 존재합니다. "
-                            "이 역할은 관리진이 제재할 수 없으니 신중히 관리해야 합니다.\n"
-                            f"상위 역할: {', '.join(higher_roles)}")
-        embed.add_field(
-            name="역할 순서 점검",
-            value=higher_roles_msg,
-            inline=False
-        )
-    else:
-        embed.add_field(
-            name="역할 순서 점검",
-            value="관리진 역할보다 상위 역할이 없습니다.",
-            inline=False
-        )
+    if dangerous : 
+        embed.color = discord.Color.red()
+    elif warning : 
+        embed.color = discord.Color.orange()
+    else : 
+        embed.color = int("a5f0ff", 16)
 
     await interaction.followup.send(embed=embed)
 
