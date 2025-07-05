@@ -597,6 +597,7 @@ c.execute("CREATE TABLE IF NOT EXISTS automod (id INTEGER PRIMARY KEY AUTOINCREM
 # -1은 기능 비활성회, 0은 삭제만 하고 타임아웃하지 않기, 1 이상은 타임아웃.
 c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, max INTEGER)") # 검열기능 사용 여부
 c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
+c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
 '''
 c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
 c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -604,6 +605,44 @@ c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREME
 c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
 c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
 '''
+
+def update_anonymous_setting(server_id: int, onoff: bool, log_channel):
+    if onoff : 
+        onoff = 1
+    else : 
+        onoff = 0
+    # user_id 존재 여부 확인
+    c.execute("SELECT id FROM anonymous WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+
+    if row:
+        # 존재하면 업데이트
+        c.execute("UPDATE anonymous SET onoff = ?, log_channel = ? WHERE server_id = ?", (onoff, log_channel, server_id))
+    else:
+        # 없으면 삽입
+        c.execute("INSERT INTO anonymous (server_id, onoff, log_channel) VALUES (?, ?)", (server_id, onoff, log_channel))
+
+def get_anonymous_setting(server_id: int) : 
+    c.execute("""
+        SELECT onoff, log_channel
+        FROM anonymous
+        WHERE server_id = ?
+    """, (server_id,))
+    row = c.fetchone()
+    
+    if row:
+        onoff, log_channel = row[0], row[1]
+
+        if onoff == 1 : 
+            onoff = True
+        elif onoff == 0 : 
+            onoff = False
+        else : 
+            onoff = None
+        
+        return onoff, log_channel
+    else : 
+        return False, None
 
 def update_warn_max(server_id: int, max_warn):
     # user_id 존재 여부 확인
@@ -10250,21 +10289,59 @@ async def restore(interaction: discord.Interaction, 백업이름: str):
     
     await interaction.followup.send(f"`{백업이름}` 복원이 완료되었습니다.")
 
+@bot.tree.command(name = "익명채팅설정", description = "익명 채팅을 사용 여부와 로그 채널을 설정합니다.")
+@app_commands.default_permissions(manage_server=True)
+@app_commands.describe(사용여부 = "기능을 사용할지 여부", 로그채널 = "익명 채팅 로그 채널 (로그 채널을 비활성화하려는 경우 비워두기)")
+@app_commands.choices(
+    사용여부 = [
+        app_commands.Choice(name = "활성화", value = "True"),
+        app_commands.Choice(name = "비활성화", value = "False"),
+    ]
+)
+async def update_anonymous_setting_command(interaction: discord.Interaction, 사용여부: str, 로그채널: discord.TextChannel = None) : 
+    await interaction.response.defer()
+
+    status, until, reason = is_blocked(interaction.user)
+    
+    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+    
+    if 사용여부 == "True" : 
+        사용여부 = True
+    else : 
+        사용여부 = False
+    
+    if 로그채널 is not None : 
+        로그채널 = 로그채널.id
+    
+    update_anonymous_setting(interaction.guild.id, 사용여부, 로그채널)
+
+    embed = discord.Embed(
+        title = "완료",
+        description = "익명 채팅 옵션이 성공적으로 저장되었습니다.",
+        color = int("a5f0ff", 16),
+    )
+    await interaction.followup.send(embed = embed)
+
 @bot.tree.command(name = "익명채팅", description = "익명으로 메시지를 보냅니다. (단, 비공개 로그 채널에 로그가 전송됩니다.)")
 @app_commands.describe(내용 = "익명으로 보낼 채팅의 내용")
 async def chat1(interaction: discord.Interaction, 내용: str):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
     channel = interaction.channel_id
     user = interaction.user.id
-    log = bot.get_channel(익명로그)
     await interaction.response.defer(ephemeral = True)
+
+    onoff, log_channel = get_anonymous_setting(interaction.guild.id)
+
+    if not onoff : 
+        embed = discord.Embed(
+            title = "오류",
+            description = "이 서버에서는 익명 채팅 기능이 비활성화되어 있습니다.",
+            color = discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed)
 
     status, until, reason = is_blocked(interaction.user)
     
@@ -10279,29 +10356,31 @@ async def chat1(interaction: discord.Interaction, 내용: str):
     if "<@" in 내용 or "@here" in 내용 or "@everyone" in 내용 or "discord.gg/" in 내용 or "discord.com/invite/" in 내용 :
         await interaction.followup.send("**[오류!]** 익명채팅에서 특정 사용자 또는 역할을 멘션하거나 서버 링크를 첨부할 수 없습니다.")
         return
-
-    global automod_keyword
-    global automod_keyword2
-    global automod_keyword3
-    global automod_keyword4
-    global automod_keyword5
-    global automod_keyword6
-    global automod_keyword7
-    global automod_keyword8
-    global automod_keyword9
-    global automod_keyword10
-    global raid_keyword1
     
-    message_content = re.sub(r"[^가-힣a-zA-Z]", "", 내용)
+    if interaction.guild.id == using_server : 
+        global automod_keyword
+        global automod_keyword2
+        global automod_keyword3
+        global automod_keyword4
+        global automod_keyword5
+        global automod_keyword6
+        global automod_keyword7
+        global automod_keyword8
+        global automod_keyword9
+        global automod_keyword10
+        global raid_keyword1
+        
+        message_content = re.sub(r"[^가-힣a-zA-Z]", "", 내용)
 
-    for i in automod_keyword + automod_keyword2 + automod_keyword3 + automod_keyword4 + automod_keyword5 + automod_keyword6 + automod_keyword7 + automod_keyword8 + automod_keyword9 + automod_keyword10 :
-        if i in message_content :
-            embed = discord.Embed(
-                title=f"오류", # name
-                description=f"automod_keyword",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed = embed)
+        for i in automod_keyword + automod_keyword2 + automod_keyword3 + automod_keyword4 + automod_keyword5 + automod_keyword6 + automod_keyword7 + automod_keyword8 + automod_keyword9 + automod_keyword10 :
+            if i in message_content :
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"automod_keyword",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
 
     content = 내용.split("\\n")
     content = "\n".join(content)
@@ -10311,8 +10390,10 @@ async def chat1(interaction: discord.Interaction, 내용: str):
         description=f"누군가가 다음과 같은 내용의 메시지를 익명으로 보냈습니다: \n\n{content}\n-# 이 메시지는 /익명채팅 명령어를 통해 전송되었습니다.",
         color=int("a5f0ff", 16)
     )
-
     await interaction.channel.send(embed = embed)
+
+    log = await bot.get_channel(log_channel)
+
     embed = discord.Embed(
         title=f"익명 채팅", # name
         description=f"<@{user}> 사용자가 <#{channel}>에 다음과 같은 내용의 메시지를 익명으로 보냈습니다: \n\n{content}",
