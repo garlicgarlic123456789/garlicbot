@@ -1,7 +1,12 @@
-# 중요!
-깃허브에 라이선스 없이 올라와 있는 코드들은 기본적으로 ‘모든 권리 보유(All rights reserved)’ 상태로 간주되며, 이 코드도 마찬가지입니다.
+# 경고
+본 프로젝트의 저작권은 garlicfood1234에게 있습니다.  
+무단 복제, 수정, 배포, 사용을 금지합니다.  
+작성자의 명시적 허가 없이 본 코드 또는 저장소의 일부를 사용하는 것은 금지됩니다.
 
-개발자 마늘요리의 허가 없이 코드를 사용. 재배포, 수정하는 행위는 금지됩니다.
+Copyright (c) 2025 garlicfood1234  
+All rights reserved.  
+Unauthorized copying, modification, distribution, or use of this code or any part of this repository is strictly prohibited without explicit permission from the author.
+
 
 # 마늘봇 소개
 마늘봇으로 서버를 더 편하게 관리하고, 더 편하게 채팅해보세요.
