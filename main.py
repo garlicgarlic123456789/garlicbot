@@ -6503,16 +6503,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             )
             await interaction.followup.send(embed=embed)
             return
-
-        # 빈 딕셔너리인 경우
-        if not output_dict:
-            embed = discord.Embed(
-                title="완료",
-                description="규정 위반 메시지가 없습니다.",
-                color=int("a5f0ff", 16)
-            )
-            await interaction.followup.send(embed=embed)
-            return
         
         description = ""
         for i in output_dict : 
