@@ -14,6 +14,13 @@ import dkim  # DKIM 검증에 필요한 라이브러리
 import dns.resolver  # DKIM 공개 키를 DNS에서 조회하기 위한 라이브러리
 import re
 import asyncio
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
+from langchain_openai import OpenAIEmbeddings
+from langchain_core.prompts import FewShotChatMessagePromptTemplate
+from langchain_core.example_selectors import SemanticSimilarityExampleSelector
+from langchain_chroma import Chroma
 import random
 from discord import app_commands
 from google.genai import types
@@ -6162,8 +6169,32 @@ async def 오리실험(interaction: discord.Interaction, 유저명1: discord.Use
     )
     await message.reply(embed=embed, mention_author = False)
 
+def create_chain1(message) : 
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", f"""유저 입력에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. 양식에 없는 말은 만들어내지 마세요.
 
-@bot.tree.command(name="판사", description="Gemini 2.0 Flash를 이용해 메시지 링크 범위를 첨부하여 특정 사건에 대한 판결문을 생성합니다.")
+1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
+2. 분위기를 흐리는 행위도 금지입니다.
+
+출력 형식은 json으로 다음 예시와 같게 출력합니다. (규정 위반이 없을 시 빈 json 반환)
+
+{{{{
+    유저id: "위반한 메시지 내용",
+    유저id: "위반한 메시지 내용",
+}}}}
+        """),
+        ("human", f"{message}")
+    ])
+    llm = ChatOpenAI(
+        temperature=0.7,
+        model="gpt-4.1-nano",
+    )
+    output_parser = StrOutputParser()
+    chain = prompt | llm | output_parser
+    return chain
+
+
+@bot.tree.command(name="판사", description="AI를 이용해 메시지 링크 범위를 첨부하여 특정 사건에 대한 판결문을 생성합니다.")
 @app_commands.describe(
     시작="판결을 시작할 메시지의 링크",
     끝="판결을 끝낼 메시지의 링크 (선택)",
@@ -6175,6 +6206,7 @@ async def 오리실험(interaction: discord.Interaction, 유저명1: discord.Use
         app_commands.Choice(name = "비활성화", value = "False"),
     ],
     버전 = [
+        app_commands.Choice(name = "버전 3", value = "버전 3"),
         app_commands.Choice(name = "버전 1", value = "버전 1"),
     ]
 )
@@ -6192,8 +6224,108 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         )
         await interaction.followup.send(embed=embed)
         return
+    if 버전 == "버전 3" : 
+        if interaction.user.id != developer : 
+            embed = discord.Embed(
+                title="오류",
+                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다. ",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        status, until, reason = is_blocked(interaction.user)
+        
+        # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+        if status:
+            embed = discord.Embed(
+                title="오류",
+                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다. {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
 
-    if 버전 == "버전 2" : 
+        user_id = interaction.user.id
+        current_time = time.time()
+
+        # 쿨다운 확인
+        if user_id not in bot.cooldowns:
+            bot.cooldowns[user_id] = 0
+
+        if current_time - bot.cooldowns[user_id] < 1 * 60:  # 60초 = 1분
+            embed = discord.Embed(
+                title=f"오류", # name
+                description=f"이 명령어는 1분마다 한 번 사용 가능합니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # owner_id 역할 확인
+        if user_id == developer:
+            bot.cooldowns[user_id] = current_time
+
+        try:
+            # 메시지 링크에서 채널 ID와 메시지 ID 추출
+            start_channel_id, start_message_id = map(int, 시작.split("/")[-2:])
+            end_channel_id = None
+            end_message_id = None
+
+            if 끝:
+                end_channel_id, end_message_id = map(int, 끝.split("/")[-2:])
+
+            # 채널 가져오기
+            channel = bot.get_channel(start_channel_id)
+            if not channel:
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"channel의 값이 올바르지 않습니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            if channel.id != interaction.channel.id:
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"channel의 값이 올바르지 않습니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # 메시지 불러오기
+            messages = await fetch_messages(channel, start_message_id, end_message_id)
+            if not messages:
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"messages의 값이 올바르지 않습니다. 이 오류는 지정된 범위의 메시지들의 개수가 0개일 때 표시됩니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # 메시지 내용을 합치기
+            messages_list = "\n\n".join(f"{msg.author.display_name}: {msg.content}" for msg in reversed(messages))
+        except Exception as e : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "오류가 발생했습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        chain = create_chain1(messages_list)
+        output = chain.invoke(messages_list)
+        print(output)
+        embed = discord.Embed(
+            title = "성공",
+            description = "개발 중",
+            color = int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
+        return
+    elif 버전 == "버전 2" : 
         프롬프트 = """
 아래 디스코드 서버 대화에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. (단, 규정 위반 메시지가 하나도 없을시 문자열 답변에 'None'만 딱 작성하세요) 양식에 없는 말은 만들어내지 마세요.
 
