@@ -6171,19 +6171,25 @@ async def 오리실험(interaction: discord.Interaction, 유저명1: discord.Use
 
 def create_chain1(message) : 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", f"""유저 입력에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. 양식에 없는 말은 만들어내지 마세요.
+        ("system", """유저 입력에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. 양식에 없는 말은 만들어내지 마세요.
 
 1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
 2. 분위기를 흐리는 행위도 금지입니다.
 
 출력 형식은 json으로 다음 예시와 같게 출력합니다. (규정 위반이 없을 시 빈 json 반환)
 
-{{{{
+{{
     유저id: "위반한 메시지 내용",
     유저id: "위반한 메시지 내용",
-}}}}
+}}
+
+예: 유저 id가 1인 유저가 "섹스"라고 성적인 말을 했고, 유저 id가 2인 유저가 "노무현"이라고 정치인 언급을 한 경우:
+{{
+    1: "섹스",
+    2: "노무현",
+}}
         """),
-        ("human", f"{message}")
+        ("human", "{messages}")
     ])
     llm = ChatOpenAI(
         temperature=0.7,
@@ -6307,7 +6313,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                 return
 
             # 메시지 내용을 합치기
-            messages_list = "\n\n".join(f"{msg.author.display_name}: {msg.content}" for msg in reversed(messages))
+            messages_list = "\n\n".join(f"{msg.author.id}: {msg.content}" for msg in reversed(messages))
         except Exception as e : 
             embed = discord.Embed(
                 title = "오류",
@@ -6317,7 +6323,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed = embed)
             return
         chain = create_chain1(messages_list)
-        output = chain.invoke(messages_list)
+        output = chain.invoke({"messages": messages_list})
         print(output)
         embed = discord.Embed(
             title = "성공",
