@@ -22,7 +22,7 @@ def setup(bot: commands.Bot):
         if interaction.guild.owner_id != interaction.user.id:
             embed = discord.Embed(
                 title="오류",
-                description="이 명령어는 서버 주인만 사용할 수 있습니다.",
+                description="권한이 부족합니다. 다음 권한이 필요합니다: `서버 주인`",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=embed, ephemeral=False)
