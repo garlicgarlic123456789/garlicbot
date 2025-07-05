@@ -5475,16 +5475,6 @@ async def ban(interaction: discord.Interaction, 사용자: discord.User, 사유:
 
     await process_anti_nuke_ban(interaction.guild.id, interaction.user.id, interaction.guild)
 
-'''
-async def on_member_ban(guild, user):
-    # 밴한 관리자 정보를 감사 로그에서 가져오기
-    async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
-        if entry.target.id == user.id:  # 밴된 유저와 감사 로그의 대상이 일치하는지 확인
-            admin = entry.user  # 밴을 실행한 관리자
-            reason = entry.reason  # 밴 사유
-            return
-'''
-
 @bot.tree.command(name="일괄차단", description="여러 사용자를 일괄 차단합니다. 보안봇이 서버에 있는 경우 보안봇 화이트리스트에 마늘이를 추가한 후 사용해 주세요.")
 @app_commands.choices(제재내역공개여부 = [app_commands.Choice(name = "공개", value = "공개"), app_commands.Choice(name = "비공개", value = "비공개")])
 @app_commands.describe(
