@@ -6493,7 +6493,12 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         # JSON 파싱 시도
         try:
             import json
-            output_dict = json.loads(output)
+            cleaned_output = output.strip()
+            if cleaned_output.startswith('{') and cleaned_output.endswith('}') and cleaned_output.count('{') > 1:
+                cleaned_output = '[' + cleaned_output.replace('},', '}},').replace('}{', '},{').replace('{{', '{').replace('}}', '}') + ']'
+            elif not cleaned_output.startswith('['):
+                cleaned_output = '[' + cleaned_output + ']'
+            output_dict = json.loads(cleaned_output)
         except json.JSONDecodeError:
             # JSON 파싱 실패 시 빈 결과로 처리
             embed = discord.Embed(
