@@ -86,7 +86,7 @@ async def advice_main(bot, interaction, original_message, start_message_link, en
         await original_message.reply(embed = embed)
         return
 
-        
+
 
 
 
