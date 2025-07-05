@@ -6185,6 +6185,8 @@ def create_chain1(message) :
 
 하나의 유저가 같은 메시지를 보낸 것이 여러번 위반일 때에는 한 번만 json에 언급합니다. (단, 여러명의 유저가 같은 메시지를 보낸 경우에는 여러번 json에 언급할 수 있습니다.)
 
+절대로 같은 유저 id가 보낸 같은 메시지를 여러번 json으로 주지 마세요.
+
 예: 유저 id가 1인 유저가 "섹스"라고 성적인 말을 했고, 유저 id가 2인 유저가 "노무현"이라고 정치인 언급을 한 경우:
 {{
     "1": "섹스",
@@ -6473,7 +6475,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         print(blockhistory)
 
         chain = create_chain2(messages_list)
-        output = chain.invoke({"messages": messages_list, "before_blockhistory": blockhistory})
+        output = chain.invoke({"messages": output_dict, "before_blockhistory": blockhistory})
         print(output)
 
         # output이 빈 문자열이거나 None인 경우
