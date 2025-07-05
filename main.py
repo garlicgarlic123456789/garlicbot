@@ -6287,11 +6287,11 @@ def create_chain2(message) :
         app_commands.Choice(name = "비활성화", value = "False"),
     ],
     버전 = [
-        app_commands.Choice(name = "버전 3", value = "버전 3"),
-        app_commands.Choice(name = "버전 1", value = "버전 1"),
+        app_commands.Choice(name = "버전 3 (GPT-4.1 mini가 메시지 기록 및 이전 제재 내역으로 판결)", value = "v2"),
+        app_commands.Choice(name = "버전 1 (Gemini 2.0 Flash가 메시지 기록으로 판결)", value = "v1"),
     ]
 )
-async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "버전 1"):
+async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v1"):
     if 개인응답 == "False" : 
         await interaction.response.defer()
     else :
@@ -6305,7 +6305,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         )
         await interaction.followup.send(embed=embed)
         return
-    if 버전 == "버전 3" : 
+    if 버전 == "v2" : 
         status, until, reason = is_blocked(interaction.user)
         
         # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
@@ -6532,9 +6532,119 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         )
         await interaction.followup.send(embed=embed)
         return
+    elif 버전 == "v1" : 
+        프롬프트 = """
+아래 디스코드 서버 대화에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 부분을 찾고, 유저별 제재 수위를 작성해 주세요.
 
+1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
+2. 대화 주제를 고려하지 않고 자기 할말만 하는 등 분위기를 흐리는 행위도 금지입니다.
 
-    elif 버전 == "버전 2" : 
+제재 수위 다음 중 하나입니다: 제재하지 아니함, 주의, 경고, 타임아웃(이 경우 1분 ~ 72시간 사이의 시간으로 기간도 작성), 차단. (차단은 행위가 매우매우 지속적일 때만)
+
+답변 양식: 
+- {유저명}: {제재 수위} ({사유})
+- {유저명}: {제재 수위} ({사유})
+- {유저명}: {제재 수위} ({사유})
+- ...
+
+----------"""
+
+        status, until, reason = is_blocked(interaction.user)
+        
+        # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+        if status:
+            embed = discord.Embed(
+                title="오류",
+                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다. {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+
+        user_id = interaction.user.id
+        current_time = time.time()
+
+        # 쿨다운 확인
+        if user_id not in bot.cooldowns:
+            bot.cooldowns[user_id] = 0
+
+        if current_time - bot.cooldowns[user_id] < 1 * 60:  # 60초 = 1분
+            embed = discord.Embed(
+                title=f"오류", # name
+                description=f"이 명령어는 1분마다 한 번 사용 가능합니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # owner_id 역할 확인
+        if user_id == developer:
+            bot.cooldowns[user_id] = current_time
+
+        try:
+            # 메시지 링크에서 채널 ID와 메시지 ID 추출
+            start_channel_id, start_message_id = map(int, 시작.split("/")[-2:])
+            end_channel_id = None
+            end_message_id = None
+
+            if 끝:
+                end_channel_id, end_message_id = map(int, 끝.split("/")[-2:])
+
+            # 채널 가져오기
+            channel = bot.get_channel(start_channel_id)
+            if not channel:
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"channel의 값이 올바르지 않습니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            if channel.id != interaction.channel.id:
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"channel의 값이 올바르지 않습니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # 메시지 불러오기
+            messages = await fetch_messages(channel, start_message_id, end_message_id)
+            if not messages:
+                embed = discord.Embed(
+                    title=f"오류", # name
+                    description=f"messages의 값이 올바르지 않습니다. 이 오류는 지정된 범위의 메시지들의 개수가 0개일 때 표시됩니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # 메시지 내용을 합치기
+            text_to_summarize = "\n\n".join(f"{msg.author.display_name}: {msg.content}" for msg in reversed(messages))
+            text_to_summarize = f"{프롬프트}\n\n{text_to_summarize}"
+
+            # Gemini API 호출
+            response = two_five_lite_model.generate_content(text_to_summarize)
+
+            # 응답 전송
+            embed = discord.Embed(
+                title="성공",
+                description=f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\nGemini 2.0 Flash의 답변은 다음과 같습니다: \n\n{response.text}",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            embed = discord.Embed(
+                title=f"오류", # name
+                description=f"오류가 발생했습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+'''
+    elif 버전 == "v2" : 
         프롬프트 = """
 아래 디스코드 서버 대화에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요. (단, 규정 위반 메시지가 하나도 없을시 문자열 답변에 'None'만 딱 작성하세요) 양식에 없는 말은 만들어내지 마세요.
 
@@ -6735,117 +6845,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
-    elif 버전 == "버전 1" : 
-        프롬프트 = """
-아래 디스코드 서버 대화에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 부분을 찾고, 유저별 제재 수위를 작성해 주세요.
-
-1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
-2. 대화 주제를 고려하지 않고 자기 할말만 하는 등 분위기를 흐리는 행위도 금지입니다.
-
-제재 수위 다음 중 하나입니다: 제재하지 아니함, 주의, 경고, 타임아웃(이 경우 1분 ~ 72시간 사이의 시간으로 기간도 작성), 차단. (차단은 행위가 매우매우 지속적일 때만)
-
-답변 양식: 
-- {유저명}: {제재 수위} ({사유})
-- {유저명}: {제재 수위} ({사유})
-- {유저명}: {제재 수위} ({사유})
-- ...
-
-----------"""
-
-        status, until, reason = is_blocked(interaction.user)
-        
-        # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-        if status:
-            embed = discord.Embed(
-                title="오류",
-                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다. {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed = embed)
-            return
-
-        user_id = interaction.user.id
-        current_time = time.time()
-
-        # 쿨다운 확인
-        if user_id not in bot.cooldowns:
-            bot.cooldowns[user_id] = 0
-
-        if current_time - bot.cooldowns[user_id] < 1 * 60:  # 60초 = 1분
-            embed = discord.Embed(
-                title=f"오류", # name
-                description=f"이 명령어는 1분마다 한 번 사용 가능합니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
-        # owner_id 역할 확인
-        if user_id == developer:
-            bot.cooldowns[user_id] = current_time
-
-        try:
-            # 메시지 링크에서 채널 ID와 메시지 ID 추출
-            start_channel_id, start_message_id = map(int, 시작.split("/")[-2:])
-            end_channel_id = None
-            end_message_id = None
-
-            if 끝:
-                end_channel_id, end_message_id = map(int, 끝.split("/")[-2:])
-
-            # 채널 가져오기
-            channel = bot.get_channel(start_channel_id)
-            if not channel:
-                embed = discord.Embed(
-                    title=f"오류", # name
-                    description=f"channel의 값이 올바르지 않습니다.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            if channel.id != interaction.channel.id:
-                embed = discord.Embed(
-                    title=f"오류", # name
-                    description=f"channel의 값이 올바르지 않습니다.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            # 메시지 불러오기
-            messages = await fetch_messages(channel, start_message_id, end_message_id)
-            if not messages:
-                embed = discord.Embed(
-                    title=f"오류", # name
-                    description=f"messages의 값이 올바르지 않습니다. 이 오류는 지정된 범위의 메시지들의 개수가 0개일 때 표시됩니다.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            # 메시지 내용을 합치기
-            text_to_summarize = "\n\n".join(f"{msg.author.display_name}: {msg.content}" for msg in reversed(messages))
-            text_to_summarize = f"{프롬프트}\n\n{text_to_summarize}"
-
-            # Gemini API 호출
-            response = two_five_lite_model.generate_content(text_to_summarize)
-
-            # 응답 전송
-            embed = discord.Embed(
-                title="성공",
-                description=f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\nGemini 2.0 Flash의 답변은 다음과 같습니다: \n\n{response.text}",
-                color=int("a5f0ff", 16)
-            )
-            await interaction.followup.send(embed=embed)
-
-        except Exception as e:
-            embed = discord.Embed(
-                title=f"오류", # name
-                description=f"오류가 발생했습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
+'''
 
 @bot.tree.command(name="대화요약", description="Gemini 2.0 Flash를 이용해 대화 요약을 생성합니다.")
 @app_commands.describe(
