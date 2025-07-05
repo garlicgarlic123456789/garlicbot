@@ -6201,6 +6201,66 @@ def create_chain1(message) :
     chain = prompt | llm | output_parser
     return chain
 
+def create_chain2(message) : 
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """제시된 메시지들(그리고 메시지를 작성한 유저의 숫자 id)과 유저들의 이전 제재 내역들을 보고, 해당 유저를 해당 디스코드 서버에서 얼마나 제재해야 할지 알려주세요. 답변 양식은 아래 json을 지켜야 합니다.
+
+양식: 참고로, 제재 수위(punish)는 주의, 경고 *개, 타임아웃 *분/시간/일, 차단 중 하나입니다. 타임아웃은 28일까지 가능하나, 일반적으로 5일 이상 타임아웃이 필요할 시에는 차단을 합니다.
+{{
+    "유저id" : {{
+        "message_content": "해당 유저가 보낸 메시지",
+        "punish": "제재 수위",
+    }},
+    "유저id" : {{
+        "message_content": "해당 유저가 보낸 메시지",
+        "punish": "제재 수위",
+    }},
+    "유저id" : {{
+        "message_content": "해당 유저가 보낸 메시지",
+        "punish": "제재 수위",
+    }},
+}}
+
+예시: 유저 id가 1인 유저가 "섹스"라고 성적인 발언을 했고 "노무현"이라고 정치발언도 해서, 성적인 발언으로는 10분, 정치적 발언으로는 10분 타임아웃으로 해야 하는 경우
+이와 별개로 유저 id가 2인 유저가 "노알라"와 같은 정치 발언을 했는데 이전 제재내역을 보니 이전에 같은 행위로 15분 타임아웃됐었어서 이번에는 30분 정도 타임아웃해야 하는 경우
+거기다가 또 유저 id가 3인 유저는 "섹스하고싶다"라고 섹드립을 했는데 경고 1개면 충분하고, 유저 id가 4인 유저는 "씨발새끼야 꺼져"라며 지속적으로 다툼을 유발하는 행위를 해서 차단이 필요한 경우
+근데 유저 id가 5인 유저는 "섹스하고싶다"라고 하기는 했으나, 이전에 제재된 내역이 없다보니 실수로 규정을 모르고 그랬을 수 있어서 주의면 충분한 경우
+{{
+    "1" : {{
+        "message_content": "섹스",
+        "punish": "타임아웃 10분",
+    }},
+    "1" : {{
+        "message_content": "노무현",
+        "punish": "타임아웃 10분",
+    }},
+    "2" : {{
+        "message_content": "노알라",
+        "punish": "타임아웃 30분",
+    }},
+    "3" : {{
+        "message_content": "섹스하고싶다",
+        "punish": "꼉고 1개"
+    }},
+    "4" : {{
+        "message_content": "씨발새끼야 꺼져",
+        "punish": "차단",
+    }},
+    "5": {{
+        "message_content": "섹스하고싶다",
+        "punish": "주의",
+    }}
+}}
+        """),
+        ("human", "유저들의 규정 위반 메시지: \n{messages}\n\n이전 제재 내역: {before_blockhistory}")
+    ])
+    llm = ChatOpenAI(
+        temperature=0.1,
+        model="gpt-4.1-nano",
+    )
+    output_parser = StrOutputParser()
+    chain = prompt | llm | output_parser
+    return chain
 
 @bot.tree.command(name="판사", description="AI를 이용해 메시지 링크 범위를 첨부하여 특정 사건에 대한 판결문을 생성합니다.")
 @app_commands.describe(
@@ -6402,6 +6462,59 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                     blockhistory[i] += f"서버에서 차단 해제. 사유: {j[1]}\n"
         
         print(blockhistory)
+
+        chain = create_chain2(messages_list)
+        output = chain.invoke({"messages": messages_list, "before_blockhistory": blockhistory})
+        print(output)
+
+        # output이 빈 문자열이거나 None인 경우
+        if not output or output.strip() == "":
+            embed = discord.Embed(
+                title="완료",
+                description="규정 위반 메시지가 없습니다.",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # JSON 파싱 시도
+        try:
+            import json
+            output_dict = json.loads(output)
+        except json.JSONDecodeError:
+            # JSON 파싱 실패 시 빈 결과로 처리
+            embed = discord.Embed(
+                title="오류",
+                description="오류가 발생했습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # 빈 딕셔너리인 경우
+        if not output_dict:
+            embed = discord.Embed(
+                title="완료",
+                description="규정 위반 메시지가 없습니다.",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed=embed)
+            return
+        
+        description = ""
+        
+        for i, j in output_dict : 
+            description += f"- <@{i}>: {j['punish']} (관련 메시지: {j['message_content']})\n"
+        
+        print(description)
+
+        embed = discord.Embed(
+            title="성공",
+            description=f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{description}",
+            color=int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed=embed)
+        return
 
 
     elif 버전 == "버전 2" : 
