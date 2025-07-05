@@ -6297,14 +6297,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
     else :
         await interaction.response.defer(ephemeral=True)
 
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
     if 버전 == "v2" : 
         status, until, reason = is_blocked(interaction.user)
         
@@ -11590,7 +11582,8 @@ async def security_check(interaction: discord.Interaction, 관리진역할: disc
         "manage_messages": "메시지 관리",
         "manage_threads": "스레드 관리하기",
         "use_external_apps": "외부 앱 사용",
-        "manage_events": "이벤트 관리하기"
+        "manage_events": "이벤트 관리하기",
+        "create_events": "이벤트 생성하기",
     }
 
     # 검사할 역할 설정
