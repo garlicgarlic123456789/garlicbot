@@ -6306,14 +6306,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         await interaction.followup.send(embed=embed)
         return
     if 버전 == "버전 3" : 
-        if interaction.user.id != developer : 
-            embed = discord.Embed(
-                title="오류",
-                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다. ",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed = embed)
-            return
         status, until, reason = is_blocked(interaction.user)
         
         # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
@@ -6333,8 +6325,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         if user_id not in bot.cooldowns:
             bot.cooldowns[user_id] = 0
         
-        if False : 
-        # if current_time - bot.cooldowns[user_id] < 1 * 60:  # 60초 = 1분
+        if current_time - bot.cooldowns[user_id] < 1 * 60:  # 60초 = 1분
             embed = discord.Embed(
                 title=f"오류", # name
                 description=f"이 명령어는 1분마다 한 번 사용 가능합니다.",
@@ -6491,23 +6482,42 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             return
 
         # JSON 파싱 시도
+        
         try:
             import json
+            import re
             cleaned_output = output.strip()
-            if cleaned_output.startswith('{') and cleaned_output.endswith('}') and cleaned_output.count('{') > 1:
-                cleaned_output = '[' + cleaned_output.replace('},', '}},').replace('}{', '},{').replace('{{', '{').replace('}}', '}') + ']'
+
+            # 1. 마지막 쉼표 제거 (JSON 파싱 오류의 주요 원인)
+            cleaned_output = re.sub(r',(\s*[}\]])', r'\1', cleaned_output)
+            
+            # 2. 중괄호 여러 개로 시작/끝하는 경우 배열로 감싸기
+            if cleaned_output.startswith('{') and cleaned_output.endswith('}'):
+                # 중첩된 중괄호 패턴을 모두 추출
+                objects = re.findall(r'\{[^{}]*\}', cleaned_output)
+                if True:
+                    cleaned_output = '[' + ','.join(objects) + ']'
+                else:
+                    cleaned_output = objects[0] if objects else cleaned_output
+
+            # 3. 배열이 아닌 경우 배열로 감싸기
             elif not cleaned_output.startswith('['):
                 cleaned_output = '[' + cleaned_output + ']'
+
             output_dict = json.loads(cleaned_output)
-        except json.JSONDecodeError:
-            # JSON 파싱 실패 시 빈 결과로 처리
+        except json.JSONDecodeError as e:
+            print(f"JSON 파싱 오류: {e}")
+            print(f"원본 출력: {output}")
+            print(f"정리된 출력: {cleaned_output}")
             embed = discord.Embed(
                 title="오류",
-                description="오류가 발생했습니다.",
+                description="AI 응답을 처리하는 중 오류가 발생했습니다. 다시 시도해주세요.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
             return
+        
+        print(output_dict)
         
         description = ""
         for i in output_dict : 
