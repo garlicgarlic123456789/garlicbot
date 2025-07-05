@@ -8701,14 +8701,12 @@ async def 요약(
         )
         return
 
-    # 6. Embed 생성
     embed = discord.Embed(
         title="제재 내역 요약",
         description=f"{start_time} 이후의 제재 내역",
         timestamp=datetime.utcnow()  # 임베드 하단에 표기될 시간(옵션)
     )
 
-    # 유저별로 액션들을 묶어 필드로 추가
     for target_user, actions in user_actions.items():
         # 유저마다 모아둔 로그들을 개행으로 이어붙임
         action_text = "\n".join(actions)
@@ -8721,7 +8719,6 @@ async def 요약(
             inline=False  # 한 줄에 여러 필드 배치하지 않음
         )
 
-    # 7. 명령어 실행 결과를 최종 전송
     await interaction.followup.send(embed=embed)
 
 '''
