@@ -11607,12 +11607,19 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
 
     # 검사할 역할 설정
     check_role = 인증역할 if 인증역할 else interaction.guild.default_role
+    if 인증역할 is not None : 
+        check_role2 = interaction.guild.default_role
+    else : 
+        check_role2 = None
 
     # 위험 권한 확인
     dangerous_perms_found = []
     for perm, perm_name in dangerous_permissions.items():
         if getattr(check_role.permissions, perm):
             dangerous_perms_found.append(perm_name)
+        if check_role2 is not None : 
+            if getattr(check_role2.permissions, perm):
+                dangerous_perms_found.append(perm_name)
     
     description = ""
 
@@ -11651,6 +11658,12 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
         for perm, perm_name in dangerous_permissions.items():
             if getattr(overwrites, perm, None):  # 채널에서 명시적으로 허용된 권한만 체크
                 dangerous_perms_found.append(f"{channel.mention}: {perm_name}")
+    if check_role2 is not None : 
+        for channel in interaction.guild.channels:
+            overwrites = channel.overwrites_for(check_role2)
+            for perm, perm_name in dangerous_permissions.items():
+                if getattr(overwrites, perm, None):  # 채널에서 명시적으로 허용된 권한만 체크
+                    dangerous_perms_found.append(f"{channel.mention}: {perm_name}")
 
     if dangerous_perms_found:
         status_msg = f"일반 사용자에게 위험한 채널 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다: " + \
