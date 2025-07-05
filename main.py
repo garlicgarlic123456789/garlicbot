@@ -8292,7 +8292,7 @@ class TicketButton(Button):
 
 class TicketButtonEmergency(Button):
     def __init__(self):
-        super().__init__(label="긴급 티켓 생성", style=discord.ButtonStyle.danger, custom_id="create_ticket")
+        super().__init__(label="긴급 티켓 생성", style=discord.ButtonStyle.danger, custom_id="create_ticket_emergency")
 
     async def callback(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
