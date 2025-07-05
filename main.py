@@ -8628,8 +8628,6 @@ async def 요약(
     # 유저별 로그를 모아둘 딕셔너리 (Key: 유저, Value: 로그 리스트)
     user_actions = {}
 
-    # 4. 감사 로그 조회: after 파라미터로 start_time 이후 로그만 조회
-    #    limit=None 은 필요하다면 조절 가능 (로그가 많다면 부담이 될 수 있으니 주의)
     async for entry in guild.audit_logs(limit=None, after=start_time):
         if entry.action in relevant_actions:
             # 감사 로그 대상(제재받은 사용자)
@@ -8699,7 +8697,6 @@ async def 요약(
             else:
                 pass
 
-    # 5. 수집된 로그(유저별)가 없는 경우 예외 처리
     if not user_actions:
         await interaction.followup.send(
             f"{start_time} 이후로 등록된 제재 내역이 없습니다."
