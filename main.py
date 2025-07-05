@@ -11613,14 +11613,6 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     for perm, perm_name in dangerous_permissions.items():
         if getattr(check_role.permissions, perm):
             dangerous_perms_found.append(perm_name)
-
-    # 관리자 권한이 있는 역할 찾기
-    admin_roles = [role.mention for role in interaction.guild.roles 
-                   if role.permissions.administrator]
-
-    # 관리진 역할보다 상위 역할 확인
-    higher_roles = [role.mention for role in interaction.guild.roles 
-                    if role.position > 관리진역할.position]
     
     description = ""
 
