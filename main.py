@@ -57,7 +57,6 @@ import pytz
 
 from openai import OpenAI
 
-
 from commands import encode
 from commands import manage_timeout
 from commands import bulk_cancel
@@ -73,8 +72,6 @@ from zoneinfo import ZoneInfo
 
 # API KEY 정보로드
 load_dotenv()
-
-
 
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
@@ -4929,10 +4926,6 @@ async def set_warn_limit(interaction: discord.Interaction, 한도: int):
     )
     await interaction.followup.send(embed=embed)
     return
-
-
-    
-
 
 @bot.tree.command(name="경고", description = "특정 사용자에게 경고를 부여합니다.")
 @app_commands.describe(사용자="경고를 부여할 사용자", 개수="추가할 경고 개수", 사유="경고 사유")
