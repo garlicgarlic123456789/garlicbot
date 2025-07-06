@@ -11563,7 +11563,6 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
 
     await interaction.followup.send(embed=embed)
 
-
 @security_check.error
 async def security_check_error(interaction: discord.Interaction, error):
     if isinstance(error, app_commands.MissingPermissions):
