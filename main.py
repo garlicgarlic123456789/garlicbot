@@ -9507,7 +9507,6 @@ async def get_train_info_railblue(train, date):
     await asyncio.sleep(2)
     train_info = driver.find_element(by = By.ID, value = "spDrive")
     print(train_info.text)
-    driver.quit()
     train_info = await parse_train_info(train_info.text)
     '''
     반환값 설명:
@@ -9559,6 +9558,8 @@ async def get_train_info_railblue(train, date):
                     delay_msg = f"{train_info[3]}분 {train_info[4]}초 조기 운행 중"
         else : 
             delay_msg = "*(알 수 없음)*"
+    
+    driver.quit()
     
     return loc_msg, delay_msg
 
