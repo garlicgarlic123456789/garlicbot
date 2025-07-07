@@ -9434,7 +9434,7 @@ class train_command(app_commands.Group) :
         )
         await interaction.followup.send(embed = embed)
 
-def parse_train_info(text):
+async def parse_train_info(text):
     # 1. '운행중' 포함 & 지연/조기 없을 때
     if re.match(r'(.+?) - (.+?) 운행중$', text):
         m = re.match(r'(.+?) - (.+?) 운행중$', text)
@@ -9508,7 +9508,7 @@ async def get_train_info_railblue(train, date):
     train_info = driver.find_element(by = By.ID, value = "spDrive")
     print(train_info.text)
     driver.quit()
-    train_info = parse_train_info(train_info.text)
+    train_info = await parse_train_info(train_info.text)
     '''
     반환값 설명:
     0번째 값이 True => 역과 역 사이를 이동 중
