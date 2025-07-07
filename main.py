@@ -54,7 +54,7 @@ from langchain_openai import ChatOpenAI
 from openai import OpenAI
 from discord.ui import View, Button
 import pytz
-import selenium
+from selenium import webdriver
 
 from openai import OpenAI
 
