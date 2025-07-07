@@ -55,6 +55,7 @@ from openai import OpenAI
 from discord.ui import View, Button
 import pytz
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 
 from openai import OpenAI
 
