@@ -9427,18 +9427,136 @@ class train_command(app_commands.Group) :
             await interaction.followup.send("아직 개발 중인 기능으로, 개발자만 사용이 가능합니다.")
             return
         
-        await get_train_info_railblue(열차번호, 날짜)
-        await interaction.followup.send("여기까지 문제 없이 잘 실행됨\n-# 이 메시지는 개발용입니다.")
+        위치, 지연 = await get_train_info_railblue(열차번호, 날짜)
+        embed = discord.Embed(
+            title = f"열차 #{열차번호} 정보",
+            description = f"- 위치: {위치}\n- 지연: {지연}"
+        )
+        await interaction.followup.send(embed = embed)
+
+def parse_train_info(text):
+    # 1. '운행중' 포함 & 지연/조기 없을 때
+    if re.match(r'(.+?) - (.+?) 운행중$', text):
+        m = re.match(r'(.+?) - (.+?) 운행중$', text)
+        return [True, m.group(1), m.group(2), False]
+
+    # 2. '운행중' 포함 & 초 단위 지연
+    if re.match(r'(.+?) - (.+?), (\d+)초 지연 운행중$', text):
+        m = re.match(r'(.+?) - (.+?), (\d+)초 지연 운행중$', text)
+        return [True, m.group(1), m.group(2), True, 0, int(m.group(3))]
+
+    # 3. '운행중' 포함 & 분 초 단위 지연
+    if re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 지연 운행중$', text):
+        m = re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 지연 운행중$', text)
+        return [True, m.group(1), m.group(2), True, int(m.group(3)), int(m.group(4))]
+
+    # 4. '도착' 단독
+    if re.match(r'(.+?) 도착$', text):
+        m = re.match(r'(.+?) 도착$', text)
+        return [False, m.group(1), False]
+
+    # 5. '조착'
+    if re.match(r'(.+?)에 (\d+)분 (\d+)초 조착$', text):
+        m = re.match(r'(.+?)에 (\d+)분 (\d+)초 조착$', text)
+        return [False, m.group(1), True, -int(m.group(2)), -int(m.group(3))]
+
+    # 6. '지연 도착'
+    if re.match(r'(.+?)에 (\d+)분 (\d+)초 지연 도착$', text):
+        m = re.match(r'(.+?)에 (\d+)분 (\d+)초 지연 도착$', text)
+        return [False, m.group(1), True, int(m.group(2)), int(m.group(3))]
+
+    # 7. '조기 운행중' 분+초
+    if re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 조기 운행중$', text):
+        m = re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 조기 운행중$', text)
+        return [True, m.group(1), m.group(2), True, -int(m.group(3)), -int(m.group(4))]
+
+    # 8. '지연 운행중' 분만
+    if re.match(r'(.+?) - (.+?), (\d+)분 지연 운행중$', text):
+        m = re.match(r'(.+?) - (.+?), (\d+)분 지연 운행중$', text)
+        return [True, m.group(1), m.group(2), True, int(m.group(3)), 0]
+
+    # 9. '조기 운행중' 분만
+    if re.match(r'(.+?) - (.+?), (\d+)분 조기 운행중$', text):
+        m = re.match(r'(.+?) - (.+?), (\d+)분 조기 운행중$', text)
+        return [True, m.group(1), m.group(2), True, -int(m.group(3)), 0]
+
+    # 10. '정시 운행중'
+    if re.match(r'(.+?) - (.+?), 정시 운행중$', text):
+        m = re.match(r'(.+?) - (.+?), 정시 운행중$', text)
+        return [True, m.group(1), m.group(2), True, 0, 0]
+
+    # 11. '정시 도착'
+    if re.match(r'(.+?)에 정시 도착$', text):
+        m = re.match(r'(.+?)에 정시 도착$', text)
+        return [False, m.group(1), True, 0, 0]
+    
+    if text == "운행대기" : 
+        return [False, "종착역", False]
+
+    # 만약 어느 유형에도 해당하지 않으면 None 반환
+    return None
 
 async def get_train_info_railblue(train, date):
     options = webdriver.FirefoxOptions()
     driver = webdriver.Firefox(options=options)
-
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
     await asyncio.sleep(10)
     train_info = driver.find_element(by = By.ID, value = "spDrive")
     print(train_info.text)
     driver.quit()
+    train_info = parse_train_info(train_info.text)
+    '''
+    반환값 설명:
+    0번째 값이 True => 역과 역 사이를 이동 중
+    False => 특정 역에 정차 중
+
+    True인 경우 1번째 값이 이전역, 2번째 값이 다음역을 의미하며, 3번째 값이 지연정보가 있는지 True/False로 나타냄. 지연정보가 있다면 4~5번째 값이 지연된 시간을 의미(각각 분, 초)
+    False인 경우 1번째 값이 정차 중인 역역을 의미하며, 2번째 값이 지연정보가 있는지 True/False로 나타냄. 지연정보가 있다면 3~4번째 값이 지연된 시간을 의미(각각 분, 초)
+    지연 정보에서 음수값은 현재 조기 운행 중임을 의미하고 양수값은 현재 지연 운행 중임을 의미함.
+    '''
+    if train_info is None : 
+        return "*(알 수 없음)*", "*(알 수 없음)*"
+
+    if train_info[0] : 
+        loc_msg = f"{train_info[1]} → {train_info[2]}"
+        if train_info[3] : 
+            if train_info[4] >= 0 : 
+                if train_info[4] == 0 and train_info[5] == 0 : 
+                    delay_msg = "정시 운행 중"
+                elif train_info[4] == 0 : 
+                    delay_msg = f"{train_info[5]}초 지연 운행 중"
+                else : 
+                    delay_msg = f"{train_info[4]}분 {train_info[5]}초 지연 운행 중"
+            else : 
+                train_info[4] = abs(train_info[4])
+                train_info[5] = abs(train_info[5])
+                if train_info[4] == 0 : 
+                    delay_msg = f"{train_info[5]}초 조기 운행 중"
+                else : 
+                    delay_msg = f"{train_info[4]}분 {train_info[5]}초 조기 운행 중"
+        else : 
+            delay_msg = "*(알 수 없음)*"
+    else : 
+        loc_msg = f"{train_info[1]}"
+        if train_info[2] : 
+            if train_info[3] >= 0 : 
+                if train_info[3] == 0 and train_info[4] == 0 : 
+                    delay_msg = "정시 운행 중"
+                elif train_info[3] == 0 : 
+                    delay_msg = f"{train_info[4]}초 지연 운행 중"
+                else : 
+                    delay_msg = f"{train_info[3]}분 {train_info[4]}초 지연 운행 중"
+            else : 
+                train_info[3] = abs(train_info[3])
+                train_info[4] = abs(train_info[4])
+                if train_info[3] == 0 : 
+                    delay_msg = f"{train_info[4]}초 조기 운행 중"
+                else : 
+                    delay_msg = f"{train_info[3]}분 {train_info[4]}초 조기 운행 중"
+        else : 
+            delay_msg = "*(알 수 없음)*"
+    
+    return loc_msg, delay_msg
 
 def get_subway_info(station_name):
     url = f"http://swopenapi.seoul.go.kr/api/subway/4d72747a7267617233336e7553574f/json/realtimeStationArrival/1/25/{station_name}"
