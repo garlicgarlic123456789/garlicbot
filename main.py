@@ -669,7 +669,7 @@ c.execute('''
         sub_id INTEGER NOT NULL
     )
 ''')
-c.execute("CREATE TABLE IF NOT EXISTS log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, editdelete INTEGER, reaction INTEGER, role INTEGER)")
+c.execute("CREATE TABLE IF NOT EXISTS log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, editdelete INTEGER, reaction INTEGER, role INTEGER, image INTEGER)")
 c.execute("CREATE TABLE IF NOT EXISTS premium (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, premium INTEGER)") # 프리미엄 계정 여부
 c.execute("CREATE TABLE IF NOT EXISTS automod (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, political INTEGER, sexual INTEGER, invite_link INTEGER, mention INTEGER, whitelist_permission TEXT)") # 검열기능 사용 여부
 # -1은 기능 비활성회, 0은 삭제만 하고 타임아웃하지 않기, 1 이상은 타임아웃.
@@ -836,7 +836,7 @@ def get_automod(server_id):
             'whitelist_permission': 'admin'
         }
 
-def update_log_channel(server_id, editdelete, reaction, role):
+def update_log_channel(server_id, editdelete, reaction, role, image):
     # 먼저 server_id가 있는지 확인
     c.execute("SELECT id FROM log_channel WHERE server_id = ?", (server_id,))
     row = c.fetchone()
@@ -845,19 +845,19 @@ def update_log_channel(server_id, editdelete, reaction, role):
         # 존재할 경우 update
         c.execute("""
             UPDATE log_channel 
-            SET editdelete = ?, reaction = ?, role = ?
+            SET editdelete = ?, reaction = ?, role = ?, image = ?
             WHERE server_id = ?
-        """, (editdelete, reaction, role, server_id))
+        """, (editdelete, reaction, role, image, server_id))
     else:
         # 없을 경우 insert
         c.execute("""
-            INSERT INTO log_channel (server_id, editdelete, reaction, role)
+            INSERT INTO log_channel (server_id, editdelete, reaction, role, image)
             VALUES (?, ?, ?, ?)
-        """, (server_id, editdelete, reaction, role))
+        """, (server_id, editdelete, reaction, role, image))
 
 def get_log_channel(server_id):
     c.execute("""
-        SELECT editdelete, reaction, role
+        SELECT editdelete, reaction, role, image
         FROM log_channel
         WHERE server_id = ?
     """, (server_id,))
@@ -867,13 +867,15 @@ def get_log_channel(server_id):
         return {
             'editdelete': row[0],  # None일 경우 자동으로 Python의 None
             'reaction': row[1],
-            'role': row[2]
+            'role': row[2],
+            'image': row[3]
         }
     else:
         return {
             'editdelete': None,
             'reaction': None,
-            'role': None
+            'role': None,
+            'image': None
         }
 
 # 서버별 초대코드 캐시
@@ -1742,27 +1744,57 @@ async def on_message_delete(message):
         pass
     else :
         return
+    
+    message_log = True
+    image_log = True
     log_id = get_log_channel(message.guild.id)["editdelete"]
+    image_id = get_log_channel(message.guild.id)["image"]
     if log_id is None : 
+        message_log = False
+    if image_id is None : 
+        image_log = False
+    
+    if message.channel.id in no_log_channel :
         return
-    log_channel = bot.get_channel(log_id)
-    if log_channel:
-        if message.channel.id in no_log_channel :
-            return
-        content = message.content or "*(메시지 내용 없음)*"
-        author = message.author.mention  # 메시지 작성자 멘션
-        deleted_by = "*(알 수 없음)*"
-        found_audit_log_entry = False
+    
+    if message_log : 
+        log_channel = bot.get_channel(log_id)
+        if log_channel:
+            content = message.content or "*(메시지 내용 없음)*"
+            author = message.author.mention  # 메시지 작성자 멘션
+            deleted_by = "*(알 수 없음)*"
+            found_audit_log_entry = False
 
-        embed = discord.Embed(
-            title="메시지 삭제 로그",
-            description=f"<#{message.channel.id}>에서 <@{message.author.id}>님의 메시지가 삭제되었습니다.",
-            color=discord.Color.red(),
-            timestamp=discord.utils.utcnow()
-        )
-        embed.add_field(name="삭제된 내용", value=content, inline=False)
-        await log_channel.send(embed=embed)
-        return
+            embed = discord.Embed(
+                title="메시지 삭제 로그",
+                description=f"<#{message.channel.id}>에서 <@{message.author.id}>님의 메시지가 삭제되었습니다.",
+                color=discord.Color.red(),
+                timestamp=discord.utils.utcnow()
+            )
+            embed.add_field(name="삭제된 내용", value=content, inline=False)
+            await log_channel.send(embed=embed)
+    if image_log : 
+        attachments = []
+        if message.attachments:
+            for attachment in message.attachments:
+                if attachment.content_type and attachment.content_type.startswith('image/'):
+                    attachments.append(attachment.url)
+        
+        log_channel = bot.get_channel(image_id)
+        if log_channel:
+            for attachment in attachments : 
+                author = message.author.mention  # 메시지 작성자 멘션
+                deleted_by = "*(알 수 없음)*"
+                found_audit_log_entry = False
+
+                embed = discord.Embed(
+                    title="메시지 삭제 로그",
+                    description=f"<#{message.channel.id}>에서 <@{message.author.id}>님의 메시지가 삭제되었습니다.",
+                    color=discord.Color.red(),
+                    timestamp=discord.utils.utcnow()
+                )
+                embed.set_image(url=attachment)
+                await log_channel.send(embed=embed)
 
 # 메시지 수정 이벤트
 @bot.event
@@ -5811,8 +5843,8 @@ async def bulk_unban(interaction: discord.Interaction, 사용자_리스트: str,
 
 @bot.tree.command(name = "로그채널설정", description = "로그를 전송할 채널을 설정합니다.")
 @app_commands.default_permissions(manage_guild=True)
-@app_commands.describe(수정삭제로그 = "수정/삭제 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 반응로그 = "반응 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 역할부여회수로그 = "역할 부여 및 회수 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 제재로그 = "제재 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.")
-async def set_log_channel(interaction: discord.Interaction, 수정삭제로그: discord.TextChannel = None, 반응로그: discord.TextChannel = None, 역할부여회수로그: discord.TextChannel = None, 제재로그: discord.TextChannel = None):
+@app_commands.describe(수정삭제로그 = "수정/삭제 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 반응로그 = "반응 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 역할부여회수로그 = "역할 부여 및 회수 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 제재로그 = "제재 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 이미지로그 = "이미지 삭제 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.")
+async def set_log_channel(interaction: discord.Interaction, 수정삭제로그: discord.TextChannel = None, 반응로그: discord.TextChannel = None, 역할부여회수로그: discord.TextChannel = None, 제재로그: discord.TextChannel = None, 이미지로그: discord.TextChannel = None):
     await interaction.response.defer(ephemeral=False)
     if not interaction.user.guild_permissions.manage_guild:
         embed = discord.Embed(
@@ -5829,13 +5861,15 @@ async def set_log_channel(interaction: discord.Interaction, 수정삭제로그: 
         반응로그 = 반응로그.id
     if 역할부여회수로그 is not None :
         역할부여회수로그 = 역할부여회수로그.id
+    if 이미지로그 is not None : 
+        이미지로그 = 이미지로그.id
 
     if 제재로그 is not None :
         제재로그 = 제재로그.id
     else : 
         제재로그 = 0
 
-    update_log_channel(interaction.guild.id, 수정삭제로그, 반응로그, 역할부여회수로그)
+    update_log_channel(interaction.guild.id, 수정삭제로그, 반응로그, 역할부여회수로그, 이미지로그)
     update_block_log_channel(interaction.guild.id, 제재로그)
 
     embed = discord.Embed(
