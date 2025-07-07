@@ -9295,34 +9295,127 @@ async def get_train_info_railblue(train, date):
     asyncio.sleep(10)
     driver.quit()
 
-@bot.tree.command(name = "빠른환승", description = "수도권 전철 빠른 환승 정보를 확인합니다.")
-@app_commands.describe(노선 = "정보를 확인할 노선을 입력해 주세요.", 역 = "정보를 확인할 역을 입력해 주세요. (뒤에 \'역\' 자 제외)")
-async def 빠른환승(interaction: discord.Interaction, 노선: str, 역: str) :
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    if 역 == "총신대입구" : 
-        역 = "이수"
-    
-    역 += "역"
+class train_command(app_commands.Group) : 
+    def __init__(self):
+        super().__init__(name="철도", description="철도 관련 명령어")
 
-    try : 
-        transfer_info = fast_transfer[노선]
-    except Exception as e :
-        await interaction.followup.send("**[오류!]** 노선 정보를 가져오는 도중 오류가 발생했습니다. 등록되지 않은 노선이거나 노선명이 유효하지 않은 경우 일반적으로 이 오류가 표시됩니다.")
-        return
+    @app_commands.command(name = "빠른환승", description = "수도권 전철 빠른 환승 정보를 확인합니다.")
+    @app_commands.describe(노선 = "정보를 확인할 노선을 입력해 주세요.", 역 = "정보를 확인할 역을 입력해 주세요. (뒤에 \'역\' 자 제외)")
+    async def 빠른환승(self, interaction: discord.Interaction, 노선: str, 역: str) :
+        await interaction.response.defer()
+        status, until, reason = is_blocked(interaction.user)
+        
+        # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+        if status:
+            msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+            await interaction.followup.send(msg)
+            return
+        
+        if 역 == "총신대입구" : 
+            역 = "이수"
+        
+        역 += "역"
 
-    try :
-        await interaction.followup.send(f"{역}의 빠른 환승 정보는 다음과 같습니다:\n\n{transfer_info[역]}")
-    except Exception as e :
-        await interaction.followup.send("**[오류!]** 역 정보를 가져오는 도중 오류가 발생했습니다. 등록되지 않은 역이거나 환승역이 아닌 경우 일반적으로 이 오류가 표시됩니다. 역명의 \'역\' 자는 생략하고 작성해야 합니다.")
+        try : 
+            transfer_info = fast_transfer[노선]
+        except Exception as e :
+            await interaction.followup.send("**[오류!]** 노선 정보를 가져오는 도중 오류가 발생했습니다. 등록되지 않은 노선이거나 노선명이 유효하지 않은 경우 일반적으로 이 오류가 표시됩니다.")
+            return
+
+        try :
+            await interaction.followup.send(f"{역}의 빠른 환승 정보는 다음과 같습니다:\n\n{transfer_info[역]}")
+        except Exception as e :
+            await interaction.followup.send("**[오류!]** 역 정보를 가져오는 도중 오류가 발생했습니다. 등록되지 않은 역이거나 환승역이 아닌 경우 일반적으로 이 오류가 표시됩니다. 역명의 \'역\' 자는 생략하고 작성해야 합니다.")
     
+    @app_commands.command(name = "도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
+    @app_commands.describe(역명 = "역명을 입력해 주세요. (뒤에 \'역\' 자 제외)")
+    async def 지하철도착정보(self, interaction: discord.Interaction, 역명: str):
+        await interaction.response.defer()
+        status, until, reason = is_blocked(interaction.user)
+        
+        # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+        if status:
+            msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+            await interaction.followup.send(msg)
+            return
+
+        data = get_subway_info(역명)
+
+        arrivals = data["realtimeArrivalList"]
+
+        print(arrivals)
+        print("----------------------")
+
+        subway_info = {}
+
+        for arrival in arrivals:
+            if arrival["subwayId"] == "1001" :
+                line = "1호선"
+            elif arrival["subwayId"] == "1002" :
+                line = "2호선"
+            elif arrival["subwayId"] == "1003" :
+                line = "3호선"
+            elif arrival["subwayId"] == "1004" :
+                line = "4호선"
+            elif arrival["subwayId"] == "1005" :
+                line = "5호선"
+            elif arrival["subwayId"] == "1006" :
+                line = "6호선"
+            elif arrival["subwayId"] == "1007" :
+                line = "7호선"
+            elif arrival["subwayId"] == "1008" :
+                line = "8호선"
+            elif arrival["subwayId"] == "1063" :
+                line = "경의중앙선"
+            elif arrival["subwayId"] == "1065" :
+                line = "공항철도"
+            elif arrival["subwayId"] == "1077" :
+                line = "신분당선"
+            elif arrival["subwayId"] == "1075" :
+                line = "수인분당선"
+            elif arrival["subwayId"] == "1081" :
+                line = "경강선"
+            elif arrival["subwayId"] == "1067" :
+                line = "경춘선"
+            elif arrival["subwayId"] == "1092" :
+                line = "우이신설선"
+            elif arrival["subwayId"] == "1009" :
+                line = "9호선"
+            elif arrival["subwayId"] == "1093" :
+                line = "서해선"
+            else : 
+                line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
+            direction = arrival["updnLine"]  # 상행/하행
+            train_info = {
+                "열차번호": arrival["btrainNo"],
+                "행선지": arrival["bstatnNm"] + " (" + arrival["btrainSttus"] + ")",
+                "도착 정보": arrival["arvlMsg2"],
+                "도착 예정": f"약 {int(arrival['barvlDt']) // 60} 분 {int(arrival['barvlDt']) % 60}초 후"
+            }
+
+            if line not in subway_info:
+                subway_info[line] = {}
+
+            if direction not in subway_info[line]:
+                subway_info[line][direction] = []
+
+            subway_info[line][direction].append(train_info)
+
+        text = f"{역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
+
+        # 정리된 도착 정보 출력
+        for line, directions in subway_info.items():
+            text += f"\n노선: {line} 도착 정보\n"
+            for direction, trains in directions.items():
+                text += f"- 방향: {direction}\n"
+                for train in trains:
+                    text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착예정: {train['도착 예정']}\n"
+        embed = discord.Embed(
+            title=f"{역명}역의 지하철 도착 정보",
+            description=text,
+            color=int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed=embed)
 def get_subway_info(station_name):
     url = f"http://swopenapi.seoul.go.kr/api/subway/4d72747a7267617233336e7553574f/json/realtimeStationArrival/1/25/{station_name}"
     
@@ -9338,95 +9431,7 @@ def get_subway_info(station_name):
         return None
 
 
-@bot.tree.command(name = "지하철도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
-@app_commands.describe(역명 = "역명을 입력해 주세요. (뒤에 \'역\' 자 제외)")
-async def 지하철도착정보(interaction: discord.Interaction, 역명: str):
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
 
-    data = get_subway_info(역명)
-
-    arrivals = data["realtimeArrivalList"]
-
-    print(arrivals)
-    print("----------------------")
-
-    subway_info = {}
-
-    for arrival in arrivals:
-        if arrival["subwayId"] == "1001" :
-            line = "1호선"
-        elif arrival["subwayId"] == "1002" :
-            line = "2호선"
-        elif arrival["subwayId"] == "1003" :
-            line = "3호선"
-        elif arrival["subwayId"] == "1004" :
-            line = "4호선"
-        elif arrival["subwayId"] == "1005" :
-            line = "5호선"
-        elif arrival["subwayId"] == "1006" :
-            line = "6호선"
-        elif arrival["subwayId"] == "1007" :
-            line = "7호선"
-        elif arrival["subwayId"] == "1008" :
-            line = "8호선"
-        elif arrival["subwayId"] == "1063" :
-            line = "경의중앙선"
-        elif arrival["subwayId"] == "1065" :
-            line = "공항철도"
-        elif arrival["subwayId"] == "1077" :
-            line = "신분당선"
-        elif arrival["subwayId"] == "1075" :
-            line = "수인분당선"
-        elif arrival["subwayId"] == "1081" :
-            line = "경강선"
-        elif arrival["subwayId"] == "1067" :
-            line = "경춘선"
-        elif arrival["subwayId"] == "1092" :
-            line = "우이신설선"
-        elif arrival["subwayId"] == "1009" :
-            line = "9호선"
-        elif arrival["subwayId"] == "1093" :
-            line = "서해선"
-        else : 
-            line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
-        direction = arrival["updnLine"]  # 상행/하행
-        train_info = {
-            "열차번호": arrival["btrainNo"],
-            "행선지": arrival["bstatnNm"] + " (" + arrival["btrainSttus"] + ")",
-            "도착 정보": arrival["arvlMsg2"],
-            "도착 예정": f"약 {int(arrival['barvlDt']) // 60} 분 {int(arrival['barvlDt']) % 60}초 후"
-        }
-
-        if line not in subway_info:
-            subway_info[line] = {}
-
-        if direction not in subway_info[line]:
-            subway_info[line][direction] = []
-
-        subway_info[line][direction].append(train_info)
-
-    text = f"{역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
-
-    # 정리된 도착 정보 출력
-    for line, directions in subway_info.items():
-        text += f"\n노선: {line} 도착 정보\n"
-        for direction, trains in directions.items():
-            text += f"- 방향: {direction}\n"
-            for train in trains:
-                text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착예정: {train['도착 예정']}\n"
-    embed = discord.Embed(
-        title=f"{역명}역의 지하철 도착 정보",
-        description=text,
-        color=int("a5f0ff", 16)
-    )
-    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="역할정보", description="특정 역할에 대한 정보를 확인합니다.")
 @app_commands.describe(역할 = "정보를 확인할 역할을 입력해 주세요.")
