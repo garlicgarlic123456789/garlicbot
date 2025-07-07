@@ -9504,7 +9504,7 @@ async def get_train_info_railblue(train, date):
     options = webdriver.FirefoxOptions()
     driver = webdriver.Firefox(options=options)
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
-    await asyncio.sleep(2)
+    await asyncio.sleep(2.5)
     train_info = driver.find_element(by = By.ID, value = "spDrive")
     print(train_info.text)
     train_info = await parse_train_info(train_info.text)
