@@ -9287,6 +9287,14 @@ async def anti_nuke_settings(interaction: discord.Interaction, 유저: discord.U
         await interaction.followup.send(embed = embed, ephemeral=False)
         return
 
+async def get_train_info_railblue(train, date):
+    options = webdriver.FirefoxOptions()
+    driver = webdriver.Firefox(options=options)
+
+    driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
+    asyncio.sleep(10)
+    driver.quit()
+
 @bot.tree.command(name = "빠른환승", description = "수도권 전철 빠른 환승 정보를 확인합니다.")
 @app_commands.describe(노선 = "정보를 확인할 노선을 입력해 주세요.", 역 = "정보를 확인할 역을 입력해 주세요. (뒤에 \'역\' 자 제외)")
 async def 빠른환승(interaction: discord.Interaction, 노선: str, 역: str) :
