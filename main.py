@@ -9434,7 +9434,9 @@ async def get_train_info_railblue(train, date):
     driver = webdriver.Firefox(options=options)
 
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
-    asyncio.sleep(10)
+    await asyncio.sleep(10)
+    train_info = driver.find_element(by = By.ID, value = "tr_emu_driving")
+    print(train_info)
     driver.quit()
 
 def get_subway_info(station_name):
