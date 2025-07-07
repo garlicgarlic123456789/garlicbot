@@ -9491,6 +9491,10 @@ def parse_train_info(text):
         return [False, m.group(1), True, 0, 0]
     
     if text == "운행대기" : 
+        return [False, "출발역", False]
+    elif "로 열차번호 변경" in text : 
+        return [False, "종착역", False]
+    elif "운행 종료" in text : 
         return [False, "종착역", False]
 
     # 만약 어느 유형에도 해당하지 않으면 None 반환
