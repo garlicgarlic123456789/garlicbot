@@ -9435,59 +9435,59 @@ class train_command(app_commands.Group) :
         await interaction.followup.send(embed = embed)
 
 async def parse_train_info(text):
-    # 1. '운행중' 포함 & 지연/조기 없을 때
-    if re.match(r'(.+?) - (.+?) 운행중$', text):
-        m = re.match(r'(.+?) - (.+?) 운행중$', text)
-        return [True, m.group(1), m.group(2), False]
-
-    # 2. '운행중' 포함 & 초 단위 지연
-    if re.match(r'(.+?) - (.+?), (\d+)초 지연 운행중$', text):
-        m = re.match(r'(.+?) - (.+?), (\d+)초 지연 운행중$', text)
-        return [True, m.group(1), m.group(2), True, 0, int(m.group(3))]
-
     # 3. '운행중' 포함 & 분 초 단위 지연
-    if re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 지연 운행중$', text):
-        m = re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 지연 운행중$', text)
+    m = re.match(r'^(.+?) - (.+?), (\d+)분 (\d+)초 지연 운행중$', text)
+    if m:
         return [True, m.group(1), m.group(2), True, int(m.group(3)), int(m.group(4))]
 
-    # 4. '도착' 단독
-    if re.match(r'(.+?) 도착$', text):
-        m = re.match(r'(.+?) 도착$', text)
-        return [False, m.group(1), False]
+    # 2. '운행중' 포함 & 초 단위 지연
+    m = re.match(r'^(.+?) - (.+?), (\d+)초 지연 운행중$', text)
+    if m:
+        return [True, m.group(1), m.group(2), True, 0, int(m.group(3))]
 
-    # 5. '조착'
-    if re.match(r'(.+?)에 (\d+)분 (\d+)초 조착$', text):
-        m = re.match(r'(.+?)에 (\d+)분 (\d+)초 조착$', text)
-        return [False, m.group(1), True, -int(m.group(2)), -int(m.group(3))]
-
-    # 6. '지연 도착'
-    if re.match(r'(.+?)에 (\d+)분 (\d+)초 지연 도착$', text):
-        m = re.match(r'(.+?)에 (\d+)분 (\d+)초 지연 도착$', text)
-        return [False, m.group(1), True, int(m.group(2)), int(m.group(3))]
+    # 1. '운행중' 포함 & 지연/조기 없을 때
+    m = re.match(r'^(.+?) - (.+?) 운행중$', text)
+    if m:
+        return [True, m.group(1), m.group(2), False]
 
     # 7. '조기 운행중' 분+초
-    if re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 조기 운행중$', text):
-        m = re.match(r'(.+?) - (.+?), (\d+)분 (\d+)초 조기 운행중$', text)
+    m = re.match(r'^(.+?) - (.+?), (\d+)분 (\d+)초 조기 운행중$', text)
+    if m:
         return [True, m.group(1), m.group(2), True, -int(m.group(3)), -int(m.group(4))]
 
     # 8. '지연 운행중' 분만
-    if re.match(r'(.+?) - (.+?), (\d+)분 지연 운행중$', text):
-        m = re.match(r'(.+?) - (.+?), (\d+)분 지연 운행중$', text)
+    m = re.match(r'^(.+?) - (.+?), (\d+)분 지연 운행중$', text)
+    if m:
         return [True, m.group(1), m.group(2), True, int(m.group(3)), 0]
 
     # 9. '조기 운행중' 분만
-    if re.match(r'(.+?) - (.+?), (\d+)분 조기 운행중$', text):
-        m = re.match(r'(.+?) - (.+?), (\d+)분 조기 운행중$', text)
+    m = re.match(r'^(.+?) - (.+?), (\d+)분 조기 운행중$', text)
+    if m:
         return [True, m.group(1), m.group(2), True, -int(m.group(3)), 0]
 
     # 10. '정시 운행중'
-    if re.match(r'(.+?) - (.+?), 정시 운행중$', text):
-        m = re.match(r'(.+?) - (.+?), 정시 운행중$', text)
+    m = re.match(r'^(.+?) - (.+?), 정시 운행중$', text)
+    if m:
         return [True, m.group(1), m.group(2), True, 0, 0]
 
+    # 4. '도착' 단독
+    m = re.match(r'^(.+?) 도착$', text)
+    if m:
+        return [False, m.group(1), False]
+
+    # 5. '조착'
+    m = re.match(r'^(.+?)에 (\d+)분 (\d+)초 조착$', text)
+    if m:
+        return [False, m.group(1), True, -int(m.group(2)), -int(m.group(3))]
+
+    # 6. '지연 도착'
+    m = re.match(r'^(.+?)에 (\d+)분 (\d+)초 지연 도착$', text)
+    if m:
+        return [False, m.group(1), True, int(m.group(2)), int(m.group(3))]
+
     # 11. '정시 도착'
-    if re.match(r'(.+?)에 정시 도착$', text):
-        m = re.match(r'(.+?)에 정시 도착$', text)
+    m = re.match(r'^(.+?)에 정시 도착$', text)
+    if m:
         return [False, m.group(1), True, 0, 0]
     
     if text == "운행대기" : 
