@@ -8398,6 +8398,7 @@ class TicketView(View):
 TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
 async def on_ready():
+    bot.tree.add_command(train_command()
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
     guild = bot.get_guild(using_server)
@@ -9416,6 +9417,7 @@ class train_command(app_commands.Group) :
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
+
 def get_subway_info(station_name):
     url = f"http://swopenapi.seoul.go.kr/api/subway/4d72747a7267617233336e7553574f/json/realtimeStationArrival/1/25/{station_name}"
     
