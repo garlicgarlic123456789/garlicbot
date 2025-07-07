@@ -9413,18 +9413,14 @@ class train_command(app_commands.Group) :
     
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
     @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)")
-    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str) : 
-        await interaction.response.defer()
+    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str, 개인응답: bool) : 
+        await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
         
         if status:
             msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
             await interaction.followup.send(msg)
-            return
-
-        if interaction.user.id != developer : 
-            await interaction.followup.send("아직 개발 중인 기능으로, 개발자만 사용이 가능합니다.")
             return
         
         위치, 지연 = await get_train_info_railblue(열차번호, 날짜)
