@@ -9436,7 +9436,7 @@ async def get_train_info_railblue(train, date):
 
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
     await asyncio.sleep(10)
-    train_info = driver.find_element(by = By.ID, value = "tr_emu_driving")
+    train_info = driver.find_element(by = By.ID, value = "spDrive")
     print(train_info)
     driver.quit()
 
