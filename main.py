@@ -9449,6 +9449,10 @@ async def parse_train_info(text):
     m = re.match(r'^(.+?) - (.+?), (\d+)분 (\d+)초 조기 운행중$', text)
     if m:
         return [True, m.group(1), m.group(2), True, -int(m.group(3)), -int(m.group(4))]
+    
+    m = re.match(r'^(.+?) - (.+?), (\d+)초 조기 운행중$', text)
+    if m:
+        return [True, m.group(1), m.group(2), True, 0, -int(m.group(3))]
 
     # 8. '지연 운행중' 분만
     m = re.match(r'^(.+?) - (.+?), (\d+)분 지연 운행중$', text)
@@ -9474,11 +9478,27 @@ async def parse_train_info(text):
     m = re.match(r'^(.+?)에 (\d+)분 (\d+)초 조착$', text)
     if m:
         return [False, m.group(1), True, -int(m.group(2)), -int(m.group(3))]
+    
+    m = re.match(r'^(.+?)에 (\d+)분 조착$', text)
+    if m:
+        return [False, m.group(1), True, -int(m.group(2)), 0]
+    
+    m = re.match(r'^(.+?)에 (\d+)초 조착$', text)
+    if m:
+        return [False, m.group(1), True, 0, -int(m.group(2))]
 
     # 6. '지연 도착'
     m = re.match(r'^(.+?)에 (\d+)분 (\d+)초 지연 도착$', text)
     if m:
         return [False, m.group(1), True, int(m.group(2)), int(m.group(3))]
+    
+    m = re.match(r'^(.+?)에 (\d+)분 지연 도착$', text)
+    if m:
+        return [False, m.group(1), True, int(m.group(2)), 0]
+    
+    m = re.match(r'^(.+?)에 (\d+)초 지연 도착$', text)
+    if m:
+        return [False, m.group(1), True, 0, int(m.group(2))]
 
     # 11. '정시 도착'
     m = re.match(r'^(.+?)에 정시 도착$', text)
@@ -9527,7 +9547,10 @@ async def get_train_info_railblue(train, date):
                 if train_info[4] == 0 and train_info[5] == 0 : 
                     delay_msg = "정시 운행 중"
                 elif train_info[4] == 0 : 
-                    delay_msg = f"{train_info[5]}초 지연 운행 중"
+                    if train_info[5] > 0 : 
+                        delay_msg = f"{train_info[5]}초 지연 운행 중"
+                    else : 
+                        delay_msg = f"{train_info[5]}초 조기 운행 중"
                 else : 
                     delay_msg = f"{train_info[4]}분 {train_info[5]}초 지연 운행 중"
             else : 
@@ -9546,7 +9569,10 @@ async def get_train_info_railblue(train, date):
                 if train_info[3] == 0 and train_info[4] == 0 : 
                     delay_msg = "정시 운행 중"
                 elif train_info[3] == 0 : 
-                    delay_msg = f"{train_info[4]}초 지연 운행 중"
+                    if train_info[4] > 0 : 
+                        delay_msg = f"{train_info[4]}초 지연 운행 중"
+                    else : 
+                        delay_msg = f"{train_info[4]}초 조기 운행 중"
                 else : 
                     delay_msg = f"{train_info[3]}분 {train_info[4]}초 지연 운행 중"
             else : 
