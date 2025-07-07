@@ -9426,7 +9426,8 @@ class train_command(app_commands.Group) :
         위치, 지연 = await get_train_info_railblue(열차번호, 날짜)
         embed = discord.Embed(
             title = f"열차 #{열차번호} 정보",
-            description = f"- 위치: {위치}\n- 지연: {지연}"
+            description = f"- 위치: {위치}\n- 지연: {지연}",
+            color = int("a5f0ff", 16),
         )
         await interaction.followup.send(embed = embed)
 
