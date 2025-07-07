@@ -9412,7 +9412,7 @@ class train_command(app_commands.Group) :
         await interaction.followup.send(embed=embed)
     
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
-    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)")
+    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
     async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str, 개인응답: bool) : 
         await interaction.response.defer(ephemeral=개인응답)
 
@@ -9518,6 +9518,7 @@ async def parse_train_info(text):
 
 async def get_train_info_railblue(train, date):
     options = webdriver.FirefoxOptions()
+    options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
     await asyncio.sleep(2.5)
