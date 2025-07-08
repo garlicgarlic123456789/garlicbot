@@ -1918,9 +1918,7 @@ async def on_message_edit(before, after):
                 notify_channel = bot.get_channel(owner_notify)
                 if notify_channel :
                     await notify_channel.send(f"<@&{owner_id}> 테러가 감지되었습니다. 임시로 자동 인증을 비활성화하고 테러 사용자의 인증을 해제합니다.")
-                if member.status == discord.Status.idle or member.status == discord.Status.offline:
-                    await after.channel.send("<@1181084142969032848> <@873128084193296406> 긴급. 테러 감지. 현재 서버 주인이 오프라인입니다.")
-                    send_email("마늘이", "마늘이", "마늘이", "테러 감지! 비상!")
+                send_email("마늘이", "마늘이", "마늘이", "테러 감지! 비상!")
                 return
 
 @bot.event
