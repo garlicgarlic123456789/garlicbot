@@ -8408,7 +8408,7 @@ class TicketButtonEmergency(Button):
         await thread.add_user(interaction.user)
         embed = discord.Embed(
             title = "긴급 티켓 생성됨",
-            description = f"{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*\n\n환영합니다. 관리자에게 문의/신고할 내용을 작성해주세요. 잘못 여신 경우 잘못 여셨다고 남겨주시기 바랍니다.\n\n**__관리자 멘션으로 업무 처리 재촉 시 제재될 수 있습니다.__**",
+            description = f"{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*\n\n환영합니다. 관리자에게 문의/신고할 내용을 작성해주세요. 잘못 여신 경우 잘못 여셨다고 남겨주시기 바랍니다.\n\n**__관리자 멘션으로 업무 처리 재촉 시 제재될 수 있습니다.__**",
             color = discord.Color.red()
         )
         await thread.send("<@&1346047923460243507> <@&1325762715867943004> <@&1320303818004496430>", embed = embed)
@@ -8416,7 +8416,7 @@ class TicketButtonEmergency(Button):
         channel = bot.get_channel(1349651598980288542)
         embed = discord.Embed(
             title = "긴급 티켓 생성됨",
-            description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
+            description = f"{thread.mention}\n\n{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
             color = discord.Color.red()
         )
         await channel.send(embed = embed)
