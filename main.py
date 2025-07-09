@@ -8453,14 +8453,6 @@ async def on_ready():
     bot.tree.add_command(train_command())
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
-    guild = bot.get_guild(using_server)
-    if guild:
-        try:
-            invite_cache[guild.id] = await guild.invites()
-            print(f"{guild.name} 서버의 초대 캐시 초기화 완료")
-        except discord.Forbidden:
-            invite_cache[guild.id] = []
-            print(f"{guild.name} 서버의 초대 링크에 접근할 수 없습니다.")
     exp_event.start()
     check_voice_channels.start()
     bot.add_view(TicketView())  # persistent view 등록
@@ -8506,6 +8498,17 @@ async def on_ready():
         with open(TICKET_MESSAGE_FILE, "w") as f:
             f.write(str(message.id))
         print("새 티켓 메시지를 전송하고 ID를 저장했습니다.")
+    
+    for guild in bot.guilds:
+        try:
+            invite_cache[guild.id] = await guild.invites()
+            print(f"{guild.name} 서버의 초대 캐시 초기화 완료")
+        except discord.Forbidden:
+            invite_cache[guild.id] = []
+            print(f"{guild.name} 서버의 초대 링크에 접근할 수 없습니다.")
+        except Exception as e:
+            invite_cache[guild.id] = []
+            print(f"{guild.name} 서버의 초대 링크 캐싱 중 오류 발생: {e}")
 
 @bot.tree.command(name="사용자슬로우모드", description = "특정 사용자에게 슬로우 모드를 적용하고, 이를 어길 시 메시지를 삭제시킵니다.")
 async def user_slowmode(interaction: discord.Interaction, user: discord.User, seconds: int):
