@@ -11353,10 +11353,13 @@ async def link_check(interaction: discord.Interaction, 링크: str, 세부정보
         if malicious == 0 and suspicious == 0 : 
             embed.description = "검사 결과, 위험하지 않은 링크입니다."
             embed.color = int("a5f0ff", 16)
-        elif malicious > 1 :
+        elif malicious > 0 :
+            embed.description = "검사 결과, 매우 위험한 링크입니다."
+            embed.color = discord.Color.red()
+        elif suspicious >= 3 : 
             embed.description = "검사 결과, 위험한 링크입니다."
             embed.color = discord.Color.red()
-        elif suspicious > 1 or malicious > 0 : 
+        elif suspicious > 0 : 
             embed.description = "검사 결과, 의심스러운 링크입니다."
             embed.color = discord.Color.yellow()
         
