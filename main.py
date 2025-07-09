@@ -663,7 +663,7 @@ c.execute("CREATE TABLE IF NOT EXISTS anti_nuke_log_channel (id INTEGER PRIMARY 
 c.execute("CREATE TABLE IF NOT EXISTS anti_nuke_whitelist (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, ban_kick INTEGER)") # 테러 방지 화이트리스트
 c.execute("CREATE TABLE IF NOT EXISTS block_log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER)") # 제재 로그 채널
 c.execute("CREATE TABLE IF NOT EXISTS server_link_block (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, time INTEGER)") # 제재 로그 채널
-c.execute("CREATE TABLE IF NOT EXISTS invite_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, link TEXT)") # 초대 로그
+c.execute("CREATE TABLE IF NOT EXISTS invite_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, link TEXT, server_id INTEGER)") # 초대 로그
 c.execute('''
     CREATE TABLE IF NOT EXISTS accounts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -898,8 +898,8 @@ def import_invite_log(server_id: int, user_id: int) -> list[str | None]:
 
 
 # 초대 로그 저장 함수
-def save_invite_log(user_id: int, link: str | None):
-    c.execute("INSERT INTO invite_log (user_id, link) VALUES (?, ?)", (user_id, link))
+def save_invite_log(user_id: int, link: str | None, server_id: int):
+    c.execute("INSERT INTO invite_log (user_id, link, server_id) VALUES (?, ?, ?)", (user_id, link, server_id))
 
 async def scan_url(link: str) : 
     try : 
@@ -3823,13 +3823,13 @@ async def on_member_join(member):
 
         # DB에 저장
         if used_invite:
-            save_invite_log(member.id, used_invite.code)
+            save_invite_log(member.id, used_invite.code, member.guild.id)
         else:
-            save_invite_log(member.id, None)  # 초대코드 알 수 없음
+            save_invite_log(member.id, None, member.guild.id)  # 초대코드 알 수 없음
 
     except Exception as e:
         print(f"Error on member join: {e}")
-        save_invite_log(member.id, None)  # 에러 발생 시에도 NULL로 저장
+        save_invite_log(member.id, None, member.guild.id)  # 에러 발생 시에도 NULL로 저장
     if member.guild.id != using_server :
         return
     if member.id == 1238750780459188225: # 챠무님
