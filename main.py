@@ -8499,6 +8499,13 @@ async def on_ready():
             f.write(str(message.id))
         print("새 티켓 메시지를 전송하고 ID를 저장했습니다.")
     
+    guild = bot.get_guild(using_server)
+    if guild:
+        invite_cache[guild.id] = await guild.invites()
+        print(f"{guild.name} 서버의 초대 캐시 초기화 완료")
+    else:
+        print("사용 중인 서버를 찾을 수 없습니다.")
+    
     for guild in bot.guilds:
         try:
             invite_cache[guild.id] = await guild.invites()
