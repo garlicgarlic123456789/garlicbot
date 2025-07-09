@@ -11905,7 +11905,7 @@ async def timestamp(interaction: discord.Interaction, 시각: str):
         # 타임스탬프 출력
         embed = discord.Embed(
             title="타임스탬프 변환 결과",
-            description=f"입력된 시각: {시각}\n변환된 타임스탬프: {timestamp}",
+            description=f"입력된 시각: {시각}\n변환된 타임스탬프: <t:{timestamp}>",
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
