@@ -11894,6 +11894,8 @@ async def timestamp(interaction: discord.Interaction, 시각: str):
     if status : 
         await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
         return
+    
+    시각 = 시각.replace("\\", "")
 
     try:
         # 입력된 시각을 datetime 객체로 변환
