@@ -9915,6 +9915,67 @@ def verify_dkim_signature(msg):
     except Exception as e:
         print(f"DKIM 검증 오류: {e}")
         return False
+
+async def get_sun_time(location, date) : 
+    url = 'http://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getAreaRiseSetInfo'
+    params ={'serviceKey' : '서비스키', 'locdate' : date, 'location' : location }
+
+    response = requests.get(url, params=params)
+    print(response.content)
+    return
+
+@bot.tree.command(name = "일몰일출시각", description = "일몰 및 일출 시각을 확인합니다.")
+@app_commands.describe(위치 = "일몰 및 일출 시각을 확인할 위치를 입력해 주세요.", 날짜 = "날짜를 YYYYMMDD 형식으로 입력해 주세요. (예: 20250101)")
+@app_commands.choices(
+    위치 = [
+        app_commands.Choice(name = "서울", value = "서울"),
+        app_commands.Choice(name = "부산", value = "부산"),
+        app_commands.Choice(name = "대구", value = "대구"),
+        app_commands.Choice(name = "인천", value = "인천"),
+        app_commands.Choice(name = "광주", value = "광주"),
+        app_commands.Choice(name = "대전", value = "대전"),
+        app_commands.Choice(name = "울산", value = "울산"),
+        app_commands.Choice(name = "세종", value = "세종"),
+        app_commands.Choice(name = "경기", value = "경기"),
+        app_commands.Choice(name = "강원", value = "강원"),
+        app_commands.Choice(name = "충북", value = "충북"),
+        app_commands.Choice(name = "충남", value = "충남"),
+        app_commands.Choice(name = "전북", value = "전북"),
+        app_commands.Choice(name = "전남", value = "전남"),
+        app_commands.Choice(name = "경북", value = "경북"),
+        app_commands.Choice(name = "경남", value = "경남"),
+        app_commands.Choice(name = "제주", value = "제주"),
+    ]
+)
+async def 일몰일출시각(interaction: discord.Interaction, 위치: str, 날짜: str = None):
+    await interaction.response.defer()
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+    
+    if interaction.user.id != developer : 
+        await interaction.followup.send("**[오류!]** 권한이 부족합니다.", ephemeral=False)
+        return
+    
+    # 날짜가 입력되지 않았으면 현재 날짜 사용
+    if 날짜 is None:
+        현재날짜 = datetime.now().strftime("%Y%m%d")
+        날짜 = 현재날짜
+    
+    if len(날짜) != 8 : 
+        embed = discord.Embed(
+            title = "오류",
+            description = "날짜의 값이 올바르지 않습니다.",
+            color = discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed)
+        return
+    
+    await get_sun_time(위치, 날짜)
+    await interaction.followup.send(f"**[알림]** 테스트 완료.")
+
 '''
 @tasks.loop(minutes=3)
 async def check_email():
