@@ -1737,7 +1737,8 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
             log_msg = await channel.send(embed = embed2)
 
     if log_msg is not None : 
-        embed.add_field(name="사유", value=f"{reason} | {log_msg.jump_url}", inline=False)
+        reason = f"{reason} | {log_msg.jump_url}"
+        embed.add_field(name="사유", value=reason, inline=False)
     else : 
         embed.add_field(name="사유", value=reason, inline=False)
 
