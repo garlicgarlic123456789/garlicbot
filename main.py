@@ -887,8 +887,8 @@ do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900
 
 mention_timestamps = defaultdict(list)
 
-def import_invite_log(user_id: int) -> list[str | None]:
-    c.execute("SELECT link FROM invite_log WHERE user_id = ?", (user_id,))
+def import_invite_log(server_id: int, user_id: int) -> list[str | None]:
+    c.execute("SELECT link FROM invite_log WHERE user_id = ? AND server_id = ?", (user_id, server_id))
     rows = c.fetchall()
     
     if not rows:
@@ -9827,7 +9827,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
         await interaction.followup.send(msg)
         return
 
-    way = import_invite_log(사용자.id)
+    way = import_invite_log(interaction.guild.id, 사용자.id)
 
     if len(way) == 0 : 
         embed = discord.Embed(
