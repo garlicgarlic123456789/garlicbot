@@ -11906,8 +11906,8 @@ async def timestamp(interaction: discord.Interaction, 시각: str):
         
         # 타임스탬프 출력
         embed = discord.Embed(
-            title="타임스탬프 변환 결과",
-            description=f"입력된 시각: {시각}\n변환된 타임스탬프: <t:{timestamp}>",
+            title="완료",
+            description=f"- 유닉스 시간: {timestamp}\n- 디스코드 문법: <t:{timestamp}> (<t:{timestamp}:R>)",
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
