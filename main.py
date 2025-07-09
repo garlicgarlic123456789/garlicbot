@@ -1714,7 +1714,7 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     embed.add_field(name="관리자", value=f"<@1316579106749681664>", inline=False)
     embed.add_field(name="기간", value=f"{print_time(timeout_d)}", inline=False)
 
-    embed2 = embed.copy()
+    embed2 = embed
     embed2.add_field(name="사유", value=reason, inline=False)
     embed2.add_field(name="검열된 메시지", value=f"{message_content}", inline=False)
     embed2.add_field(name="검열된 키워드", value=f"{keyword}", inline=False)
