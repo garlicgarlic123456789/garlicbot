@@ -1699,9 +1699,9 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     log_channel = guild.get_channel(get_block_log_channel(message.guild.id))
 
     if ai_apply :
-        reason = f"{reason} (확률: {확률}) | 자동화된 타임아웃"
+        reason = f"{reason} (키워드 및 AI 기반 자동 검열, 확률: {확률})"
     else : 
-        reason = f"{reason} | 자동화된 타임아웃"
+        reason = f"{reason} (키워드 기반 검열)"
 
     await manage_timeout.add_timeout(member, timeout_duration, reason)
 
