@@ -3803,8 +3803,6 @@ async def refresh_invite_cache():
 
 @bot.event
 async def on_member_join(member):
-    if member.guild.id != using_server :
-        return
     try:
         # 새로운 초대 리스트 받아오기
         new_invites = await member.guild.invites()
@@ -3832,6 +3830,8 @@ async def on_member_join(member):
     except Exception as e:
         print(f"Error on member join: {e}")
         save_invite_log(member.id, None)  # 에러 발생 시에도 NULL로 저장
+    if member.guild.id != using_server :
+        return
     if member.id == 1238750780459188225: # 챠무님
         role = member.guild.get_role(1351884828219408386) # 고마운 분
         if role:
@@ -9813,6 +9813,7 @@ async def invite_log_check(link) :
     else : return f"링크 {link}"
 
 @bot.tree.command(name = "유입경로확인", description = "유입경로를 확인합니다.")
+@app_commands.default_permissions(administrator = True)
 @app_commands.describe(사용자 = "유입경로를 확인할 사용자를 입력해 주세요. (본인도 가능)")
 async def 유입경로확인(interaction: discord.Interaction, 사용자: discord.User):
     await interaction.response.defer(ephemeral=True)
@@ -9821,17 +9822,6 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
     if status:
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
-        return
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    if interaction.user.id != developer : 
-        await interaction.followup.send("**[오류!]** 권한이 부족합니다.", ephemeral=True)
         return
 
     way = import_invite_log(사용자.id)
@@ -9849,7 +9839,10 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
         if way[i] == None : 
             way[i] = "*(알 수 없음)*"
         else : 
-            way[i] = await invite_log_check(way[i])
+            if interaction.guild.id == using_server :
+                way[i] = await invite_log_check(way[i])
+            else : 
+                way[i] = f"링크 {way[i]}"
     
     if len(way) > 2: 
         way_text = ", ".join(way)
