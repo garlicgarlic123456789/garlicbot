@@ -75,6 +75,8 @@ from zoneinfo import ZoneInfo
 # API KEY 정보로드
 load_dotenv()
 
+error = 1
+
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
 # from IPython.display import Markdown
@@ -11881,6 +11883,49 @@ async def security_check_error(interaction: discord.Interaction, error):
             color=discord.Color.red()
         )
         await interaction.response.send_message(embed = embed, ephemeral=False)
+        return
+
+@bot.tree.command(name = "타임스탬프", description = "날짜 및 시각을 입력하여 타임스탬프를 출력합니다.")
+@app_commands.describe(시각 = "타임스탬프로 변환할 시각 (YYYY-MM-DD HH:MM:SS)")
+async def timestamp(interaction: discord.Interaction, 시각: str):
+    await interaction.response.defer()
+
+    status, until, reason = is_blocked(interaction.user)
+    if status : 
+        await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
+        return
+
+    try:
+        # 입력된 시각을 datetime 객체로 변환
+        timestamp = datetime.strptime(시각, "%Y-%m-%d %H:%M:%S")
+        
+        # 유닉스 시간으로 변환
+        timestamp = int(timestamp.timestamp())
+        
+        # 타임스탬프 출력
+        embed = discord.Embed(
+            title="타임스탬프 변환 결과",
+            description=f"입력된 시각: {시각}\n변환된 타임스탬프: {timestamp}",
+            color=int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed=embed)
+    except ValueError:
+        embed = discord.Embed(
+            title="오류",
+            description=f"입력값이 올바르지 않습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+    except Exception as e:
+        global error
+        print(f"오류 #{error}: {e}")
+        error += 1
+        embed = discord.Embed(
+            title="오류",
+            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
         return
 
 '''
