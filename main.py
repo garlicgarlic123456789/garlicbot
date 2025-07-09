@@ -906,7 +906,7 @@ async def scan_url(link: str) :
         headers = {
             "accept": "application/json",
             "content-type": "application/x-www-form-urlencoded",
-            "x-apikey": f"{os.get_env('SCAN_API_KEY')}",
+            "x-apikey": f"{os.getenv('SCAN_API_KEY')}",
         }
 
         response = requests.post(url, headers=headers)
@@ -915,7 +915,7 @@ async def scan_url(link: str) :
 
         result_link = response['data']['links']['self']
 
-        headers = {"accept": "application/json", "x-apikey": f"{os.get_env('SCAN_API_KEY')}"}
+        headers = {"accept": "application/json", "x-apikey": f"{os.getenv('SCAN_API_KEY')}"}
 
         await asyncio.sleep(50)
 
