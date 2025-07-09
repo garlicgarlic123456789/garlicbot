@@ -9916,6 +9916,8 @@ def verify_dkim_signature(msg):
         print(f"DKIM 검증 오류: {e}")
         return False
 
+sun_api_key = os.getenv("sun_api_key")
+
 async def get_sun_time(location, date) : 
     url = 'http://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getAreaRiseSetInfo'
     params ={'serviceKey' : '서비스키', 'locdate' : date, 'location' : location }
