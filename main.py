@@ -11862,7 +11862,7 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     if dangerous : 
         embed.color = discord.Color.red()
     elif warning : 
-        embed.color = discord.Color.orange()
+        embed.color = discord.Color.yellow()
     else : 
         embed.color = int("a5f0ff", 16)
 
