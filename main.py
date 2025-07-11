@@ -9891,13 +9891,13 @@ async def 이메일전송(interaction: discord.Interaction, 내용: str):
         if not any(role.id in email_role_id for role in member.roles):
             await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `이메일 명령어 허용`", ephemeral=True)
             return
-    await interaction.response.send_message("**[알림]** 소유자에게 이메일 전송 중... 잠시만 기다려주세요.", ephemeral=True)
-    sender_name = interaction.user.name
+    await interaction.response.send_message("**[알림]** 마늘봇 개발자(마늘 서버 주인)에게 이메일 전송 중... 잠시만 기다려주세요.", ephemeral=True)
+    sender_name = interaction.user.display_name
     sender_display_name = interaction.user.display_name
     sender_id = interaction.user.id
     email_sent = send_email(sender_name, sender_display_name, sender_id, 내용)
     if email_sent:
-        await interaction.followup.send("**[알림]** 소유자에게 이메일이 성공적으로 전송되었습니다.")
+        await interaction.followup.send("**[알림]** 마늘봇 개발자(마늘 서버 주인)에게 이메일이 성공적으로 전송되었습니다.")
     else:
         await interaction.followup.send("**[오류!]** 이메일 전송에 실패했습니다.")
 
