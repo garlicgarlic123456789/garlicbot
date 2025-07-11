@@ -97,7 +97,9 @@ async def advice_main(bot, interaction, original_message, message_provide, start
             하려는 조언(유저의 프롬프트): {prompt}
 
             서버의 메시지 기록 중 일부: {messages}
-            서버의 채널 구성: {channels} 
+            서버의 채널 구성: {channels}
+
+            위 정보를 참고하여 해당 유저에게 조언을 해주세요. 조언은 최대 3000자 이내여야 합니다.
             """
         )
         embed = discord.Embed(title="완료", description=f"인공지능의 조언은 다음과 같습니다: \n\n{response.text}", color=int("a5f0ff", 16))
