@@ -102,7 +102,11 @@ async def advice_main(bot, interaction, original_message, message_provide, start
             위 정보를 참고하여 해당 유저에게 조언을 해주세요. 조언은 최대 3000자 이내여야 합니다.
             """
         )
-        embed = discord.Embed(title="완료", description=f"인공지능의 조언은 다음과 같습니다: \n\n{response.text}", color=int("a5f0ff", 16))
+        response = response.text
+        if len(response) > 4000: 
+            response = response[:4000]
+            response = response + "\n\n(AI 조언이 4000자를 초과하여 이하 생략)"
+        embed = discord.Embed(title="완료", description=f"인공지능의 조언은 다음과 같습니다: \n\n{response}", color=int("a5f0ff", 16))
         await original_message.reply(embed = embed)
         return
 
