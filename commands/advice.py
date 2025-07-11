@@ -11,17 +11,25 @@ import asyncio
 
 async def collect_message(bot, interaction, start_message_link, end_message_link):
     start_message_channel = start_message_link.split("/")[-2]
-    end_message_channel = end_message_link.split("/")[-2]
-    if start_message_channel != end_message_channel:
-        return [False, "different_channel"]
+    if end_message_link is not None : 
+        end_message_channel = end_message_link.split("/")[-2]
+        if start_message_channel != end_message_channel:
+            return [False, "different_channel"]
     start_message_id = start_message_link.split("/")[-1]
-    end_message_id = end_message_link.split("/")[-1]
+    if end_message_link is not None : 
+        end_message_id = end_message_link.split("/")[-1]
+    else : 
+        end_message_id = None
     channel = bot.get_channel(int(start_message_channel))
     if not channel:
         return [False, "invaild_channel"]
     messages = []
-    async for message in channel.history(limit=None, after=discord.Object(int(start_message_id), type = discord.Message), before=discord.Object(int(end_message_id), type = discord.Message), oldest_first=True):
-        messages.append(f"{message.author.display_name}: {message.content}")
+    if end_message_id is not None : 
+        async for message in channel.history(limit=None, after=discord.Object(int(start_message_id), type = discord.Message), before=discord.Object(int(end_message_id), type = discord.Message), oldest_first=True):
+            messages.append(f"{message.author.display_name}: {message.content}")
+    else : 
+        async for message in channel.history(limit=None, after=discord.Object(int(start_message_id), type = discord.Message), oldest_first=True):
+            messages.append(f"{message.author.display_name}: {message.content}")
     if not messages:
         return [False, "no_message"]
     return [True, messages]
@@ -48,25 +56,35 @@ async def get_channel_list(guild):
     else : 
         return [False, "no_channel"]
 
-async def advice_main(bot, interaction, original_message, start_message_link, end_message_link, prompt, role):
+async def advice_main(bot, interaction, original_message, message_provide, start_message_link, end_message_link, channel_provide, prompt, role):
     if not interaction.guild:
         embed = discord.Embed(title="오류", description="invaild_guild", color=discord.Color.red())
         await original_message.reply(embed = embed)
         return
-    messages = await collect_message(bot, interaction, start_message_link, end_message_link)
+    if message_provide : 
+        if start_message_link is None : 
+            embed = discord.Embed(title="오류", description="invaild_start_message_link", color=discord.Color.red())
+            await original_message.reply(embed = embed)
+            return
+        messages = await collect_message(bot, interaction, start_message_link, end_message_link)
+    else : 
+        messages = [True, "*(제공되지 않음)*"]
     if not messages[0]:
         embed = discord.Embed(title="오류", description=messages[1], color=discord.Color.red())
         await original_message.reply(embed = embed)
         return
     else : 
         messages = messages[1]
-        channels = await get_channel_list(interaction.guild)
-        if channels[0]:
-            channels = channels[1]
+        if channel_provide : 
+            channels = await get_channel_list(interaction.guild)
+            if channels[0]:
+                channels = channels[1]
+            else : 
+                embed = discord.Embed(title="오류", description=channels[1], color=discord.Color.red())
+                await original_message.reply(embed = embed)
+                return
         else : 
-            embed = discord.Embed(title="오류", description=channels[1], color=discord.Color.red())
-            await original_message.reply(embed = embed)
-            return
+            channels = [True, "*(제공되지 않음)*"]
         
         model = genai.GenerativeModel('gemini-2.0-flash')
         response = await asyncio.to_thread(
@@ -74,7 +92,7 @@ async def advice_main(bot, interaction, original_message, start_message_link, en
             f"""
             이름이 '{interaction.guild.name}'인 디스코드 서버에서 아래와 같은 유저가 서버에 관해 조언을 구하고 있습니다.
 
-            유저 이름 : {interaction.user.display_name} ({interaction.user.name})
+            유저 이름: {interaction.user.display_name} ({interaction.user.name})
             유저의 역할: {role}
             하려는 조언(유저의 프롬프트): {prompt}
 

@@ -8827,12 +8827,12 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         app_commands.Choice(name="일반 유저", value="일반 유저"),
     ]
 )
-async def 서버조언(interaction: discord.Interaction, 프롬프트: str, 시작메시지: str, 종료메시지: str, 역할: str = "*(입력되지 않음)*"):
+async def 서버조언(interaction: discord.Interaction, 프롬프트: str, 메시지제공여부: bool, 시작메시지: str = None, 종료메시지: str = None, 채널제공여부: bool, 역할: str = "*(입력되지 않음)*"):
     if interaction.user.id != 1063676895000018944 and interaction.user.id != 1305492487137267722 and interaction.user.id != 1355698620606709902 : 
         await interaction.response.send_message("권한이 부족합니다. 다음 권한이 필요합니다: `사용자: 1063676895000018944` 또는 `사용자: 1305492487137267722` 또는 `사용자: 1355698620606709902`")
         return
     await interaction.response.send_message("처리 중입니다.")
-    await advice_main(bot, interaction, await interaction.original_response(), 시작메시지, 종료메시지, 프롬프트, 역할)
+    await advice_main(bot, interaction, await interaction.original_response(), 메시지제공여부, 시작메시지, 종료메시지, 채널제공여부, 프롬프트, 역할)
 
 
 @bot.tree.command(name = "자동검열설정", description = "자동 검열 기능 사용 여부를 설정합니다.")
