@@ -107,7 +107,7 @@ async def advice_main(bot, interaction, original_message, message_provide, start
             response = response[:4000]
             response = response + "\n\n(AI 조언이 4000자를 초과하여 이하 생략)"
         embed = discord.Embed(title="완료", description=f"인공지능의 조언은 다음과 같습니다: \n\n{response}", color=int("a5f0ff", 16))
-        await original_message.reply(embed = embed)
+        await original_message.reply(embed = embed, mention_author=False)
         return
 
 
