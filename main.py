@@ -7009,12 +7009,16 @@ async def remove_cooldown(interaction: discord.Interaction, 사용자: discord.U
         await interaction.followup.send(embed=embed, ephemeral=False)
 
     except Exception as e:
+        global error
+        print(f"오류 #{error}: {e}")
+        error += 1
         embed = discord.Embed(
             title="오류",
-            description="쿨타임 해제 중 오류가 발생했습니다.",
+            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
             color=discord.Color.red()
         )
-        await interaction.followup.send(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed)
+        return
 
 ai_cooldowns = {} # gpt-4o 쿨타임
 o3_cooldowns = {} # o3-mini 쿨타임
@@ -7792,22 +7796,20 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
         await interaction.followup.send(msg)
         return
     
-    cursor = conn.cursor()
-    
     # 사용자 인자가 있는 경우: 해당 사용자의 제재 내역 중에서 서버 ID가 일치하는 행을 선택합니다.
     if 사용자:
-        cursor.execute(
+        c.execute(
             "SELECT * FROM blockhistory WHERE user_id = ? AND server_id = ? ORDER BY id DESC", 
             (사용자.id, interaction.guild.id)
         )
     # 사용자 인자가 없으면 해당 서버의 전체 제재 내역을 선택합니다.
     else:
-        cursor.execute(
+        c.execute(
             "SELECT * FROM blockhistory WHERE server_id = ? ORDER BY id DESC", 
             (interaction.guild.id,)
         )
     
-    records = cursor.fetchall()
+    records = c.fetchall()
 
     if not records:
         await interaction.followup.send("제재 내역이 없습니다.", ephemeral=False)
