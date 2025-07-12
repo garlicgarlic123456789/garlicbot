@@ -11172,7 +11172,8 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
         await interaction.followup.send(msg)
         return
 
-    if "discord.gg/" in 제목 or "discord.com/invite/" in 제목 or "discord.gg/" in 내용 or "discord.com/invite/" in 내용 :
+    pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
+    if re.search(pattern1, after.content) : 
         embed = discord.Embed(
             title=f"오류", # name
             description=f"discord_link",
