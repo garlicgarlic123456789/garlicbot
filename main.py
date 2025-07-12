@@ -1663,7 +1663,10 @@ async def personal_info_detect_ai(message) :
 
 async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, ai_apply = False):
     member = message.author
-    message_content = message.content
+    if message.message_snapshots:
+        message_content = message.message_snapshots[0].content
+    else : 
+        message_content = message.content
     guild = message.guild
 
     # Check whitelist
@@ -2767,20 +2770,23 @@ async def on_message(message):
                     return
         
         message_content = re.sub(r"[^가-힣a-zA-Z]", "", message.content)
+        if message.message_snapshots : 
+            message_content2 = re.sub(r"[^가-힣a-zA-Z]", "", message.message_snapshots[0].content)
+        else : 
+            message_content2 = ""
         if automod_setting['political'][0] : 
-            if message.channel.id != 1344617642312597585 : 
-                for i in automod_keyword :
-                    if i in message_content :
-                        await handle_spamming(message, automod_reason, automod_setting['political'][1], True, i, True)
-                        return
+            for i in automod_keyword :
+                if i in message_content or i in message_content2 :
+                    await handle_spamming(message, automod_reason, automod_setting['political'][1], True, i, True)
+                    return
         if message.guild.id == using_server : 
             for i in automod_keyword2 :
-                if i in message_content :
+                if i in message_content or i in message_content2 :
                     await handle_spamming(message, automod_reason2, 5 * 60 * 60, True, i)
                     return
         if message.guild.id == using_server :
             for i in automod_keyword3 :
-                if i in message.content.replace("\\", "") :
+                if i in message_content.replace("\\", "") or i in message_content2.replace("\\", "") :
                     await handle_spamming(message, automod_reason3, 24 * 60 * 60, False, i)
                     return
         if message.guild.id == using_server :
@@ -2788,10 +2794,14 @@ async def on_message(message):
                 if i in message.content and message.content.startswith("!번역 ") :
                     await handle_spamming(message, automod_reason4, 15 * 60 * 60, True, i)
                     return
+                if message.message_snapshots : 
+                    if i in message.message_snapshots[0].content and message.message_snapshots[0].content.startswith("!번역 ") :
+                        await handle_spamming(message, automod_reason4, 15 * 60 * 60, True, i)
+                        return
         if automod_setting['sexual'][0] : 
             if message.channel.id != 1344617642312597585 :
                 for i in automod_keyword5 :
-                    if i in message_content :
+                    if i in message_content or i in message_content2 :
                         await handle_spamming(message, automod_reason5, automod_setting['sexual'][1], True, i, True)
                         return
         if automod_setting['mention'][0] :
@@ -2806,31 +2816,31 @@ async def on_message(message):
 
         if message.guild.id == using_server :
             for i in automod_keyword7 :
-                if i in message.content :
+                if i in message.content or i in message_content2 :
                     await handle_spamming(message, automod_reason7, 48 * 60 * 60, True, i)
                     return
         if message.guild.id == using_server :
             if message.channel.id != 1322203223028793396 : 
                 for i in automod_keyword8 :
-                    if i in message_content :
+                    if i in message_content or i in message_content2 :
                         await handle_spamming(message, automod_reason8, 10 * 60, True, i)
                         return
         
         if message.guild.id == using_server :
             for i in automod_keyword9 :
-                if i in message_content :
+                if i in message_content or i in message_content2 :
                     await handle_spamming(message, automod_reason9, 20 * 60, True, i)
                     return
 
         if message.guild.id == using_server :
             for i in automod_keyword10 :
-                if i in message_content :
+                if i in message_content or i in message_content2 :
                     await handle_spamming(message, automod_reason10, 3 * 60 * 60, True, i)
                     return
 
         if message.guild.id == using_server :
             for i in automod_keyword11 :
-                if i in message.content :
+                if i in message.content or i in message_content2 :
                     await handle_spamming(message, automod_reason11, 24 * 60 * 60, True, i)
                     return
         if message.guild.id == using_server  :
