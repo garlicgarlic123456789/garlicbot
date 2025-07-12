@@ -6372,12 +6372,15 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             # 메시지 내용을 합치기
             messages_list = "\n\n".join(f"{msg.author.id}: {msg.content}" for msg in reversed(messages))
         except Exception as e : 
+            global error
+            print(f"오류 #{error}: {e}")
+            error += 1
             embed = discord.Embed(
-                title = "오류",
-                description = "오류가 발생했습니다.",
-                color = discord.Color.red()
+                title="오류",
+                description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+                color=discord.Color.red()
             )
-            await interaction.followup.send(embed = embed)
+            await interaction.followup.send(embed=embed)
             return
         chain = create_chain1(messages_list)
         output = await asyncio.to_thread(chain.invoke, {"messages": messages_list})
@@ -6398,10 +6401,12 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             import json
             output_dict = json.loads(output)
         except json.JSONDecodeError:
-            # JSON 파싱 실패 시 빈 결과로 처리
+            global error
+            print(f"오류 #{error}: {e}")
+            error += 1
             embed = discord.Embed(
                 title="오류",
-                description="오류가 발생했습니다.",
+                description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
@@ -6500,9 +6505,13 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             print(f"JSON 파싱 오류: {e}")
             print(f"원본 출력: {output}")
             print(f"정리된 출력: {cleaned_output}")
+            print("----------")
+            global error
+            print(f"오류 #{error}: {e}")
+            error += 1
             embed = discord.Embed(
                 title="오류",
-                description="AI 응답을 처리하는 중 오류가 발생했습니다. 다시 시도해주세요.",
+                description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
@@ -6628,12 +6637,16 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
+            global error
+            print(f"오류 #{error}: {e}")
+            error += 1
             embed = discord.Embed(
-                title=f"오류", # name
-                description=f"오류가 발생했습니다.",
+                title="오류",
+                description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
+            return
 '''
     elif 버전 == "v2" : 
         프롬프트 = """
@@ -6956,12 +6969,16 @@ async def summarize(interaction: discord.Interaction, 시작: str, 끝: str = No
         await interaction.followup.send(embed=embed)
 
     except Exception as e:
+        global error
+        print(f"오류 #{error}: {e}")
+        error += 1
         embed = discord.Embed(
-            title=f"오류", # name
-            description=f"오류가 발생했습니다.",
+            title="오류",
+            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
             color=discord.Color.red()
         )
         await interaction.followup.send(embed=embed)
+        return
 
 
 @bot.tree.command(name="대화요약쿨타임해제", description="특정 사용자의 대화요약 명령어 쿨타임을 해제합니다.")
