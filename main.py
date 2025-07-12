@@ -2761,7 +2761,7 @@ async def on_message(message):
             if re.search(pattern1, message.content) :
                 await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
                 return
-            elif message.message_snapshots is not None : 
+            elif message.message_snapshots : 
                 if re.search(pattern1, message.message_snapshots[0].content) : 
                     await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
                     return
