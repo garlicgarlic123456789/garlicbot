@@ -6295,6 +6295,8 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         await interaction.response.defer()
     else :
         await interaction.response.defer(ephemeral=True)
+    
+    global error
 
     if 버전 == "v2" : 
         status, until, reason = is_blocked(interaction.user)
@@ -6372,7 +6374,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             # 메시지 내용을 합치기
             messages_list = "\n\n".join(f"{msg.author.id}: {msg.content}" for msg in reversed(messages))
         except Exception as e : 
-            global error
             print(f"오류 #{error}: {e}")
             error += 1
             embed = discord.Embed(
@@ -6401,7 +6402,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             import json
             output_dict = json.loads(output)
         except json.JSONDecodeError:
-            global error
             print(f"오류 #{error}: {e}")
             error += 1
             embed = discord.Embed(
@@ -6506,7 +6506,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             print(f"원본 출력: {output}")
             print(f"정리된 출력: {cleaned_output}")
             print("----------")
-            global error
             print(f"오류 #{error}: {e}")
             error += 1
             embed = discord.Embed(
@@ -6637,7 +6636,6 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed=embed)
 
         except Exception as e:
-            global error
             print(f"오류 #{error}: {e}")
             error += 1
             embed = discord.Embed(
