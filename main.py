@@ -12196,7 +12196,7 @@ async def 말투변경(interaction: discord.Interaction, 말투: str, 텍스트:
 
     embed = discord.Embed(
         title = "완료",
-        description = f"{response.text}",
+        description = f"{response}",
         color = int("a5f0ff", 16)
     )
     await interaction.followup.send(embed = embed)
