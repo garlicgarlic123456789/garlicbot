@@ -10075,7 +10075,7 @@ async def invite_log_check(link) :
     elif link == "QXNR5WJS9p" : return "TinyDev 연합 채널 홍보지"
     elif link == "kEbZeZTfTP" : return "하불의 믹서기 연구소 연합 채널 홍보지"
     elif link == "DhueXyrNUz" : return "무늬 서버 연합 채널 홍보지 또는 홍보 채널 홍보지"
-    elif link == "4T5pHkNqp" : return "나르님 서버 연합 채널 홍보지"
+    elif link == "24T5pHkNqp" : return "나르님 서버 연합 채널 홍보지"
     elif link == "4X4fnTCe6S" : return "전국단위 잡담방 홍보 채널 홍보지"
     else : return f"링크 {link}"
 
