@@ -8455,7 +8455,7 @@ async def mine_help(interaction: discord.Interaction) :
 
 @bot.tree.command(name="프로필사진", description="특정 사용자의 프로필 사진을 보여줍니다.")
 @app_commands.describe(사용자="프로필 사진을 확인할 대상 사용자")
-async def 프로필사진(interaction: discord.Interaction, 사용자: discord.Member):
+async def 프로필사진(interaction: discord.Interaction, 사용자: discord.User):
     status, until, reason = is_blocked(interaction.user)
     if status:
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
