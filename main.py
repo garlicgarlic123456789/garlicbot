@@ -9649,6 +9649,8 @@ class train_command(app_commands.Group) :
                 arrival_info = "당역 도착"
             elif arrival_info == f"{역명} 진입" : 
                 arrival_info = "당역 진입"
+            elif arrival_info == f"{역명} 출발" : 
+                arrival_info = "당역 출발"
             
             train_info = {
                 "열차번호": arrival["btrainNo"],
