@@ -9633,10 +9633,24 @@ class train_command(app_commands.Group) :
             else : 
                 line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
             direction = arrival["updnLine"]  # 상행/하행
+            arrival_info = arrival["arvlMsg2"]
+            match = re.search(r"(\d+)번째 전역 \((.*?)\)", arrival_info)
+            if match:
+                number = int(match.group(1))
+                content = match.group(2)
+                if number == 2 : 
+                    arrival_info = f"전전역 ({content})"
+                else : 
+                    arrival_info = f"{number}전역 ({content})"
+            elif arrival_info == f"{역명} 도착" : 
+                arrival_info = "당역 도착"
+            elif arrival_info == f"{역명} 진입" : 
+                arrival_info = "당역 진입"
+            
             train_info = {
                 "열차번호": arrival["btrainNo"],
                 "행선지": arrival["bstatnNm"] + " (" + arrival["btrainSttus"] + ")",
-                "도착 정보": arrival["arvlMsg2"],
+                "도착 정보": arrival_info,
                 "도착 예정": f"약 {int(arrival['barvlDt']) // 60} 분 {int(arrival['barvlDt']) % 60}초 후"
             }
 
@@ -9656,7 +9670,7 @@ class train_command(app_commands.Group) :
             for direction, trains in directions.items():
                 text += f"- 방향: {direction}\n"
                 for train in trains:
-                    text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착예정: {train['도착 예정']}\n"
+                    text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착 예정: {train['도착 예정']}\n"
         embed = discord.Embed(
             title=f"{역명}역의 지하철 도착 정보",
             description=text,
