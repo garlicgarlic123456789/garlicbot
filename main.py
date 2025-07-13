@@ -9574,6 +9574,10 @@ class train_command(app_commands.Group) :
             msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
             await interaction.followup.send(msg)
             return
+        
+        if 역명 == "평택지제" : 
+            역명 = "지제"
+
         try : 
             data = get_subway_info(역명)
 
