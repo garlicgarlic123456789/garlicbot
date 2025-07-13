@@ -9634,7 +9634,7 @@ class train_command(app_commands.Group) :
                 line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
             direction = arrival["updnLine"]  # 상행/하행
             arrival_info = arrival["arvlMsg2"]
-            match = re.search(r"(\d+)번째 전역 \((.*?)\)", arrival_info)
+            match = re.search(r"\[(\d+)\]번째 전역 \((.*?)\)", arrival_info)
             if match:
                 number = int(match.group(1))
                 content = match.group(2)
