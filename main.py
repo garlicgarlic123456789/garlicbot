@@ -9638,6 +9638,9 @@ class train_command(app_commands.Group) :
             if match:
                 number = int(match.group(1))
                 content = match.group(2)
+                if content == "지제" : 
+                    content = "평택지제"
+                
                 if number == 2 : 
                     arrival_info = f"전전역 ({content})"
                 else : 
