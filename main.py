@@ -854,7 +854,7 @@ def update_log_channel(server_id, editdelete, reaction, role, image):
         # 없을 경우 insert
         c.execute("""
             INSERT INTO log_channel (server_id, editdelete, reaction, role, image)
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?)
         """, (server_id, editdelete, reaction, role, image))
 
 def get_log_channel(server_id):
