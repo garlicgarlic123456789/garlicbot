@@ -1573,7 +1573,10 @@ class ModerationLogView(discord.ui.View):
             elif type_ == "timeout" :
                 addinfo = str(addinfo) + "초"
             title = f"{type_mapping.get(type_, '알 수 없는 제재 유형')} - #{id_}"
-            content = f"사용자: <@{user_id}>\n관리자: <@{admin_id}>"
+            if admin_id is None : 
+                content = f"사용자: <@{user_id}>\n관리자: *(알 수 없음)*"
+            else : 
+                content = f"사용자: <@{user_id}>\n관리자: <@{admin_id}>"
             if type_ in ["warn", "unwarn"]:
                 content += f"\n개수: {'+' if type_ == 'warn' else '-'}{addinfo}"
             elif type_ == "timeout":
