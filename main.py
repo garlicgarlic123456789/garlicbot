@@ -1318,7 +1318,7 @@ def check_blacklist(user_id):
 def delete_blacklist(user_id) :
     c.execute("DELETE FROM blacklist WHERE user_id = ?", (user_id,))
 
-def add_blockhistory(user_id: int, admin_id: int, reason: str, blocktype: str, addinfo: int, server_id: int):
+def add_blockhistory(user_id: int, admin_id, reason: str, blocktype: str, addinfo: int, server_id: int):
     c.execute("""
         INSERT INTO blockhistory (user_id, admin_id, reason, type, addinfo, server_id)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -4269,28 +4269,52 @@ async def on_member_update(before, after):
         # 타임아웃된 경우
         elif not before.timed_out_until and after.timed_out_until:
             async for entry in after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update):
-                moderator = entry.user
-                if entry.user.id == 1316579106749681664 :
-                    return
-                reason = entry.reason or "*(사유 입력되지 않음)*"
-                timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
-                
-                embed = discord.Embed(
-                    title="타임아웃",
-                    color=discord.Color.red(),
-                    timestamp=discord.utils.utcnow()
-                )
-                embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
-                embed.add_field(name="관리자", value=f"{moderator.mention}", inline=False)
-                embed.add_field(name="기간", value=format_duration(timeout_duration), inline=False)
-                embed.add_field(name="사유", value=reason, inline=False)
+                if entry.target.id == after.id : 
+                    moderator = entry.user
+                    if entry.user.id == 1316579106749681664 :
+                        return
+                    reason = entry.reason or "*(사유 입력되지 않음)*"
+                    timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
+                    
+                    embed = discord.Embed(
+                        title="타임아웃",
+                        color=discord.Color.red(),
+                        timestamp=discord.utils.utcnow()
+                    )
+                    embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
+                    embed.add_field(name="관리자", value=f"{moderator.mention}", inline=False)
+                    embed.add_field(name="기간", value=format_duration(timeout_duration), inline=False)
+                    embed.add_field(name="사유", value=reason, inline=False)
 
-                add_blockhistory(after.id, moderator.id, reason, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
-                
-                await channel.send(embed=embed)
-                if after.guild.id == using_server :
-                    log_channel = bot.get_channel(message_log)
-                    await log_channel.send(embed=embed)
+                    add_blockhistory(after.id, moderator.id, reason, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
+                    
+                    await channel.send(embed=embed)
+                    if after.guild.id == using_server :
+                        log_channel = bot.get_channel(message_log)
+                        await log_channel.send(embed=embed)
+                else : 
+                    if entry.user.id == 1316579106749681664 :
+                        return
+                    reason = "*(알 수 없음)*"
+                    timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
+                    
+                    embed = discord.Embed(
+                        title="타임아웃",
+                        color=discord.Color.red(),
+                        timestamp=discord.utils.utcnow()
+                    )
+                    embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
+                    embed.add_field(name="관리자", value=f"*(알 수 없음)*", inline=False)
+                    embed.add_field(name="기간", value=format_duration(timeout_duration), inline=False)
+                    embed.add_field(name="사유", value=reason, inline=False)
+
+                    add_blockhistory(after.id, None, reason, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
+                    
+                    await channel.send(embed=embed)
+                    if after.guild.id == using_server :
+                        log_channel = bot.get_channel(message_log)
+                        await log_channel.send(embed=embed)
+    
     if before.roles != after.roles:
         channel = get_log_channel(after.guild.id)['role']
         if channel is not None : 
