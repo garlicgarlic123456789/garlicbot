@@ -8224,7 +8224,10 @@ async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = 
     else :
         embed.add_field(name="대상 사용자", value=f"모두", inline=False)
     embed.add_field(name="사유", value=사유, inline=False)
-    log_channel = bot.get_channel(get_log_channel(interaction.guild.id)["editdelete"])
+    if interaction.guild.id != using_server : 
+        log_channel = bot.get_channel(get_log_channel(interaction.guild.id)["editdelete"])
+    else : 
+        log_channel = bot.get_channel(1394228444673605754)
     if log_channel :
         await log_channel.send(embed=embed)
     else :
