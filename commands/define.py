@@ -24,7 +24,7 @@ kst = pytz.timezone('Asia/Seoul')
 
 using_server = 1320303102703702037
 record_channel = 1320304892992028785 # 제재 내역 채널 ID
-message_log = 1325006023064293417  # 여기에 기록할 채널의 ID를 입력하세요
+message_log = 1394228444673605754  # 여기에 기록할 채널의 ID를 입력하세요
 
 
 # 차단 정보를 저장할 JSON 파일 경로
