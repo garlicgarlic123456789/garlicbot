@@ -3849,7 +3849,7 @@ async def refresh_invite_cache():
             invite_cache[guild.id] = []
             print(f"[초대 캐시 갱신 실패] 초대 링크 접근 권한이 없습니다.")
 
-async def create_check_account_chain : 
+async def create_check_account_chain() : 
     prompt = ChatPromptTemplate.from_messages([
         ("system", """입력에서 제시된 특정 디스코드 서버에 참가한 사용자의 정보를 바탕으로, 아래 조건을 잘 확인하여 해당 계정이 깡통계정일 가능성을 %로 출력하고, 근거도 작성하세요. (출력 양식 참고 바람)
 
