@@ -3849,6 +3849,43 @@ async def refresh_invite_cache():
             invite_cache[guild.id] = []
             print(f"[초대 캐시 갱신 실패] 초대 링크 접근 권한이 없습니다.")
 
+async def create_check_account_chain : 
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """입력에서 제시된 특정 디스코드 서버에 참가한 사용자의 정보를 바탕으로, 아래 조건을 잘 확인하여 해당 계정이 깡통계정일 가능성을 %로 출력하고, 근거도 작성하세요. (출력 양식 참고 바람)
+
+        조건: 아래 중 하나 이상을 만족할 시 높은 확률로 깡통계정이며, 두 개 이상을 만족할 시 거의 깡통계정임이 확실시됩니다.
+        1. \'별명\'과 \'사용자명\'이 비슷하거나 완전히 같습니다. 아래는 몇 가지 예시입니다.
+          - 사용자명이 \'nancy_1971.ca_42450\'이고 별명도 \'nancy_1971.ca_42450\'인 경우
+          - 사용자명이 \'shadsuarez_27690\'이고, 별명은 \'Shad Suarez\'입니다.
+        2. \'사용자명\'이 회원가입 절차에서 \'별명\'에 기반한 디스코드의 추천 사용자명으로 만들어진 듯합니다. (별명에서 띄어쓰기를 모두 제거 후 뒤에 무작위 숫자 5자리가 추가되는 것이 디스코드의 사용자명 추천 방식입니다.)
+          - 별명이 \'test test\'인 경우, 디스코드는 사용자명으로 \'testtest\' 뒤에 무작위의 숫자 5자리를 붙여서 사용자명을 추천할 것입니다. 예를 들어, \'testtest_24874\'와 같습니다.
+          - 참고: 별명이 한국어인 경우, 로마자 표기를 이용해 영어로 옮긴 후 띄어쓰기 제거 및 뒤에 무작위 숫자 5자리가 붙는 방식으로 작동합니다.
+
+        출력 양식: 예) 깡통계정 가능성이 90%인 경우
+        {{
+            "possibility": 90,
+            "reason": "해당 계정은 사용자명과 별명이 유사하고, 별명을 통해 자동 추천되는 사용자명을 사용합니다."
+        }}
+        """),
+        ("human", """
+        계정 별명: {display_name}
+        계정 사용자명: {name}
+        """)
+    ])
+    llm = ChatOpenAI(
+        temperature=0.1,
+        model="gpt-4.1-nano",
+    )
+    output_parser = StrOutputParser()
+    chain = prompt | llm | output_parser
+    return chain
+
+async def check_account(user_id):
+    user = await bot.fetch_user(user_id)
+    chain = create_check_account_chain(user.display_name, user.name)
+    response = chain.invoke({"display_name": user.display_name, "name": user.name})
+    print(response)
+
 @bot.event
 async def on_member_join(member):
     try:
@@ -3878,6 +3915,10 @@ async def on_member_join(member):
     except Exception as e:
         print(f"Error on member join: {e}")
         save_invite_log(member.id, None, member.guild.id)  # 에러 발생 시에도 NULL로 저장
+    
+    if member.guild.id == using_server : 
+        await check_account(member.id)
+
     if member.guild.id != using_server :
         return
     if member.id == 1238750780459188225: # 챠무님
@@ -8969,6 +9010,10 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.response.defer()
         print(get_automod(interaction.guild.id))
         await interaction.followup.send(f"실행된 서버의 검열 기능 설정을 콘솔에 출력했습니다.")
+    elif 아이디 == 17 : 
+        await interaction.response.defer(ephemeral=True)
+        await check_account(bot.fetch_user(int(입력1)))
+        await interaction.followup.send("처리되었습니다.")
 
 @bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
 @app_commands.describe(
