@@ -3881,10 +3881,42 @@ async def create_check_account_chain(display_name, name) :
     return chain
 
 async def check_account(user_id):
+    global error
+    channel = bot.get_channel(owner_notify)
     user = await bot.fetch_user(user_id)
     chain = await create_check_account_chain(user.display_name, user.name)
     response = chain.invoke({"display_name": user.display_name, "name": user.name})
-    print(response)
+    try:
+        import json
+        output_dict = json.loads(response)
+    except json.JSONDecodeError:
+        print(f"오류 #{error}: {e}")
+        embed = discord.Embed(
+            title="오류",
+            description=f"{user.mention}님의 계정이 깡통계정인지 판단하는 것에 실패했습니다.\n\n오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            color=discord.Color.red()
+        )
+        await channel.send(embed=embed)
+        error += 1
+        return
+    
+    if output_dict["possibility"] >= 80 : 
+        embed = discord.Embed(
+            title="깡통계정 감지됨",
+            description=f"{user.mention}님의 계정이 깡통계정일 가능성이 {output_dict["possibility"]}%입니다.\n\n근거: {output_dict["reason"]}",
+            color=discord.Color.red()
+        )
+        await channel.send(embed=embed)
+        return
+    else : 
+        embed = discord.Embed(
+            title="깡통계정이 아닌 것으로 판단됨",
+            description=f"{user.mention}님의 계정이 깡통계정일 가능성이 {output_dict["possibility"]}%입니다.\n\n근거: {output_dict["reason"]}",
+            color=int("a5f0ff", 16)
+        )
+        await channel.send(embed=embed)
+        return
+        
 
 @bot.event
 async def on_member_join(member):
