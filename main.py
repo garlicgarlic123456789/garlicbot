@@ -9012,8 +9012,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.followup.send(f"실행된 서버의 검열 기능 설정을 콘솔에 출력했습니다.")
     elif 아이디 == 17 : 
         await interaction.response.defer(ephemeral=True)
-        user = await bot.fetch_user(int(입력1))
-        await check_account(user)
+        await check_account(int(입력1))
         await interaction.followup.send("처리되었습니다.")
 
 @bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
