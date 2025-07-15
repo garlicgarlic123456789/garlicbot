@@ -10579,7 +10579,7 @@ def reset_game():
 async def help(interaction: discord.Interaction) :
     embed = discord.Embed(
         title = "도움말",
-        description = "https://asdfasdfqwer.notion.site/1aa4a653ce018010ba92e5741e6ac72a?pvs=4\n\n위 링크에서 도움말을 확인 가능합니다.",
+        description = "[도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce018010ba92e5741e6ac72a?pvs=4)",
         color = int("a5f0ff", 16)
     )
     await interaction.response.send_message(embed = embed)
