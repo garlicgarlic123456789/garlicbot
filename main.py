@@ -3853,7 +3853,7 @@ async def create_check_account_chain(display_name, name) :
     prompt = ChatPromptTemplate.from_messages([
         ("system", """입력에서 제시된 특정 디스코드 서버에 참가한 사용자의 정보를 바탕으로, 아래 조건을 잘 확인하여 해당 계정이 깡통계정일 가능성을 %로 출력하고, 근거도 작성하세요. (출력 양식 참고 바람)
 
-        조건: 아래 중 하나 이상을 만족할 시 높은 확률로 깡통계정이며, 두 개 이상을 만족할 시 거의 깡통계정임이 확실시됩니다.
+        조건: 아래 중 하나 이상을 만족할 시 높은 확률로 깡통계정이며, 두 개 이상을 만족할 시 거의 깡통계정임이 확실시됩니다. 조건을 만족하는 게 하나도 없을 시에는 확률은 0으로 처리.
         1. \'별명\'과 \'사용자명\'이 비슷하거나 완전히 같습니다. 아래는 몇 가지 예시입니다.
           - 사용자명이 \'nancy_1971.ca_42450\'이고 별명도 \'nancy_1971.ca_42450\'인 경우
           - 사용자명이 \'shadsuarez_27690\'이고, 별명은 \'Shad Suarez\'입니다.
@@ -3882,7 +3882,7 @@ async def create_check_account_chain(display_name, name) :
 
 async def check_account(user_id):
     user = await bot.fetch_user(user_id)
-    chain = create_check_account_chain(user.display_name, user.name)
+    chain = await create_check_account_chain(user.display_name, user.name)
     response = chain.invoke({"display_name": user.display_name, "name": user.name})
     print(response)
 
