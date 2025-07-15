@@ -3947,9 +3947,10 @@ async def on_member_join(member):
     except Exception as e:
         print(f"Error on member join: {e}")
         save_invite_log(member.id, None, member.guild.id)  # 에러 발생 시에도 NULL로 저장
-    
+    '''
     if member.guild.id == using_server : 
         await check_account(member.id)
+    '''
 
     if member.guild.id != using_server :
         return
