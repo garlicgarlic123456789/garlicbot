@@ -4190,31 +4190,6 @@ async def on_member_join(member):
         await channel.send(f"**[알림]** 레이드가 감지되었습니다. 관련 유저의 인증을 해제하고 임시로 자동 인증을 비활성화 및 소유자에게 멘션을 전송합니다.")
         recent_joins.clear()  # 리스트 초기화
     
-    # 조건 1: 이름과 디스플레이 이름 유사도 검사
-    name = member.name.lower()
-    display_name = member.display_name.lower()
-    max_len = max(len(name), len(display_name))
-    same_chars = sum(1 for a, b in zip(name, display_name) if a == b)
-    similarity_ratio = same_chars / max_len if max_len > 0 else 0
-    name_similar = similarity_ratio >= 0.85
-
-    # 조건 2: 계정 생성일이 9개월 미만인지 검사
-    now = datetime.now(timezone.utc)
-    is_new_account = member.created_at > now - timedelta(days=30 * 7)
-
-    if name_similar and is_new_account:
-        notify = bot.get_channel(1342329366130069504)  # 여기에 실제 채널 ID 입력
-        if notify:
-            embed = discord.Embed(
-                title="깡통계정 감지",
-                description=(
-                    f"**유저:** {member.mention} (`{member.name}`)\n"
-                    f"**디스플레이 이름:** `{member.display_name}`\n"
-                    f"**계정 생성일:** `{member.created_at.strftime('%Y-%m-%d %H:%M:%S')} UTC`"
-                ),
-                color=discord.Color.red()
-            )
-            await notify.send("<@1305492487137267722>", embed=embed)
 
 @bot.event
 async def on_member_update(before, after):
