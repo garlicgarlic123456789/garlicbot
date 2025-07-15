@@ -3903,7 +3903,7 @@ async def check_account(user_id):
     if output_dict["possibility"] >= 80 : 
         embed = discord.Embed(
             title="깡통계정 감지됨",
-            description=f"{user.mention}님의 계정이 깡통계정일 가능성이 {output_dict["possibility"]}%입니다.\n\n근거: {output_dict["reason"]}",
+            description=f"{user.mention}님의 계정이 깡통계정일 가능성이 {output_dict['possibility']}%입니다.\n\n근거: {output_dict['reason"]}",
             color=discord.Color.red()
         )
         await channel.send(embed=embed)
