@@ -1861,9 +1861,10 @@ async def on_message_edit(before, after):
         author_id = after.author.id
 
         pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
-        if re.search(pattern1, after.content) :
-            await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
-            return
+        if after.channel.id != 1394966782426484796 : 
+            if re.search(pattern1, after.content) :
+                await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
+                return
         
         message_content = re.sub(r"[^가-힣a-zA-Z]", "", after.content)
         
@@ -2763,6 +2764,8 @@ async def on_message(message):
         author_id = message.author.id
         guild = message.guild
         if automod_setting['invite_link'][0] : 
+            if message.channel.id == 1394966782426484796 : 
+                return
             pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
             if re.search(pattern1, message.content) :
                 await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
