@@ -1861,7 +1861,14 @@ async def on_message_edit(before, after):
         author_id = after.author.id
 
         pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
-        if after.channel.id != 1394966782426484796 : 
+        if isinstance(after.channel, discord.Thread) : 
+            if after.channel.parent_id != 1394966782426484796 : 
+                return
+            else : 
+                if re.search(pattern1, after.content) :
+                    await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
+                    return
+        else : 
             if re.search(pattern1, after.content) :
                 await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
                 return
@@ -2764,7 +2771,7 @@ async def on_message(message):
         author_id = message.author.id
         guild = message.guild
         if automod_setting['invite_link'][0] : 
-            if message.channel.id == 1394966782426484796 : 
+            if isinstance(message.channel, discord.Thread) and message.channel.parent_id == 1394966782426484796:
                 return
             pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
             if re.search(pattern1, message.content) :
