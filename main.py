@@ -8677,12 +8677,41 @@ class TicketButtonEmergency(Button):
         )
         await channel.send(embed = embed)
 
+class TicketButtonOwner(Button):
+    def __init__(self):
+        super().__init__(label="소유자 티켓 생성", style=discord.ButtonStyle.primary, custom_id="create_ticket_owner")
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
+        thread_name = f"{interaction.user.display_name} ({now})"
+
+        channel = bot.get_channel(1394966782426484796)
+
+        # 비공개 스레드 생성
+        thread = await channel.create_thread(
+            name=thread_name,
+            type=discord.ChannelType.private_thread,
+            invitable=False,
+            reason=f"{interaction.user.display_name} ({interaction.user.id}) 의 티켓 생성"
+        )
+
+        await thread.add_user(interaction.user)
+        embed = discord.Embed(
+            title = "티켓 생성됨",
+            description = f"{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*\n\n환영합니다. 관리자에게 문의/신고할 내용을 작성해주세요. 잘못 여신 경우 잘못 여셨다고 남겨주시기 바랍니다.\n\n**__관리자 멘션으로 업무 처리 재촉 시 제재될 수 있습니다.__**",
+            color = int("a5f0ff", 16)
+        )
+        await thread.send(embed = embed)
+        await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
+
 class TicketView(View):
     def __init__(self):
         super().__init__(timeout=None)  # persistent view
         self.add_item(TicketButton())
         self.add_item(TicketButtonLink())
         self.add_item(TicketButtonEmergency())
+        self.add_item(TicketButtonOwner())
 
 TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
@@ -8716,7 +8745,6 @@ async def on_ready():
 
 아래와 같은 문의/신고는 티켓이 아닌 다른 수단으로 문의/신고하시기 바랍니다.
 
-- 서버 주인에게 비공개 문의/신고: <@1305492487137267722> DM
 - 연합 문의: <#1330503013302927471>
 - 마늘봇 관련 문의: <#1388551689057079347>
 
@@ -8727,6 +8755,7 @@ async def on_ready():
 - 간편 티켓: 관련한 정보 첨부 없이 바로 문의/신고가 가능한 티켓입니다.
 - 티켓: 관련 메시지 링크 첨부 후 문의/신고가 가능한 티켓입니다.
 - 긴급 티켓: 테러 등 긴급 상황에 모든 운영진은 멘션할 수 있는 티켓입니다. **테러, 레이드 이외에는 사용해서는 안 되며, 사용 시 제재될 수 있습니다.**
+- 소유자 티켓: 소유자 (서버 주인) 만 볼 수 있는 티켓입니다. <#1394966782426484796>에 스레드가 생성됩니다.
 
 이 티켓이 제대로 동작하지 않는 경우 위로 스크롤하여 tickets v2를 이용해 주세요.""",
             color=int("a5f0ff", 16)
