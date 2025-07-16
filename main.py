@@ -9757,6 +9757,8 @@ class train_command(app_commands.Group) :
                 line = "서해선"
             elif arrival["subwayId"] == "1032 " : 
                 line = "GTX-A"
+            elif arrival["subwayId"] == "1094" : 
+                line = "신림선"
             else : 
                 line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
             direction = arrival["updnLine"]  # 상행/하행
