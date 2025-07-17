@@ -10045,7 +10045,7 @@ async def 역할설명수정(interaction: discord.Interaction, 역할: discord.R
     embed = discord.Embed(
         title = "역할 설명 수정",
         description = f"**[성공!]** 역할 설명이 수정되었습니다.",
-        color = int(a5f0ff, 16)
+        color = int("a5f0ff", 16)
     )
     await interaction.followup.send(embed = embed)
     return
