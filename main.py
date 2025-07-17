@@ -678,6 +678,7 @@ c.execute("CREATE TABLE IF NOT EXISTS automod (id INTEGER PRIMARY KEY AUTOINCREM
 c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, max INTEGER)") # 검열기능 사용 여부
 c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
 c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
+c.execute("CREATE TABLE IF NOT EXISTS role_description (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, role_id INTEGER, description TEXT)") # 역할 설명
 '''
 c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
 c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -685,6 +686,21 @@ c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREME
 c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
 c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
 '''
+
+def update_role_description(server_id: int, role_id: int, description):
+    c.execute("SELECT id FROM role_description WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE role_description SET description = ? WHERE server_id = ? AND role_id = ?", (description, server_id, role_id))
+    else:
+        c.execute("INSERT INTO role_description (server_id, role_id, description) VALUES (?, ?, ?)", (server_id, role_id, description))
+
+def get_role_description(server_id: int, role_id: int):
+    c.execute("SELECT description FROM role_description WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+    row = c.fetchone()
+    if row:
+        return row[0]
+    return None
 
 def update_anonymous_setting(server_id: int, onoff: bool, log_channel):
     if onoff : 
@@ -10013,6 +10029,19 @@ def get_subway_info(station_name):
         print("Request failed:", e)
         return None
 
+@bot.tree.command(name = "역할설명수정", description = "특정 역할에 대한 설명을 추가하거나 수정합니다.")
+@app_commands.describe(역할 = "수정할 역할", 설명 = "해당 역할에 대한 설명 (선택사항)")
+async def 역할설명수정(interaction: discord.Interaction, 역할: discord.Role, 설명: str = None):
+    await interaction.response.defer()
+    status, until, reason = is_blocked(interaction.user)
+
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+    
+    update_role_description(interaction.guild.id, 역할.id, 설명)
+    await interaction.followup.send(f"**[성공!]** 역할 설명이 수정되었습니다.")
 
 
 
@@ -10027,6 +10056,7 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
         return
+    '''
     if 역할.id == 1320308043350675497 : # 주인
         des = "서버 주인만이 부여받는 역할입니다."
     elif 역할.id == 1351884828219408386  : # 고마운 분
@@ -10060,6 +10090,10 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
     elif 역할.id == 1327145486192214119 : # 활동적 이용자
         des = "이 서버에서 어느정도 활동을 하시는 분들께 부여해 드리는 역할입니다. 부여 기준이 낮으므로 활동을 진짜 조금만 해도 부여되지만, 기준이 낮은 대신 활동을 하지 않을 시 조용히 회수됩니다."
     else :
+        des = "*(설명 없음)*"
+    '''
+    des = get_role_description(interaction.guild.id, 역할.id)
+    if des is None:
         des = "*(설명 없음)*"
 
     permissions = 역할.permissions  # 역할의 권한 객체 가져오기
