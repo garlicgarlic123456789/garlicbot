@@ -10030,7 +10030,7 @@ def get_subway_info(station_name):
         return None
 
 @bot.tree.command(name = "역할설명수정", description = "특정 역할에 대한 설명을 추가하거나 수정합니다.")
-@app_commands.describe(역할 = "수정할 역할", 설명 = "해당 역할에 대한 설명 (선택사항)")
+@app_commands.describe(역할 = "수정할 역할", 설명 = "해당 역할에 대한 설명 (설명을 삭제하려는 경우 입력하지 않고 비워주세요.)")
 async def 역할설명수정(interaction: discord.Interaction, 역할: discord.Role, 설명: str = None):
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -10041,7 +10041,14 @@ async def 역할설명수정(interaction: discord.Interaction, 역할: discord.R
         return
     
     update_role_description(interaction.guild.id, 역할.id, 설명)
-    await interaction.followup.send(f"**[성공!]** 역할 설명이 수정되었습니다.")
+    
+    embed = discord.Embed(
+        title = "역할 설명 수정",
+        description = f"**[성공!]** 역할 설명이 수정되었습니다.",
+        color = int(a5f0ff, 16)
+    )
+    await interaction.followup.send(embed = embed)
+    return
 
 
 
