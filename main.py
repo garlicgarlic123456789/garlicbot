@@ -10033,6 +10033,15 @@ def get_subway_info(station_name):
 @app_commands.describe(역할 = "수정할 역할", 설명 = "해당 역할에 대한 설명 (설명을 삭제하려는 경우 입력하지 않고 비워주세요.)")
 async def 역할설명수정(interaction: discord.Interaction, 역할: discord.Role, 설명: str = None):
     await interaction.response.defer()
+    if not interaction.user.guild_permissions.manage_roles:
+        embed = discord.Embed(
+            title = "오류",
+            description = "권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
+            color = discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed)
+        return
+
     status, until, reason = is_blocked(interaction.user)
 
     if status:
