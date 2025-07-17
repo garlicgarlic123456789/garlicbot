@@ -9755,7 +9755,7 @@ class train_command(app_commands.Group) :
                 line = "9호선"
             elif arrival["subwayId"] == "1093" :
                 line = "서해선"
-            elif arrival["subwayId"] == "1032 " : 
+            elif arrival["subwayId"] == "1032" : 
                 line = "GTX-A"
             elif arrival["subwayId"] == "1094" : 
                 line = "신림선"
