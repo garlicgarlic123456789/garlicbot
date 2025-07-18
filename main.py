@@ -1919,37 +1919,8 @@ async def on_raw_message_edit(payload) :
 # 메시지 수정 이벤트
 @bot.event
 async def on_message_edit(before, after):
-    if before.guild:
-        pass
-    else :
+    if not before.guild:
         return
-    # 내용이 동일하면 수정으로 간주하지 않음
-    if before.content == after.content:
-        return
-
-    # 로그 채널을 가져와서 메시지를 보냄
-    log_id = get_log_channel(before.guild.id)["editdelete"]
-    if log_id is None : 
-        return
-    log_channel = bot.get_channel(log_id)
-    if log_channel:
-        if before.author.bot:
-            return
-        if before.channel.id in no_log_channel :
-            return
-        before_content = before.content or "*(수정 전 메시지 내용 없음)*"
-        after_content = after.content or "*(수정 후 메시지 내용 없음)*"
-        author = before.author.mention  # 메시지 작성자 멘션
-        message_link = f"https://discord.com/channels/{before.guild.id}/{before.channel.id}/{before.id}"
-        embed = discord.Embed(
-            title="메시지 수정 로그",
-            description=f"<#{before.channel.id}>에서 <@{before.author.id}>님의 [메시지]({message_link})가 수정되었습니다.",
-            color=discord.Color.blue(),
-            timestamp=discord.utils.utcnow()
-        )
-        embed.add_field(name="수정 전 내용", value=before_content, inline=False)
-        embed.add_field(name="수정 후 내용", value=after_content, inline=False)
-        await log_channel.send(embed=embed)
     
     if after.guild.id == using_server : 
         author_id = after.author.id
