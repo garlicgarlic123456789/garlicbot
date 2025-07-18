@@ -9746,8 +9746,9 @@ class train_command(app_commands.Group) :
             return
     
     @app_commands.command(name = "도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
-    @app_commands.describe(역명 = "역명을 입력해 주세요. (뒤에 \'역\' 자 제외)")
-    async def 지하철도착정보(self, interaction: discord.Interaction, 역명: str):
+    @app_commands.describe(역명 = "역명 (뒤에 \'역\' 자 제외)", 열차종류 = "확인할 열차의 종류 (선택 사항)", 행선지 = "확인할 열차의 행선지 (선택 사항)")
+    @app_commands.choices(열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")])
+    async def 지하철도착정보(self, interaction: discord.Interaction, 역명: str, 열차종류: str = None, 행선지: str = None):
         await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
         
@@ -9786,6 +9787,11 @@ class train_command(app_commands.Group) :
         subway_info = {}
 
         for arrival in arrivals:
+            if 열차종류 is not None and arrival["btrainSttus"] != 열차종류 : 
+                continue
+            if 행선지 != None and arrival["bstatnNm"] != 행선지 : 
+                continue
+            
             if arrival["subwayId"] == "1001" :
                 line = "1호선"
             elif arrival["subwayId"] == "1002" :
