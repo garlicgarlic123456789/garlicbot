@@ -10146,9 +10146,9 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
     # 멘션 리스트 생성
     mentions = [member.mention for member in sorted_members]
     # 출력 처리
-    if len(mentions) > 50:
-        displayed_mentions = mentions[:50]
-        remainder = len(mentions) - 50
+    if len(mentions) > 30:
+        displayed_mentions = mentions[:30]
+        remainder = len(mentions) - 30
         membermsg = f"{', '.join(displayed_mentions)} 외 {remainder}명"
     elif len(mentions) == 0:
         membermsg = "*(멤버 없음)*"
