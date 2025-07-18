@@ -1920,13 +1920,9 @@ async def on_raw_message_edit(payload) :
         embed.add_field(name="수정 전 내용", value=before_content, inline=False)
         embed.add_field(name="수정 후 내용", value=after_content, inline=False)
         await log_channel.send(embed=embed)
-
-# 메시지 수정 이벤트
-@bot.event
-async def on_message_edit(before, after):
-    if not before.guild:
-        return
     
+    after = payload.message
+
     if after.guild.id == using_server : 
         author_id = after.author.id
 
@@ -2004,24 +2000,6 @@ async def on_message_edit(before, after):
         for i in automod_keyword11 :
             if i in after.content :
                 await handle_spamming(after, f"{automod_reason11} (메시지 수정)", 24 * 60 * 60, True, i)
-                return
-
-        raid_detect_message = after.content.replace("\\", "")
-        raid_detect_message = raid_detect_message.replace(" ", "")
-
-        for i in raid_keyword1 :
-            if i in after.content.replace("\\", "") :
-                update_file("False")
-                await handle_spamming(after, "테러로 의심되는 활동 (메시지 수정)", 48 * 60 * 60, True, i)
-                member = after.guild.get_member(user_id)
-                # 역할 제거
-                roles = message.author.roles[1:]  # @everyone 역할 제외
-                for role in roles:
-                    await after.author.remove_roles(role)
-                notify_channel = bot.get_channel(owner_notify)
-                if notify_channel :
-                    await notify_channel.send(f"<@&{owner_id}> 테러가 감지되었습니다. 임시로 자동 인증을 비활성화하고 테러 사용자의 인증을 해제합니다.")
-                send_email("마늘이", "마늘이", "마늘이", "테러 감지! 비상!")
                 return
 
 @bot.event
