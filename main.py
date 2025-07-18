@@ -1902,7 +1902,7 @@ async def on_raw_message_edit(payload) :
         
         embed = discord.Embed(
             title="메시지 수정 로그",
-            description=f"<#{payload.channel_id}>에서 <@{payload.author_id}>님의 [메시지]({message_link})가 수정되었습니다.",
+            description=f"<#{payload.channel_id}>에서 <@{payload.message.author.id}>님의 [메시지]({message_link})가 수정되었습니다.",
             color=discord.Color.blue(),
             timestamp=discord.utils.utcnow()
         )
