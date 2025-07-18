@@ -1913,6 +1913,11 @@ async def on_raw_message_edit(payload) :
         after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
         message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
 
+        if len(before_content) > 1000 : 
+            before_content = before_content[:1000] + "\n\n(이후 생략)"
+        if len(after_content) > 1000 : 
+            after_content = after_content[:1000] + "\n\n(이후 생략)"
+
         if payload.message.author.bot : 
             return
         
