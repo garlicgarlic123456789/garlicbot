@@ -1863,6 +1863,53 @@ async def on_message_delete(message):
                 embed.set_image(url=attachment)
                 await log_channel.send(embed=embed)
 
+@bot.event
+async def on_raw_message_edit(payload) : 
+    if not payload.guild_id : 
+        return
+    
+    cached_message = payload.cached_message
+    channel = bot.get_channel(payload.channel_id)
+    if channel.id in no_log_channel : 
+        return
+    
+    log_id = get_log_channel(payload.guild_id)["editdelete"]
+    if log_id is None : 
+        return
+    
+    log_channel = bot.get_channel(log_id)
+    if not log_channel : 
+        return
+    
+    if cached_message is None : 
+        before_content = "*(알 수 없음)*"
+        after_content = payload.message.content or "*(메시지 내용 없음)*"
+        
+        embed = discord.Embed(
+            title="메시지 수정 로그",
+            description=f"{channel.mention}에서 <@{payload.author_id}>님의 메시지가 수정되었습니다.",
+            color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="수정 전 내용", value=before_content, inline=False)
+        embed.add_field(name="수정 후 내용", value=after_content, inline=False)
+        await log_channel.send(embed=embed)
+
+    else : 
+        before_content = cached_message.content or "*(수정 전 메시지 내용 없음)*"
+        after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
+        message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
+        
+        embed = discord.Embed(
+            title="메시지 수정 로그",
+            description=f"<#{payload.channel_id}>에서 <@{payload.author_id}>님의 [메시지]({message_link})가 수정되었습니다.",
+            color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="수정 전 내용", value=before_content, inline=False)
+        embed.add_field(name="수정 후 내용", value=after_content, inline=False)
+        await log_channel.send(embed=embed)
+
 # 메시지 수정 이벤트
 @bot.event
 async def on_message_edit(before, after):
@@ -1897,9 +1944,8 @@ async def on_message_edit(before, after):
         embed.add_field(name="수정 전 내용", value=before_content, inline=False)
         embed.add_field(name="수정 후 내용", value=after_content, inline=False)
         await log_channel.send(embed=embed)
-        if after.guild.id != using_server :
-            return
-
+    
+    if after.guild.id == using_server : 
         author_id = after.author.id
 
         pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
