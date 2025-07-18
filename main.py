@@ -11083,6 +11083,106 @@ async def restore(interaction: discord.Interaction, 백업이름: str):
     
     await interaction.followup.send(f"`{백업이름}` 복원이 완료되었습니다.")
 
+async def message_count_daliy(bot, guild, start_date, end_date):
+    """
+    특정 서버의 일별 채팅 건수를 반환하는 함수
+    
+    Args:
+        bot: discord.Bot 객체
+        guild: discord.Guild 객체  
+        start_date: 시작 날짜 (YYYYMMDD 형태)
+        end_date: 종료 날짜 (YYYYMMDD 형태)
+    
+    Returns:
+        dict: 날짜별 메시지 수 딕셔너리
+    """
+    import datetime
+    from collections import defaultdict
+    
+    # 날짜 문자열을 datetime 객체로 변환
+    start_dt = datetime.datetime.strptime(start_date, "%Y%m%d")
+    end_dt = datetime.datetime.strptime(end_date, "%Y%m%d")
+    
+    # 결과를 저장할 딕셔너리
+    message_counts = defaultdict(int)
+    
+    # 각 채널에서 메시지 수를 계산
+    for channel in guild.text_channels:
+        try:
+            # 각 날짜별로 메시지를 가져와서 개수 세기
+            current_date = start_dt
+            while current_date <= end_dt:
+                next_date = current_date + datetime.timedelta(days=1)
+                date_str = current_date.strftime("%Y%m%d")
+                
+                # 해당 날짜의 메시지들을 가져옴
+                messages = [msg async for msg in channel.history(
+                    limit=None,
+                    after=current_date,
+                    before=next_date
+                )]
+                
+                # 메시지 개수를 카운트
+                message_counts[date_str] += len(messages)
+                
+                current_date = next_date
+                
+        except discord.Forbidden:
+            # 채널에 접근 권한이 없는 경우 스킵
+            continue
+        except Exception as e:
+            # 기타 오류 발생 시 스킵
+            print(f"채널 {channel.name}에서 오류 발생: {e}")
+            continue
+    
+    # defaultdict를 일반 dict로 변환하여 반환
+    return dict(message_counts)
+
+@bot.tree.command(name = "일별채팅건수", description = "일별 채팅 건수를 확인합니다.")
+@app_commands.describe(시작날짜 = "시작 날짜 (YYYYMMDD 형태)", 종료날짜 = "종료 날짜 (YYYYMMDD 형태)")
+async def message_count_daliy_command(interaction: discord.Interaction, 시작날짜: str, 종료날짜: str):
+    if interaction.user.id != developer : 
+        await interaction.response.send_message("**[오류!]** 권한이 부족합니다.", ephemeral = True)
+        return
+    
+    await interaction.response.send_message("처리 중입니다.")
+
+    original_message = interaction.message
+
+    status, until, reason = is_blocked(interaction.user)
+    
+    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+
+    message_counts = await message_count_daliy(bot, interaction.guild, 시작날짜, 종료날짜)
+
+    text = "일별 채팅 건수는 다음과 같습니다: \n"
+
+    for i, j in message_counts.items() : 
+        text += f"\n- {i}: {j}건"
+    
+    if len(text) > 4096 : 
+        print(text)
+        embed = discord.Embed(
+            title = "오류",
+            description = "출력하려는 메시지가 4096자를 초과합니다.",
+            color = discord.Color.red()
+        )
+        await original_message.reply(embed = embed, mention_author = False)
+        return
+
+    embed = discord.Embed(
+        title = "일별 채팅 건수",
+        description = text,
+        color = int("a5f0ff", 16)
+    )
+    await original_message.reply(embed = embed, mention_author = False)
+    return
+
+
 @bot.tree.command(name = "익명채팅설정", description = "익명 채팅을 사용 여부와 로그 채널을 설정합니다.")
 @app_commands.default_permissions(administrator=True)
 @app_commands.describe(사용여부 = "기능을 사용할지 여부", 로그채널 = "익명 채팅 로그 채널 (로그 채널을 비활성화하려는 경우 비워두기)")
