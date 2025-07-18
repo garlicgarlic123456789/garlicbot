@@ -6578,7 +6578,7 @@ def create_chain2(message) :
         app_commands.Choice(name = "버전 1 (Gemini 2.0 Flash가 메시지 기록으로 판결)", value = "v1"),
     ]
 )
-async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v1"):
+async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v3"):
     if 개인응답 == "False" : 
         await interaction.response.defer()
     else :
