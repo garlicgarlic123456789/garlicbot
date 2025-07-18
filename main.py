@@ -1884,6 +1884,9 @@ async def on_raw_message_edit(payload) :
     if cached_message is None : 
         before_content = "*(알 수 없음)*"
         after_content = payload.message.content or "*(메시지 내용 없음)*"
+
+        if payload.message.author.bot : 
+            return
         
         embed = discord.Embed(
             title="메시지 수정 로그",
@@ -1899,6 +1902,9 @@ async def on_raw_message_edit(payload) :
         before_content = cached_message.content or "*(수정 전 메시지 내용 없음)*"
         after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
         message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
+
+        if payload.message.author.bot : 
+            return
         
         embed = discord.Embed(
             title="메시지 수정 로그",
