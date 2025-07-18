@@ -6574,7 +6574,7 @@ def create_chain2(message) :
         app_commands.Choice(name = "비활성화", value = "False"),
     ],
     버전 = [
-        app_commands.Choice(name = "버전 3 (GPT-4.1 mini가 메시지 기록 및 이전 제재 내역으로 판결)", value = "v2"),
+        app_commands.Choice(name = "버전 3 (GPT-4.1 mini가 메시지 기록 및 이전 제재 내역으로 판결)", value = "v3"),
         app_commands.Choice(name = "버전 1 (Gemini 2.0 Flash가 메시지 기록으로 판결)", value = "v1"),
     ]
 )
@@ -6586,7 +6586,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
     
     global error
 
-    if 버전 == "v2" : 
+    if 버전 == "v3" : 
         status, until, reason = is_blocked(interaction.user)
         
         # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
