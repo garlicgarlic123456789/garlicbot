@@ -11097,11 +11097,18 @@ async def message_count_daliy(bot, guild, start_date, end_date):
         dict: 날짜별 메시지 수 딕셔너리
     """
     import datetime
+    import pytz
     from collections import defaultdict
     
-    # 날짜 문자열을 datetime 객체로 변환
+    # KST 시간대 설정
+    kst = pytz.timezone('Asia/Seoul')
+    
+    # 날짜 문자열을 KST 기준 datetime 객체로 변환
     start_dt = datetime.datetime.strptime(start_date, "%Y%m%d")
+    start_dt = kst.localize(start_dt)  # KST 시간대 적용
+    
     end_dt = datetime.datetime.strptime(end_date, "%Y%m%d")
+    end_dt = kst.localize(end_dt)  # KST 시간대 적용
     
     # 결과를 저장할 딕셔너리
     message_counts = defaultdict(int)
@@ -11115,11 +11122,11 @@ async def message_count_daliy(bot, guild, start_date, end_date):
                 next_date = current_date + datetime.timedelta(days=1)
                 date_str = current_date.strftime("%Y%m%d")
                 
-                # 해당 날짜의 메시지들을 가져옴
+                # 해당 날짜의 메시지들을 가져옴 (UTC로 변환하여 Discord API에 전달)
                 messages = [msg async for msg in channel.history(
                     limit=None,
-                    after=current_date,
-                    before=next_date
+                    after=current_date.astimezone(pytz.UTC),
+                    before=next_date.astimezone(pytz.UTC)
                 )]
                 
                 # 메시지 개수를 카운트
