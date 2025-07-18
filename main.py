@@ -9757,8 +9757,12 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(msg)
             return
         
+        실제입력역명 = 역명
+        
         if 역명 == "평택지제" : 
             역명 = "지제"
+        elif 역명 == "총신대입구" or 역명 == "이수" or 역명 == "이수(총신대입구)" : 
+            역명 = "총신대입구(이수)"
 
         try : 
             data = get_subway_info(역명)
@@ -9830,6 +9834,8 @@ class train_command(app_commands.Group) :
                 content = match.group(2)
                 if content == "지제" : 
                     content = "평택지제"
+                elif content == "총신대입구" or content == "이수(총신대입구)" or content == "총신대입구(이수)" : 
+                    content = "이수"
                 
                 if number == 2 : 
                     arrival_info = f"전전역 ({content})"
@@ -9857,7 +9863,7 @@ class train_command(app_commands.Group) :
 
             subway_info[line][direction].append(train_info)
 
-        text = f"{역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
+        text = f"{실제입력역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
 
         # 정리된 도착 정보 출력
         for line, directions in subway_info.items():
@@ -9867,7 +9873,7 @@ class train_command(app_commands.Group) :
                 for train in trains:
                     text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착 예정: {train['도착 예정']}\n"
         embed = discord.Embed(
-            title=f"{역명}역의 지하철 도착 정보",
+            title=f"{실제입력역명}역의 지하철 도착 정보",
             description=text,
             color=int("a5f0ff", 16)
         )
