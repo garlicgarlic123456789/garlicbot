@@ -2111,7 +2111,7 @@ async def handle_user_mentions(message):
         embed = discord.Embed(title="멘션 알림", description = mention_text, color=int("a5f0ff", 16))
         
         save_mentions(mentions)
-        await message.channel.send(content=f"{message.author.mention}님에게 예약된 멘션입니다.", embed=embed)
+        await message.reply(content=f"{message.author.mention}님에게 예약된 멘션입니다.", embed=embed, mention_author=False)
 
 warn_file = "personal_warn_settings.json"
 
