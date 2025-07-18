@@ -12252,10 +12252,10 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     all_bot_admin = await check_all_bot_admin_perm(interaction)
 
     if all_bot_admin : 
-        all_bot_admin_msg = "모든 봇에게 관리자 권한을 주는 것은 비권장사항입니다. 봇별로 개별적으로 권한을 다르게 부여하시기 바랍니다."
+        all_bot_admin_msg = "모든 봇에게 관리자 권한을 일괄적으로 부여하는 것은 권장되지 않습니다. 봇별로 개별적으로 권한을 다르게 부여하시기 바랍니다."
         warning = True
     else : 
-        all_bot_admin_msg = "모든 봇에게 관리자 권한을 주고 있지 않습니다."
+        all_bot_admin_msg = "모든 봇에게 관리자 권한을 일괄적으로 부여하고 있지 않습니다."
     
     
     embed.add_field(name = "역할 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}", inline = False)
