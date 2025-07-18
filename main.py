@@ -9758,6 +9758,9 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(msg)
             return
         
+        if 열차종류 == "전체" : 
+            열차종류 = None
+        
         실제입력역명 = 역명
         
         if 역명 == "평택지제" : 
