@@ -1778,6 +1778,48 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     
     add_blockhistory(member.id, 1316579106749681664, reason, "timeout", timeout_d, guild.id)
 
+@bot.event
+async def on_raw_message_delete(payload) : 
+    if not payload.guild_id : 
+        return
+
+    cached_message = payload.cached_message
+    channel = bot.get_channel(payload.channel_id)
+    if channel.id in no_log_channel : 
+        return
+    
+    log_id = get_log_channel(payload.guild_id)["editdelete"]
+    if log_id is None : 
+        return
+    
+    if cached_message is None : 
+        log_channel = bot.get_channel(log_id)
+        if log_channel:
+            content = "*(알 수 없음)*"
+            author = "*(알 수 없음)*"
+
+            embed = discord.Embed(
+                title="메시지 삭제 로그",
+                description=f"{channel.mention}에서 {author}님의 메시지가 삭제되었습니다.",
+                color=discord.Color.red(),
+                timestamp=discord.utils.utcnow()
+            )
+            embed.add_field(name="삭제된 내용", value=content, inline=False)
+            await log_channel.send(embed=embed)
+    else : 
+        log_channel = bot.get_channel(log_id)
+        if log_channel : 
+            content = cached_message.content or "*(메시지 내용 없음)*"
+            author = cached_message.author.mention
+            
+            embed = discord.Embed(
+                title="메시지 삭제 로그",
+                description=f"{channel.mention}에서 {author}님의 메시지가 삭제되었습니다.",
+                color=discord.Color.red(),
+                timestamp=discord.utils.utcnow()
+            )
+            embed.add_field(name="삭제된 내용", value=content, inline=False)
+            await log_channel.send(embed=embed)
 
 @bot.event
 async def on_message_delete(message):
@@ -1798,22 +1840,6 @@ async def on_message_delete(message):
     if message.channel.id in no_log_channel :
         return
     
-    if message_log : 
-        log_channel = bot.get_channel(log_id)
-        if log_channel:
-            content = message.content or "*(메시지 내용 없음)*"
-            author = message.author.mention  # 메시지 작성자 멘션
-            deleted_by = "*(알 수 없음)*"
-            found_audit_log_entry = False
-
-            embed = discord.Embed(
-                title="메시지 삭제 로그",
-                description=f"<#{message.channel.id}>에서 <@{message.author.id}>님의 메시지가 삭제되었습니다.",
-                color=discord.Color.red(),
-                timestamp=discord.utils.utcnow()
-            )
-            embed.add_field(name="삭제된 내용", value=content, inline=False)
-            await log_channel.send(embed=embed)
     if image_log : 
         attachments = []
         if message.attachments:
