@@ -9874,13 +9874,16 @@ class train_command(app_commands.Group) :
 
         text = f"{실제입력역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
 
-        # 정리된 도착 정보 출력
-        for line, directions in subway_info.items():
-            text += f"\n노선: {line} 도착 정보\n"
-            for direction, trains in directions.items():
-                text += f"- 방향: {direction}\n"
-                for train in trains:
-                    text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착 예정: {train['도착 예정']}\n"
+        if len(subway_info) == 0 : 
+            text += "도착 정보가 비어 있습니다."
+        else : 
+            # 정리된 도착 정보 출력
+            for line, directions in subway_info.items():
+                text += f"\n노선: {line} 도착 정보\n"
+                for direction, trains in directions.items():
+                    text += f"- 방향: {direction}\n"
+                    for train in trains:
+                        text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착 예정: {train['도착 예정']}\n"
         embed = discord.Embed(
             title=f"{실제입력역명}역의 지하철 도착 정보",
             description=text,
