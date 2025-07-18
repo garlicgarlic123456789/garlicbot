@@ -9875,7 +9875,7 @@ class train_command(app_commands.Group) :
         text = f"{실제입력역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
 
         if len(subway_info) == 0 : 
-            text += "도착 정보가 비어 있습니다."
+            text += "\n도착 정보가 비어 있습니다."
         else : 
             # 정리된 도착 정보 출력
             for line, directions in subway_info.items():
