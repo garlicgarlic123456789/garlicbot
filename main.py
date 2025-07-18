@@ -1883,7 +1883,7 @@ async def on_raw_message_edit(payload) :
     
     if cached_message is None : 
         before_content = "*(알 수 없음)*"
-        after_content = payload.message.content or "*(메시지 내용 없음)*"
+        after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
 
         if payload.message.author.bot : 
             return
