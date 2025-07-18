@@ -6650,7 +6650,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
 
             # 메시지 불러오기
             messages = await fetch_messages(channel, start_message_id, end_message_id)
-            if len(messages) > 1250 : 
+            if len(messages) > 1250 and interaction.user.id != developer : 
                 embed = discord.Embed(
                     title=f"오류", # name
                     description=f"판단할 메시지 개수가 너무 많습니다.",
