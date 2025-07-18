@@ -10141,6 +10141,8 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
         displayed_mentions = mentions[:50]
         remainder = len(mentions) - 50
         membermsg = f"{', '.join(displayed_mentions)} 외 {remainder}명"
+    elif len(mentions) == 0:
+        membermsg = "*(멤버 없음)*"
     else:
         membermsg = ", ".join(mentions)
 
@@ -10151,17 +10153,18 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
         permissions_text = "*(권한 없음)*"
     
     embed = discord.Embed(
-        title=f"역할 정보", # name
-        description=f"**역할 이름**: {역할.mention}\n"
-                    f"**역할 ID**: {역할.id}\n"
-                    f"**색상**: {역할.color}\n"
-                    f"**멤버 수**: {len(역할.members)}명\n"
-                    f"**역할 설명**: {des}\n"
-                    f"**부여된 권한**: {permissions_text}\n"
-                    f"**멤버**: {membermsg}\n"
-                    f"**관리가 불가능한 역할**: {cannot_moderate_roles_text}\n",
+        title=f"역할 정보",
         color=역할.color # color=discord.Color.green()
     )
+    embed.add_field(name = "역할 이름", value = f"{역할.name}", inline = False)
+    embed.add_field(name = "역할 멘션", value = f"{역할.mention}", inline = False)
+    embed.add_field(name = "역할 ID", value = f"{역할.id}", inline = False)
+    embed.add_field(name = "색상", value = f"{역할.color}", inline = False)
+    embed.add_field(name = "멤버 수", value = f"{len(역할.members)}", inline = False)
+    embed.add_field(name = "역할 설명", value = f"{des}", inline = False)
+    embed.add_field(name = "부여된 권한", value = f"{permissions_text}", inline = False)
+    embed.add_field(name = "멤버", value = f"{membermsg}", inline = False)
+    embed.add_field(name = "관리가 불가능한 역할", value = f"{cannot_moderate_roles_text}", inline = False)
     await interaction.followup.send(embed=embed, ephemeral=False)
 
 async def invite_log_check(link) : 
