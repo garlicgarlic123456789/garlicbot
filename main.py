@@ -1906,6 +1906,9 @@ async def on_raw_message_edit(payload) :
         if payload.message.author.bot : 
             return
         
+        if before_content == after_content : 
+            return
+        
         embed = discord.Embed(
             title="메시지 수정 로그",
             description=f"<#{payload.channel_id}>에서 <@{payload.message.author.id}>님의 [메시지]({message_link})가 수정되었습니다.",
