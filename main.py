@@ -1798,6 +1798,9 @@ async def on_raw_message_delete(payload) :
             content = "*(알 수 없음)*"
             author = "*(알 수 없음)*"
 
+            if len(content) > 1000 : 
+                content = content[:1000] + "\n\n(이후 생략)"
+
             embed = discord.Embed(
                 title="메시지 삭제 로그",
                 description=f"{channel.mention}에서 {author}님의 메시지가 삭제되었습니다.",
@@ -1884,6 +1887,11 @@ async def on_raw_message_edit(payload) :
     if cached_message is None : 
         before_content = "*(알 수 없음)*"
         after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
+
+        if len(before_content) > 1000 : 
+            before_content = before_content[:1000] + "\n\n(이후 생략)"
+        if len(after_content) > 1000 : 
+            after_content = after_content[:1000] + "\n\n(이후 생략)"
 
         if payload.message.author.bot : 
             return
