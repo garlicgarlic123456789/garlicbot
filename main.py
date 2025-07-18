@@ -10049,6 +10049,15 @@ async def 역할설명수정(interaction: discord.Interaction, 역할: discord.R
         await interaction.followup.send(msg)
         return
     
+    if 설명 is not None and len(설명) > 1024 : 
+        embed = discord.Embed(
+            title = "오류",
+            description = "설명의 길이가 너무 깁니다. 1024자 이하로 입력해 주세요.",
+            color = discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed)
+        return
+    
     update_role_description(interaction.guild.id, 역할.id, 설명)
     
     embed = discord.Embed(
