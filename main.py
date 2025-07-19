@@ -744,7 +744,7 @@ async def check_perm(message, command: str):
         return perm
     
     # 유저가 가진 역할 확인
-    member = await message.guild.get_member(user)
+    member = message.guild.get_member(user)
     role = member.roles
 
     # 유저가 가진 역할 상위 역할부터 정렬
