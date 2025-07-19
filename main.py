@@ -735,7 +735,7 @@ async def check_perm(message, command: str):
     server_id = message.guild.id
     user = message.author.id
     channel = message.channel.id
-    perm = get_channel_perm(server_id, command, channel, None, user)
+    perm = get_server_perm(server_id, command, channel, None, user)
     if perm is not None : 
         return perm
     
@@ -9089,7 +9089,6 @@ async def channel_command_perm_setting(interaction: discord.Interaction, 명령�
 @app_commands.describe(
     명령어="설정할 명령어",
     역할="권한을 설정할 역할",
-    유저="권한을 설정할 유저",
     권한="설정할 권한",
 )
 @app_commands.choices(권한=[
@@ -9103,7 +9102,7 @@ async def channel_command_perm_setting(interaction: discord.Interaction, 명령�
 ]
 )
 @app_commands.default_permissions(manage_roles = True)
-async def server_command_perm_setting(interaction: discord.Interaction, 명령어: str, 권한: str, 역할: discord.Role = None, 유저: discord.Member = None):
+async def server_command_perm_setting(interaction: discord.Interaction, 명령어: str, 권한: str, 역할: discord.Role):
     await interaction.response.defer(ephemeral=False)
 
     if not interaction.user.guild_permissions.manage_channels : 
@@ -9124,28 +9123,8 @@ async def server_command_perm_setting(interaction: discord.Interaction, 명령�
         await interaction.followup.send(embed=embed, ephemeral=False)
         return
     
-    if 유저 is not None and 역할 is not None : 
-        embed = discord.Embed(
-            title="오류",
-            description="유저와 역할을 동시에 설정할 수 없습니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed, ephemeral=False)
-        return
-    
-    if 유저 is not None : 
-        update_server_perm(interaction.guild.id, 명령어, "user", None, 유저.id, 권한)
-    elif 역할 is not None : 
-        update_server_perm(interaction.guild.id, 명령어, "role", 역할.id, None, 권한)
-    else : 
-        embed = discord.Embed(
-            title="오류",
-            description="유저 또는 역할을 설정해야 합니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed, ephemeral=False)
-        return
-    
+    update_server_perm(interaction.guild.id, 명령어, "user", None, 유저.id, 권한)
+
     embed = discord.Embed(
         title="완료",
         description="서버별 명령어 권한이 설정되었습니다.",
