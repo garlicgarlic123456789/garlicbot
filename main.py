@@ -735,6 +735,10 @@ async def check_perm(message, command: str):
     server_id = message.guild.id
     user = message.author.id
     channel = message.channel.id
+
+    perm = get_channel_perm(server_id, command, channel, None, user)
+    if perm is not None : 
+        return perm
     
     role = message.author.roles
 
