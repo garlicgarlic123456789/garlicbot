@@ -9013,7 +9013,7 @@ async def on_ready():
 async def channel_command_perm_setting(interaction: discord.Interaction, 명령어: str, 채널: discord.TextChannel, 권한: str, 역할: discord.Role = None, 유저: discord.Member = None):
     await interaction.response.defer(ephemeral=False)
 
-    if not interaction.user.permissions.manage_channels : 
+    if not interaction.user.guild_permissions.manage_channels : 
         embed = discord.Embed(
             title="오류",
             description="권한이 부족합니다. 다음 권한이 필요합니다: `채널 관리하기`",
@@ -9022,7 +9022,7 @@ async def channel_command_perm_setting(interaction: discord.Interaction, 명령�
         await interaction.followup.send(embed=embed, ephemeral=False)
         return
     
-    if not interaction.user.permissions.manage_roles : 
+    if not interaction.user.guild_permissions.manage_roles : 
         embed = discord.Embed(
             title="오류",
             description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
