@@ -757,7 +757,7 @@ def check_perm(interaction, server_id: int, command: str, channel: str, user: in
         if perm is not None : 
             return perm
 
-@bot.tree.command(name = "채널명령어권한설정", description = "채널별 명령어 권한을 설정합니다.\")
+@bot.tree.command(name = "채널명령어권한설정", description = "채널별 명령어 권한을 설정합니다.")
 @app_commands.describe(
     명령어="설정할 명령어",
     채널="설정할 채널",
