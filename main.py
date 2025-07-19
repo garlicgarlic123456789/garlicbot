@@ -731,7 +731,10 @@ def get_channel_perm(server_id: int, command: str, channel: str, role, user):
         return row[0]
     return None
 
-async def check_perm(interaction, server_id: int, command: str, channel: str, user: int):
+async def check_perm(message, command: str):
+    server_id = message.guild.id
+    user = message.author.id
+    channel = message.channel.id
     perm = get_channel_perm(server_id, command, channel, None, user)
     if perm is not None : 
         return perm
@@ -741,7 +744,7 @@ async def check_perm(interaction, server_id: int, command: str, channel: str, us
         return perm
     
     # 유저가 가진 역할 확인
-    member = await interaction.guild.get_member(user)
+    member = await message.guild.get_member(user)
     role = member.roles
 
     # 유저가 가진 역할 상위 역할부터 정렬
@@ -3201,20 +3204,6 @@ async def on_message(message):
             else :
                 pass
 
-    if message.content == "양파야" or message.content == "미늘아" :
-        status, until, reason = is_blocked(message.author)
-    
-        # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-        if status:
-            msg = f"**[오류!]** {message.author.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-            await message.reply(msg, mention_author=False)
-            return
-        if message.author.id in no_response_list :
-            return
-        await message.reply("예? 저는 마늘이인데요?", mention_author=False)
-        add_likeability(str(message.author.id), -1)
-        return
-
     if message.content == "마늘아" :
         status, until, reason = is_blocked(message.author)
     
@@ -3223,6 +3212,19 @@ async def on_message(message):
             msg = f"**[오류!]** {message.author.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
             await message.reply(msg, mention_author=False)
             return
+        
+        perm = await check_perm(message, "마늘아")
+        if perm == "ignore" :
+            return
+        elif perm == "limit" :
+            embed = discord.Embed(
+                title = f"오류",
+                description = f"명령어 사용 권한이 없습니다.",
+                color = discord.Color.red()
+            )
+            await message.reply(embed = embed, mention_author=False)
+            return
+
         if message.author.id in no_response_list :
             return
         # async with message.channel.typing():
@@ -3245,6 +3247,18 @@ async def on_message(message):
         if status:
             msg = f"**[오류!]** {message.author.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
             await message.reply(msg, mention_author=False)
+            return
+        
+        perm = await check_perm(message, "마느라")
+        if perm == "ignore" :
+            return
+        elif perm == "limit" :
+            embed = discord.Embed(
+                title = f"오류",
+                description = f"명령어 사용 권한이 없습니다.",
+                color = discord.Color.red()
+            )
+            await message.reply(embed = embed, mention_author=False)
             return
         
         if not check_call_limit(message.author.id)[0]:
@@ -3326,6 +3340,18 @@ async def on_message(message):
             await message.reply(msg, mention_author=False)
             return
         if message.author.id in no_response_list :
+            return
+        
+        perm = await check_perm(message, "마늘아")
+        if perm == "ignore" :
+            return
+        elif perm == "limit" :
+            embed = discord.Embed(
+                title = f"오류",
+                description = f"명령어 사용 권한이 없습니다.",
+                color = discord.Color.red()
+            )
+            await message.reply(embed = embed, mention_author=False)
             return
 
         # async with message.channel.typing():
