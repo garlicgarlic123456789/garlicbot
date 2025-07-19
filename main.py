@@ -731,7 +731,7 @@ def get_channel_perm(server_id: int, command: str, channel: str, role, user):
         return row[0]
     return None
 
-def check_perm(interaction, server_id: int, command: str, channel: str, user: int):
+async def check_perm(interaction, server_id: int, command: str, channel: str, user: int):
     perm = get_channel_perm(server_id, command, channel, None, user)
     if perm is not None : 
         return perm
