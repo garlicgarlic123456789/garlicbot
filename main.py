@@ -3553,10 +3553,6 @@ async def on_message(message):
                         await message.reply("서버에서 열심히 활동중인 분이세요!", mention_author=False)
                         add_likeability(str(message.author.id), 1)
                         return
-                    elif "노아" == message.content[4:] :
-                        await message.reply("노아님은 이 서버에서 부관리자이시기도 하고 귀여우신 분이에용!", mention_author=False)
-                        add_likeability(str(message.author.id), 1)
-                        return
                     elif "챠무" == message.content[4:] :
                         await message.reply("챠무님은 이 서버에서, 그리고 사적으로 이 서버 주인에게 많은 도움을 주고 있어용!", mention_author=False)
                         add_likeability(str(message.author.id), 5)
