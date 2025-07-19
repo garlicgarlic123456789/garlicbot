@@ -6103,7 +6103,7 @@ async def set_log_channel(interaction: discord.Interaction, 수정삭제로그: 
     if not interaction.user.guild_permissions.manage_guild:
         embed = discord.Embed(
             title="오류",
-            description="권한이 부족합니다. 서버 관리하기 권한이 있어야 합니다.",
+            description="권한이 부족합니다. 다음 권한이 필요합니다. `서버 관리하기`",
             color=discord.Color.red()
         )
         await interaction.followup.send(embed=embed)
