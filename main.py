@@ -6645,7 +6645,27 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                 return
 
             # 메시지 불러오기
-            messages = await fetch_messages(channel, start_message_id, end_message_id)
+            try :  
+                messages = await fetch_messages(channel, start_message_id, end_message_id)
+            except discord.Forbidden : 
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `채널 보기` 권한이 있는지 확인해 주세요.\n- 봇에게 `메시지 기록 보기` 권한이 있는지 확인해 주세요.\n- 봇이 해당 채널을 볼 수 있는지 확인해 주세요.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            except Exception as e : 
+                print(f"오류 #{error}: {e}")
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                error += 1
+                return
+            
             if len(messages) > 1250 and interaction.user.id != developer : 
                 embed = discord.Embed(
                     title=f"오류", # name
@@ -6902,7 +6922,26 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                 return
 
             # 메시지 불러오기
-            messages = await fetch_messages(channel, start_message_id, end_message_id)
+            try : 
+                messages = await fetch_messages(channel, start_message_id, end_message_id)
+            except discord.Forbidden : 
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `채널 보기` 권한이 있는지 확인해 주세요.\n- 봇에게 `메시지 기록 보기` 권한이 있는지 확인해 주세요.\n- 봇이 해당 채널을 볼 수 있는지 확인해 주세요.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            except Exception as e : 
+                print(f"오류 #{error}: {e}")
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                error += 1
+                return
             if not messages:
                 embed = discord.Embed(
                     title=f"오류", # name
@@ -7257,6 +7296,15 @@ async def summarize(interaction: discord.Interaction, 시작: str, 끝: str = No
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
+    
+    except discord.Forbidden : 
+        embed = discord.Embed(
+            title="오류",
+            description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `채널 보기` 권한이 있는지 확인해 주세요.\n- 봇에게 `메시지 기록 보기` 권한이 있는지 확인해 주세요.\n- 봇이 해당 채널을 볼 수 있는지 확인해 주세요.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
 
     except Exception as e:
         global error
@@ -8320,11 +8368,19 @@ async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = 
         else:
             messages.append(message)
             message_contents.append([message.author.id, message.content])
-
-    if messages:
-        # `delete_messages`는 한 번에 최대 100개의 메시지만 삭제 가능
-        for i in range(0, len(messages), 100):
-            await interaction.channel.delete_messages(messages[i:i + 100], reason = f"사용자 {interaction.user.id}의 명령어 사용. 사유: {사유}")
+    try : 
+        if messages:
+            # `delete_messages`는 한 번에 최대 100개의 메시지만 삭제 가능
+            for i in range(0, len(messages), 100):
+                await interaction.channel.delete_messages(messages[i:i + 100], reason = f"사용자 {interaction.user.id}의 명령어 사용. 사유: {사유}")
+    except discord.Forbidden : 
+        embed = discord.Embed(
+            title="오류",
+            description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `메시지 관리하기` 권한이 있는지 확인해 주세요.\n- 봇이 해당 채널을 볼 수 있는지 확인해 주세요.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
     
     # 삭제된 메시지 개수
     deleted_count = len(messages)
@@ -8399,8 +8455,14 @@ async def delete_invites(interaction: discord.Interaction, user: discord.User):
         try:
             await invite.delete()
             deleted_count += 1
-        except Exception as e:
-            print(f"Failed to delete invite {invite.code}: {e}")
+        except discord.Forbidden : 
+            embed = discord.Embed(
+                title="오류",
+                description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `서버 관리하기` 권한이 있는지 확인해 주세요.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
 
     if deleted_count == 0:
         await interaction.followup.send(f"{user.id}가 만든 초대 링크를 찾을 수 없습니다.")
@@ -9273,7 +9335,6 @@ async def 요약(
     interaction: discord.Interaction,
     시작시각: str
 ):
-    
     status, until, reason = is_blocked(interaction.user)
     
     # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
@@ -9320,74 +9381,83 @@ async def 요약(
     # 유저별 로그를 모아둘 딕셔너리 (Key: 유저, Value: 로그 리스트)
     user_actions = {}
 
-    async for entry in guild.audit_logs(limit=None, after=start_time):
-        if entry.action in relevant_actions:
-            # 감사 로그 대상(제재받은 사용자)
-            target = entry.target
-            # target이 User(또는 Member)인지 확인
-            if isinstance(target, (discord.Member, discord.User)):
-                # 딕셔너리에 해당 유저 key가 없으면 생성
-                if target not in user_actions:
-                    user_actions[target] = []
+    try : 
+        async for entry in guild.audit_logs(limit=None, after=start_time):
+            if entry.action in relevant_actions:
+                # 감사 로그 대상(제재받은 사용자)
+                target = entry.target
+                # target이 User(또는 Member)인지 확인
+                if isinstance(target, (discord.Member, discord.User)):
+                    # 딕셔너리에 해당 유저 key가 없으면 생성
+                    if target not in user_actions:
+                        user_actions[target] = []
 
-                # 누가(어떤 관리자)가 했는지
-                moderator = entry.user
+                    # 누가(어떤 관리자)가 했는지
+                    moderator = entry.user
 
-                # 사유(reason)가 없으면 기본 문구 설정
-                reason = entry.reason if entry.reason else ""
+                    # 사유(reason)가 없으면 기본 문구 설정
+                    reason = entry.reason if entry.reason else ""
 
-                # 4-1) 차단(ban)
-                if entry.action == discord.AuditLogAction.ban:
-                    user_actions[target].append(
-                        f"- <@{moderator.id}> 사용자가 차단 ({reason})"
-                    )
+                    # 4-1) 차단(ban)
+                    if entry.action == discord.AuditLogAction.ban:
+                        user_actions[target].append(
+                            f"- <@{moderator.id}> 사용자가 차단 ({reason})"
+                        )
 
-                # 4-2) 차단해제(unban)
-                elif entry.action == discord.AuditLogAction.unban:
-                    user_actions[target].append(
-                        f"- <@{moderator.id}> 사용자가 차단 해제 ({reason})"
-                    )
+                    # 4-2) 차단해제(unban)
+                    elif entry.action == discord.AuditLogAction.unban:
+                        user_actions[target].append(
+                            f"- <@{moderator.id}> 사용자가 차단 해제 ({reason})"
+                        )
 
-                # 4-3) 추방(kick)
-                elif entry.action == discord.AuditLogAction.kick:
-                    user_actions[target].append(
-                        f"- <@{moderator.id}> 사용자가 추방 ({reason})"
-                    )
+                    # 4-3) 추방(kick)
+                    elif entry.action == discord.AuditLogAction.kick:
+                        user_actions[target].append(
+                            f"- <@{moderator.id}> 사용자가 추방 ({reason})"
+                        )
 
-                # 4-4) member_update(타임아웃 또는 타임아웃 해제)
-                elif entry.action == discord.AuditLogAction.member_update:
-                    # entry.before, entry.after 는 dict 형식으로 업데이트된 항목이 담김
-                    before = entry.before
-                    after = entry.after
-                    
-                    try : 
-                        # communication_disabled_until (Discord에서 타임아웃 시 사용하는 키)
-                        old_timeout_value = before.timed_out_until
-                        new_timeout_value = after.timed_out_until
+                    # 4-4) member_update(타임아웃 또는 타임아웃 해제)
+                    elif entry.action == discord.AuditLogAction.member_update:
+                        # entry.before, entry.after 는 dict 형식으로 업데이트된 항목이 담김
+                        before = entry.before
+                        after = entry.after
+                        
+                        try : 
+                            # communication_disabled_until (Discord에서 타임아웃 시 사용하는 키)
+                            old_timeout_value = before.timed_out_until
+                            new_timeout_value = after.timed_out_until
 
-                        # 새롭게 타임아웃이 설정된 경우
-                        if new_timeout_value and not old_timeout_value:
-                            # 얼마나 타임아웃되었는지 계산(분단위)
-                            # entry.created_at: 해당 감사로그가 생성된 시간(UTC)
-                            end_time = new_timeout_value
-                            diff = end_time - entry.created_at
-                            minutes = int(diff.total_seconds() // 60)
+                            # 새롭게 타임아웃이 설정된 경우
+                            if new_timeout_value and not old_timeout_value:
+                                # 얼마나 타임아웃되었는지 계산(분단위)
+                                # entry.created_at: 해당 감사로그가 생성된 시간(UTC)
+                                end_time = new_timeout_value
+                                diff = end_time - entry.created_at
+                                minutes = int(diff.total_seconds() // 60)
 
-                            user_actions[target].append(
-                                f"- <@{moderator.id}> 사용자가 {minutes}분 타임아웃 ({reason})"
-                            )
+                                user_actions[target].append(
+                                    f"- <@{moderator.id}> 사용자가 {minutes}분 타임아웃 ({reason})"
+                                )
 
-                        # 기존에 타임아웃이 있었는데, 새 값이 None이면 -> 타임아웃 해제
-                        elif old_timeout_value and not new_timeout_value:
-                            user_actions[target].append(
-                                f"- <@{moderator.id}> 사용자가 타임아웃 해제 ({reason})"
-                            )
-                    except Exception as e :
-                        print(f"error {e}")
-                    # 그 외는 타임아웃 관련이 아닐 수 있으므로 무시
-            # target이 유저 객체가 아닌 경우(역할, 채널 등)는 여기서는 생략
-            else:
-                pass
+                            # 기존에 타임아웃이 있었는데, 새 값이 None이면 -> 타임아웃 해제
+                            elif old_timeout_value and not new_timeout_value:
+                                user_actions[target].append(
+                                    f"- <@{moderator.id}> 사용자가 타임아웃 해제 ({reason})"
+                                )
+                        except Exception as e :
+                            print(f"error {e}")
+                        # 그 외는 타임아웃 관련이 아닐 수 있으므로 무시
+                # target이 유저 객체가 아닌 경우(역할, 채널 등)는 여기서는 생략
+                else:
+                    pass
+    except discord.Forbidden : 
+        embed = discord.Embed(
+            title="오류",
+            description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `감사 로그 보기` 권한이 있는지 확인해 주세요.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
 
     if not user_actions:
         await interaction.followup.send(
@@ -9596,6 +9666,14 @@ async def 모든역할회수(interaction: discord.Interaction, 사용자: discor
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed = embed, ephemeral=False)
+    except discord.Forbidden : 
+        embed = discord.Embed(
+            title="오류",
+            description=f"봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `역할 관리하기` 권한이 있는지 확인해 주세요.\n- 봇의 최상위 역할이 역할 회수 대상 사용자의 최상위 역할보다 낮거나 같지는 않은지 확인해 주세요.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
     except Exception as e:
         global error
         print(f"오류 #{error}: {e}")
