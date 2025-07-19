@@ -22,7 +22,7 @@ from langchain_core.prompts import FewShotChatMessagePromptTemplate
 from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from langchain_chroma import Chroma
 import random
-from discord import app_commands
+from discord import Role, app_commands
 from google.genai import types
 from cryptography.fernet import Fernet
 import datetime
@@ -711,10 +711,10 @@ def get_server_perm(server_id: int, command: str, role, user):
     return None
 
 def update_channel_perm(server_id: int, command: str, channel: str, role_user: str, role, user, perm):
-    c.execute("SELECT id FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND role = ? AND user = ?", (server_id, command, channel, role, user))
+    c.execute("SELECT id FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND role = ?", (server_id, command, channel, role))
     row = c.fetchone()
     if row:
-        c.execute("UPDATE channel_perm SET perm = ? WHERE server_id = ? AND command = ? AND channel = ? AND role_user = ? AND role = ? AND user = ?", (perm, server_id, command, channel, role_user, role, user))
+        c.execute("UPDATE channel_perm SET perm = ? WHERE server_id = ? AND command = ? AND channel = ? AND role_user = ? AND role = ?", (perm, server_id, command, channel, role_user, role, user))
     else:
         c.execute("INSERT INTO channel_perm (server_id, command, channel, role_user, role, user, perm) VALUES (?, ?, ?, ?, ?, ?, ?)", (server_id, command, channel, role_user, role, user, perm))
 
