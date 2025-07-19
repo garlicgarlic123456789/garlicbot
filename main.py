@@ -759,7 +759,7 @@ async def check_perm(interaction, server_id: int, command: str, channel: str, us
 
     return "allow"
 
-def update_role_description(server_id: int, role_id: int, description)
+def update_role_description(server_id: int, role_id: int, description):
     c.execute("SELECT id FROM role_description WHERE server_id = ? AND role_id = ?", (server_id, role_id))
     row = c.fetchone()
     if row:
