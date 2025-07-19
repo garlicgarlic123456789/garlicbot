@@ -679,6 +679,8 @@ c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCRE
 c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
 c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
 c.execute("CREATE TABLE IF NOT EXISTS role_description (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, role_id INTEGER, description TEXT)") # 역할 설명
+c.execute("CREATE TABLE IF NOT EXISTS server_perm (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, command TEXT, role_user text, role integer, user integer, perm text)") # 서버별 명령어 권한
+c.execute("CREATE TABLE IF NOT EXISTS channel_perm (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, command TEXT, channel TEXT, role_user text, role integer, user integer, perm text)") # 채널별 명령어 권한
 '''
 c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
 c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -686,6 +688,213 @@ c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREME
 c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
 c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
 '''
+
+def update_server_perm(server_id: int, command: str, role_user: str, role, user, perm):
+    c.execute("SELECT id FROM server_perm WHERE server_id = ? AND command = ?", (server_id, command))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE server_perm SET role_user = ?, role = ?, user = ?, perm = ? WHERE server_id = ? AND command = ?", (role_user, role, user, perm, server_id, command))
+    else:
+        c.execute("INSERT INTO server_perm (server_id, command, role_user, role, user, perm) VALUES (?, ?, ?, ?, ?, ?)", (server_id, command, role_user, role, user, perm))
+
+def get_server_perm(server_id: int, command: str, role, user):
+    if role is not None : 
+        c.execute("SELECT perm FROM server_perm WHERE server_id = ? AND command = ? AND role = ?", (server_id, command, role))
+    elif user is not None : 
+        c.execute("SELECT perm FROM server_perm WHERE server_id = ? AND command = ? AND user = ?", (server_id, command, user))
+    else : 
+        return None
+    
+    row = c.fetchone()
+    if row:
+        return row[0]
+    return None
+
+def update_channel_perm(server_id: int, command: str, channel: str, role_user: str, role, user, perm):
+    c.execute("SELECT id FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ?", (server_id, command, channel))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE channel_perm SET role_user = ?, role = ?, user = ?, perm = ? WHERE server_id = ? AND command = ? AND channel = ?", (role_user, role, user, perm, server_id, command, channel))
+    else:
+        c.execute("INSERT INTO channel_perm (server_id, command, channel, role_user, role, user, perm) VALUES (?, ?, ?, ?, ?, ?, ?)", (server_id, command, channel, role_user, role, user, perm))
+
+def get_channel_perm(server_id: int, command: str, channel: str, role, user):
+    if role is not None : 
+        c.execute("SELECT perm FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND role = ?", (server_id, command, channel, role))
+    elif user is not None : 
+        c.execute("SELECT perm FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND user = ?", (server_id, command, channel, user))
+    else : 
+        return None
+    
+    row = c.fetchone()
+    if row:
+        return row[0]
+    return None
+
+def check_perm(interaction, server_id: int, command: str, channel: str, user: int):
+    perm = get_channel_perm(server_id, command, channel, None, user)
+    if perm is not None : 
+        return perm
+    
+    perm = get_server_perm(server_id, command, None, user)
+    if perm is not None : 
+        return perm
+    
+    # 유저가 가진 역할 확인
+    member = await interaction.guild.get_member(user)
+    role = member.roles
+
+    # 유저가 가진 역할 상위 역할부터 정렬
+    role = sorted(role, key=lambda x: x.position, reverse=True)
+
+    for i in role : 
+        perm = get_channel_perm(server_id, command, channel, i.id, None)
+        if perm is not None : 
+            return perm
+    
+    for i in role : 
+        perm = get_server_perm(server_id, command, i.id, None)
+        if perm is not None : 
+            return perm
+
+@bot.tree.command(name = "채널명령어권한설정", description = "채널별 명령어 권한을 설정합니다.\")
+@app_commands.describe(
+    명령어="설정할 명령어",
+    채널="설정할 채널",
+    역할="권한을 설정할 역할",
+    유저="권한을 설정할 유저",
+    권한="설정할 권한",
+)
+@app_commands.choices(권한=[
+    app_commands.Choice(name="무시 (봇이 입력을 무시함)", value="ignore"),
+    app_commands.Choice(name="제한 (봇이 명령어를 사용할 수 없음을 출력)", value="limit"),
+    app_commands.Choice(name="허용 (봇이 명령어를 사용할 수 있음)", value="allow"),
+],
+명령어=[
+    app_commands.Choice(name="마늘이 대화 기능", value="마늘아"),
+    app_commands.Choice(name="마느리 대화 기능", value="마느라"),
+]
+)
+@app_commands.default_permissions(manage_channels = True, manage_roles = True)
+async def channel_command_perm_setting(interaction: discord.Interaction, 명령어: str, 채널: discord.TextChannel, 역할: discord.Role = None, 유저: discord.Member = None, 권한: str):
+    await interaction.response.defer(ephemeral=False)
+
+    if not interaction.user.permissions.manage_channels : 
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `채널 관리하기`",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    if not interaction.user.permissions.manage_roles : 
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    if 유저 is not None and 역할 is not None : 
+        embed = discord.Embed(
+            title="오류",
+            description="유저와 역할을 동시에 설정할 수 없습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    if 유저 is not None : 
+        update_channel_perm(interaction.guild.id, 명령어, 채널.id, "user", None, 유저.id, 권한)
+    elif 역할 is not None : 
+        update_channel_perm(interaction.guild.id, 명령어, 채널.id, "role", 역할.id, None, 권한)
+    else : 
+        embed = discord.Embed(
+            title="오류",
+            description="유저 또는 역할을 설정해야 합니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    embed = discord.Embed(
+        title="완료",
+        description="채널별 명령어 권한이 설정되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed, ephemeral=False)
+    return
+
+@bot.tree.command(name = "서버명령어권한설정", description = "서버별 명령어 권한을 설정합니다.")
+@app_commands.describe(
+    명령어="설정할 명령어",
+    역할="권한을 설정할 역할",
+    유저="권한을 설정할 유저",
+    권한="설정할 권한",
+)
+@app_commands.choices(권한=[
+    app_commands.Choice(name="무시 (봇이 입력을 무시함)", value="ignore"),
+    app_commands.Choice(name="제한 (봇이 명령어를 사용할 수 없음을 출력)", value="limit"),
+    app_commands.Choice(name="허용 (봇이 명령어를 사용할 수 있음)", value="allow"),
+],
+명령어=[
+    app_commands.Choice(name="마늘이 대화 기능", value="마늘아"),
+    app_commands.Choice(name="마느리 대화 기능", value="마느라"),
+]
+)
+@app_commands.default_permissions(manage_roles = True)
+async def server_command_perm_setting(interaction: discord.Interaction, 명령어: str, 역할: discord.Role = None, 유저: discord.Member = None, 권한: str):
+    await interaction.response.defer(ephemeral=False)
+
+    if not interaction.user.permissions.manage_roles : 
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    if not interaction.user.permissions.manage_channels : 
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `채널 관리하기`",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    if 유저 is not None and 역할 is not None : 
+        embed = discord.Embed(
+            title="오류",
+            description="유저와 역할을 동시에 설정할 수 없습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    if 유저 is not None : 
+        update_server_perm(interaction.guild.id, 명령어, "user", None, 유저.id, 권한)
+    elif 역할 is not None : 
+        update_server_perm(interaction.guild.id, 명령어, "role", 역할.id, None, 권한)
+    else : 
+        embed = discord.Embed(
+            title="오류",
+            description="유저 또는 역할을 설정해야 합니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
+    embed = discord.Embed(
+        title="완료",
+        description="서버별 명령어 권한이 설정되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed, ephemeral=False)
+    return
 
 def update_role_description(server_id: int, role_id: int, description):
     c.execute("SELECT id FROM role_description WHERE server_id = ? AND role_id = ?", (server_id, role_id))
