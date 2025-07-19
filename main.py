@@ -743,9 +743,7 @@ async def check_perm(message, command: str):
     if perm is not None : 
         return perm
     
-    # 유저가 가진 역할 확인
-    member = message.guild.get_member(user)
-    role = member.roles
+    role = message.author.roles
 
     # 유저가 가진 역할 상위 역할부터 정렬
     role = sorted(role, key=lambda x: x.position, reverse=True)
