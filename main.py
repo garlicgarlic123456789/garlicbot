@@ -9123,7 +9123,7 @@ async def server_command_perm_setting(interaction: discord.Interaction, 명령�
         await interaction.followup.send(embed=embed, ephemeral=False)
         return
     
-    update_server_perm(interaction.guild.id, 명령어, "user", None, 유저.id, 권한)
+    update_server_perm(interaction.guild.id, 명령어, "role", 역할.id, None, 권한)
 
     embed = discord.Embed(
         title="완료",
