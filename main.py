@@ -711,7 +711,7 @@ def get_server_perm(server_id: int, command: str, role, user):
     return None
 
 def update_channel_perm(server_id: int, command: str, channel: str, role_user: str, role, user, perm):
-    c.execute("SELECT id FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ?", (server_id, command, channel))
+    c.execute("SELECT id FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND role = ? AND user = ?", (server_id, command, channel, role, user))
     row = c.fetchone()
     if row:
         c.execute("UPDATE channel_perm SET role_user = ?, role = ?, user = ?, perm = ? WHERE server_id = ? AND command = ? AND channel = ?", (role_user, role, user, perm, server_id, command, channel))
