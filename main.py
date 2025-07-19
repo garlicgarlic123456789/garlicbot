@@ -776,7 +776,7 @@ def check_perm(interaction, server_id: int, command: str, channel: str, user: in
 ]
 )
 @app_commands.default_permissions(manage_channels = True, manage_roles = True)
-async def channel_command_perm_setting(interaction: discord.Interaction, 명령어: str, 채널: discord.TextChannel, 역할: discord.Role = None, 유저: discord.Member = None, 권한: str):
+async def channel_command_perm_setting(interaction: discord.Interaction, 명령어: str, 채널: discord.TextChannel, 권한: str, 역할: discord.Role = None, 유저: discord.Member = None):
     await interaction.response.defer(ephemeral=False)
 
     if not interaction.user.permissions.manage_channels : 
@@ -845,7 +845,7 @@ async def channel_command_perm_setting(interaction: discord.Interaction, 명령�
 ]
 )
 @app_commands.default_permissions(manage_roles = True)
-async def server_command_perm_setting(interaction: discord.Interaction, 명령어: str, 역할: discord.Role = None, 유저: discord.Member = None, 권한: str):
+async def server_command_perm_setting(interaction: discord.Interaction, 명령어: str, 권한: str, 역할: discord.Role = None, 유저: discord.Member = None):
     await interaction.response.defer(ephemeral=False)
 
     if not interaction.user.permissions.manage_roles : 
