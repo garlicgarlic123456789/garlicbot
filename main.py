@@ -579,7 +579,7 @@ PERMISSION_MAP = {
     "embed_links": "링크 첨부",
     "attach_files": "파일 첨부",
     "read_message_history": "메시지 기록 보기",
-    "mention_everyone": "@everyone, @here, 모든 역할 멘션",
+    "mention_everyone": "`@everyone`, `@here`, 모든 역할 멘션",
     "use_external_emojis": "외부 이모지 사용",
     "view_guild_insights": "서버 인사이트 보기",
     "connect": "연결",
@@ -10517,9 +10517,13 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
         membermsg = ", ".join(mentions)
 
     # 출력 형식
-    if enabled_permissions:
+    if len(enabled_permissions) > 30:
+        permissions = enabled_permissions[:30]
+        remainder = len(enabled_permissions) - 30
+        permissions_text = f"{', '.join(permissions)} 외 {remainder}개"
+    elif len(enabled_permissions) > 0:
         permissions_text = ", ".join(f"{perm}" for perm in enabled_permissions)
-    else:
+    else : 
         permissions_text = "*(권한 없음)*"
     
     embed = discord.Embed(
