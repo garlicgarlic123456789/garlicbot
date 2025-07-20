@@ -12457,47 +12457,6 @@ async def 제재내역수동추가(interaction: discord.Interaction, 유저: dis
     await interaction.response.send_message(embed=embed, ephemeral=True)
     return
 
-@bot.tree.command(name="임시명령", description="기간 동안의 유저별 채팅 건수를 확인합니다.")
-@app_commands.describe(시작일자="시작 날짜 (YYYY-MM-DD)", 종료일자="종료 날짜 (YYYY-MM-DD)")
-async def 채팅건수확인(interaction: discord.Interaction, 시작일자: str, 종료일자: str):
-    if interaction.user.id != developer : 
-        await interaction.response.send_message("권한이 부족합니다. 다음 권한이 필요합니다: `개발자`", ephemeral=True)
-        return
-    await interaction.response.defer(thinking=True)
-
-    try:
-        start_date = datetime.strptime(시작일자, "%Y-%m-%d")
-        end_date = datetime.strptime(종료일자, "%Y-%m-%d")
-    except ValueError:
-        await interaction.followup.send("날짜 형식이 잘못되었습니다. YYYY-MM-DD 형식으로 입력해주세요.")
-        return
-
-    user_message_counts = {}
-
-    for channel in interaction.guild.text_channels:
-        if not channel.permissions_for(interaction.guild.me).read_message_history:
-            continue
-        try:
-            async for message in channel.history(after=start_date, before=end_date, oldest_first=True, limit=None):
-                if message.author.bot:
-                    continue
-                user_message_counts[message.author] = user_message_counts.get(message.author, 0) + 1
-        except discord.Forbidden:
-            continue  # 권한이 없으면 스킵
-
-    if not user_message_counts:
-        await interaction.followup.send("해당 기간 동안 수집된 메시지가 없습니다.")
-        return
-
-    sorted_counts = sorted(user_message_counts.items(), key=lambda x: x[1], reverse=True)
-
-    embed = discord.Embed(title="📊 채팅 건수 확인", description=f"{시작일자} ~ {종료일자} 기간", color=discord.Color.blue())
-
-    for user, count in sorted_counts[:20]:  # 상위 20명만 출력
-        embed.add_field(name=user.display_name, value=f"{count}건", inline=False)
-
-    await interaction.user.send(embed=embed)
-
 async def check_all_bot_admin_perm(interaction):
     # 모든 역할을 순회
     for role in interaction.guild.roles:
