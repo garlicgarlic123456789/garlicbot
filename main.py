@@ -74,6 +74,7 @@ from commands import chat_time
 from commands import timestamp
 from commands import ping
 from commands import close_threads
+from commands.invite_log_check import *
 
 from zoneinfo import ZoneInfo
 
