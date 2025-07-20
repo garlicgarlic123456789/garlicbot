@@ -10534,6 +10534,7 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
 - 관리가 불가능한 역할: {cannot_moderate_roles_text}""",
         color=역할.color # color=discord.Color.green()
     )
+    await interaction.followup.send(embed=embed)
 
 async def invite_log_check(link) : 
     if link == "tYvhXSfGcv" : return "그늅의 놀이터 홍보 채널 홍보지"
