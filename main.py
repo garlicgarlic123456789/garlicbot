@@ -2190,7 +2190,7 @@ async def handle_user_mentions(message):
         for m in user_mentions:
             sender = message.guild.get_member(m["sender_id"])
             sender_name = sender.display_name if sender else "알 수 없음"
-            
+
             if "send_type" not in m : 
                 m["send_type"] = "reply"
             
@@ -2203,9 +2203,9 @@ async def handle_user_mentions(message):
         
         save_mentions(mentions)
         if dm_text != "" : 
-            await message.author.send(content=f"{message.author.display_name}님에게 예약된 멘션입니다.", embed=embed)
+            await message.author.send(content=f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{dm_text}", embed=embed)
         if mention_text != "" : 
-            await message.reply(content=f"{message.author.display_name}님에게 예약된 멘션입니다.", embed=embed, mention_author=False)
+            await message.reply(content=f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{mention_text}", embed=embed, mention_author=False)
 
 warn_file = "personal_warn_settings.json"
 
