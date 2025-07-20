@@ -10528,18 +10528,17 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
     
     embed = discord.Embed(
         title=f"역할 정보",
+        description=f"""- 역할 이름: {역할.name}
+- 역할 멘션: {역할.mention}
+- 역할 ID: {역할.id}
+- 색상: {역할.color}
+- 멤버 수: {len(역할.members)}
+- 역할 설명: {des}
+- 부여된 권한: {permissions_text}
+- 멤버: {membermsg}
+- 관리가 불가능한 역할: {cannot_moderate_roles_text}""",
         color=역할.color # color=discord.Color.green()
     )
-    embed.add_field(name = "역할 이름", value = f"{역할.name}", inline = False)
-    embed.add_field(name = "역할 멘션", value = f"{역할.mention}", inline = False)
-    embed.add_field(name = "역할 ID", value = f"{역할.id}", inline = False)
-    embed.add_field(name = "색상", value = f"{역할.color}", inline = False)
-    embed.add_field(name = "멤버 수", value = f"{len(역할.members)}", inline = False)
-    embed.add_field(name = "역할 설명", value = f"{des}", inline = False)
-    embed.add_field(name = "부여된 권한", value = f"{permissions_text}", inline = False)
-    embed.add_field(name = "멤버", value = f"{membermsg}", inline = False)
-    embed.add_field(name = "관리가 불가능한 역할", value = f"{cannot_moderate_roles_text}", inline = False)
-    await interaction.followup.send(embed=embed, ephemeral=False)
 
 async def invite_log_check(link) : 
     if link == "tYvhXSfGcv" : return "그늅의 놀이터 홍보 채널 홍보지"
