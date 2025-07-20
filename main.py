@@ -2182,19 +2182,30 @@ async def exp_event():
 async def handle_user_mentions(message):
     """ 예약된 멘션을 처리하는 비동기 함수 """
     global mentions
-    user_mentions = [m for m in mentions if m["user_id"] == message.author.id and m["done"] == 0 and m["server_id"] == message.guild.id]
+    user_mentions = [m for m in mentions if m["user_id"] == message.author.id and m["done"] == 0 and (m["server_id"] == message.guild.id or m["server_id"] == 0)]
     
     if user_mentions:
         mention_text = ""
+        dm_text = ""
         for m in user_mentions:
             sender = message.guild.get_member(m["sender_id"])
             sender_name = sender.display_name if sender else "알 수 없음"
-            mention_text+=f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
+            
+            if "send_type" not in m : 
+                m["send_type"] = "reply"
+            
+            if m["send_type"] == "reply" : 
+                mention_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
+            elif m["send_type"] == "dm" : 
+                dm_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
             m["done"] = 1
         embed = discord.Embed(title="멘션 알림", description = mention_text, color=int("a5f0ff", 16))
         
         save_mentions(mentions)
-        await message.reply(content=f"{message.author.display_name}님에게 예약된 멘션입니다.", embed=embed, mention_author=False)
+        if dm_text != "" : 
+            await message.author.send(content=f"{message.author.display_name}님에게 예약된 멘션입니다.", embed=embed)
+        if mention_text != "" : 
+            await message.reply(content=f"{message.author.display_name}님에게 예약된 멘션입니다.", embed=embed, mention_author=False)
 
 warn_file = "personal_warn_settings.json"
 
@@ -12026,8 +12037,23 @@ async def chat_stats(interaction: discord.Interaction, start_date: str, end_date
 
 
 @bot.tree.command(name="멘션지연", description="특정 사용자가 메시지를 보냈을 때 멘션하도록 예약합니다.")
-async def mention_delay(interaction: discord.Interaction, user: discord.Member, content: str):
+@app_commands.choices(전달범위 = [
+    app_commands.Choice(name = "이 서버 (답장으로 전달)", value = "server_reply"),
+    app_commands.Choice(name = "이 서버 (DM으로 전달)", value = "server_dm"),
+    app_commands.Choice(name = "모든 서버 (DM으로 전달)", value = "all"),
+])
+async def mention_delay(interaction: discord.Interaction, 사용자: discord.Member, 내용: str, 전달범위: str = "server_reply"):
     await interaction.response.defer()
+
+    user = 사용자
+    content = 내용
+    if 전달범위 == "server_reply" or 전달범위 == "server_dm" : 
+        mention_server = interaction.guild.id
+    elif 전달범위 == "all" : 
+        mention_server = 0
+    else : 
+        await interaction.followup.send("**[오류!]** 전달범위가 잘못되었습니다.")
+        return
 
     status, until, reason = is_blocked(interaction.user)
     if status:
@@ -12083,6 +12109,14 @@ async def mention_delay(interaction: discord.Interaction, user: discord.Member, 
                 )
                 await interaction.followup.send(embed = embed, ephemeral=False)
                 return
+    
+    if 전달범위 == "server_reply" : 
+        send_type = "reply"
+    elif 전달범위 == "server_dm" : 
+        send_type = "dm"
+    elif 전달범위 == "all" : 
+        send_type = "dm"
+
     global mentions
     mention_id = len(mentions) + 1
     mentions.append({
@@ -12091,7 +12125,8 @@ async def mention_delay(interaction: discord.Interaction, user: discord.Member, 
         "content": content,
         "done": 0,
         "id": mention_id,
-        "server_id": interaction.guild.id,
+        "server_id": mention_server,
+        "send_type": send_type,
     })
     save_mentions(mentions)
     
@@ -12114,10 +12149,10 @@ async def mention_list(interaction: discord.Interaction, user: discord.Member):
         await interaction.followup.send("다른 사용자에게 예약된 멘션의 목록을 확인하려면 특수 권한이 필요합니다.")
         return
     
-    pending_mentions = [m for m in mentions if m["user_id"] == user.id and m["done"] == 0 and m["server_id"] == interaction.guild.id]
+    pending_mentions = [m for m in mentions if m["user_id"] == user.id and m["done"] == 0 and m["server_id"] == interaction.guild.id and m["send_type"] == "reply"]
     
     if not pending_mentions:
-        await interaction.followup.send(f"{user.display_name}님에게 대기 중인 멘션이 없습니다.", ephemeral=False)
+        await interaction.followup.send(f"{user.display_name}님에게 대기 중인 공개 멘션이 없습니다.", ephemeral=False)
         return
     mention_ids = []
     
@@ -12142,7 +12177,7 @@ async def cancel_mention(interaction: discord.Interaction, mention_id: int):
         return
     global mentions
     for mention in mentions:
-        if mention["id"] == mention_id and mention["done"] == 0 and mention["server_id"] == interaction.guild.id:
+        if mention["id"] == mention_id and mention["done"] == 0 and mention["server_id"] == interaction.guild.id and mention["send_type"] == "reply":
             mention["done"] = 1
             save_mentions(mentions)
             await interaction.response.send_message(f"멘션 ID {mention_id}가 취소되었습니다.", ephemeral=False)
