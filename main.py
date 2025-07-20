@@ -10517,9 +10517,9 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
         membermsg = ", ".join(mentions)
 
     # 출력 형식
-    if len(enabled_permissions) > 30:
-        permissions = enabled_permissions[:30]
-        remainder = len(enabled_permissions) - 30
+    if len(enabled_permissions) > 20:
+        permissions = enabled_permissions[:20]
+        remainder = len(enabled_permissions) - 20
         permissions_text = f"{', '.join(permissions)} 외 {remainder}개"
     elif len(enabled_permissions) > 0:
         permissions_text = ", ".join(f"{perm}" for perm in enabled_permissions)
