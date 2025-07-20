@@ -69,7 +69,7 @@ from commands.return_level import *
 from commands import turn_off
 from commands.weather_api import *
 from commands.advice import advice_main
-from commands.suggest_random import suggest_random
+from commands import suggest_random
 
 from zoneinfo import ZoneInfo
 
