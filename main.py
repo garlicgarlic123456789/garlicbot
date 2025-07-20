@@ -12045,7 +12045,8 @@ async def chat_stats(interaction: discord.Interaction, start_date: str, end_date
     app_commands.Choice(name = "모든 서버 (DM으로 전달)", value = "all"),
 ])
 async def mention_delay(interaction: discord.Interaction, 사용자: discord.Member, 내용: str, 전달범위: str = "server_reply"):
-    await interaction.response.defer()
+    if 전달범위 == "server_reply" : await interaction.response.defer(ephemeral=False)
+    else : await interaction.response.defer(ephemeral=True)
 
     user = 사용자
     content = 내용
