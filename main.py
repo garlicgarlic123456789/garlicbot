@@ -70,6 +70,7 @@ from commands import turn_off
 from commands.weather_api import *
 from commands.advice import advice_main
 from commands import suggest_random
+from commands import chat_time
 
 from zoneinfo import ZoneInfo
 
@@ -13095,6 +13096,7 @@ encode.setup(bot)
 bulk_cancel.setup(bot)
 turn_off.setup(bot)
 suggest_random.setup(bot)
+chat_time.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
