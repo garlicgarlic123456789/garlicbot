@@ -2203,9 +2203,11 @@ async def handle_user_mentions(message):
         
         save_mentions(mentions)
         if dm_text != "" : 
-            await message.author.send(content=f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{dm_text}", embed=embed)
+            embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{dm_text}", color=int("a5f0ff", 16))
+            await message.author.send(embed=embed)
         if mention_text != "" : 
-            await message.reply(content=f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{mention_text}", embed=embed, mention_author=False)
+            embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{mention_text}", color=int("a5f0ff", 16))
+            await message.reply(embed=embed, mention_author=False)
 
 warn_file = "personal_warn_settings.json"
 
