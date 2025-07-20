@@ -12027,11 +12027,19 @@ async def chat_stats(interaction: discord.Interaction, start_date: str, end_date
 
 @bot.tree.command(name="멘션지연", description="특정 사용자가 메시지를 보냈을 때 멘션하도록 예약합니다.")
 async def mention_delay(interaction: discord.Interaction, user: discord.Member, content: str):
+    await interaction.response.defer()
+
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+
     if user.bot  :
-        await interaction.response.send_message("**[오류!]** user_bot")
+        await interaction.followup.send("**[오류!]** user_bot")
         return
     if len(content) > 130 and not interaction.user.guild_permissions.mention_everyone:
-        await interaction.response.send_message("**[오류!]** 130자를 초과하는 멘션을 예약하기 위해서는 특수 권한이 필요합니다.")
+        await interaction.followup.send("**[오류!]** 130자를 초과하는 멘션을 예약하기 위해서는 특수 권한이 필요합니다.")
         return
     global automod_keyword
     global automod_keyword2
@@ -12044,16 +12052,6 @@ async def mention_delay(interaction: discord.Interaction, user: discord.Member, 
     global automod_keyword9
     global automod_keyword10
     global raid_keyword1
-    
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
     
     message_content = re.sub(r"[^가-힣a-zA-Z]", "", content)
 
