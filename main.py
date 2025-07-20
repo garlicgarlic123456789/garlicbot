@@ -12461,7 +12461,7 @@ punishment_list = [
     app_commands.Choice(name = "벌칙 추천", value = "벌칙 추천"),
     app_commands.Choice(name = "홀짝 추천", value = "홀짝 추천"),
 ])
-async def train_random(interaction: discord.Interaction, 종류: str) :
+async def suggest_random(interaction: discord.Interaction, 종류: str) :
     global train_random_list, train_random_list_seoul
     await interaction.response.defer()
 
