@@ -11103,6 +11103,7 @@ async def check_audit_log(interaction: discord.Interaction, time: str):
     else:
         await interaction.followup.send("해당 시각 이후의 감사 로그가 없습니다.")
 
+'''
 @bot.tree.command(name="채널백업", description="현재 채널을 백업합니다.")
 @app_commands.describe(백업이름="백업 파일 이름", 개수="백업할 메시지 개수")
 async def backup(interaction: discord.Interaction, 백업이름: str, 개수: int):
@@ -11204,6 +11205,7 @@ async def restore(interaction: discord.Interaction, 백업이름: str):
                 )
     
     await interaction.followup.send(f"`{백업이름}` 복원이 완료되었습니다.")
+'''
 
 async def message_count_daliy(bot, guild, start_date, end_date):
     """
