@@ -2883,15 +2883,6 @@ async def on_message(message):
                             color = discord.Color.red()
                         )
                         await user.send(embed = embed)
-            
-        
-    '''
-    for i in automod_keyword3 :
-        if i in message.content :
-            if message.author.id == 1305492487137267722 : 
-                await message.delete()
-                return
-    '''
 
     if message.author.bot :
         return
