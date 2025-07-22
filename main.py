@@ -9017,7 +9017,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await 오리실험(interaction, user1, user2)
     elif 아이디 == 5 : 
         await interaction.response.defer(ephemeral=True)
-        await interaction.followup.send("더 이상 사용되지 않는 개발 명령어입니다. 커밋을 확인하세요.")
+        await interaction.followup.send("더 이상 사용되지 않는 개발 명령어입니다. 커밋 55983bc를 확인하세요.")
     elif 아이디 == 6 : 
         await interaction.response.defer()
         입력1 = int(입력1)
