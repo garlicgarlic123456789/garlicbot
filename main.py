@@ -1318,19 +1318,6 @@ def check_blocked(member_id):
     blocked_users = load_blocked_users()
     return str(member_id) in blocked_users
 
-check_data_file = "attendance.json"
-
-def load_check_data():
-    if not os.path.exists(check_data_file):
-        return {}
-    with open(check_data_file, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-def save_check_data(data):
-    with open(check_data_file, "w", encoding="utf-8") as file:
-        json.dump(data, file, indent=4, ensure_ascii=False)
-
-
 last_exp_time = {}
 
 # c.execute("CREATE TABLE IF NOT EXISTS blacklist (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, reason text, image_link text, image_private integar, report_user integar, reliability integar)") # 악성유저 테이블
