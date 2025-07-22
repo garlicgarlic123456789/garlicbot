@@ -8978,23 +8978,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         return
     if 아이디 == 1 :
         await interaction.response.defer(ephemeral=True)
-        if 입력1 != None :
-            if develop_chat_dict.get(interaction.user.id) is not None :
-                response = await asyncio.to_thread(
-                    develop_chat_dict[interaction.user.id].send_message,
-                    입력1,
-                    generation_config=genai.types.GenerationConfig(temperature=2.0)
-                )
-            else :
-                develop_chat_dict[interaction.user.id] = await asyncio.to_thread(
-                    test_model.start_chat,
-                )
-                response = await asyncio.to_thread(
-                    develop_chat_dict[interaction.user.id].send_message,
-                    입력1,
-                    generation_config=genai.types.GenerationConfig(temperature=2.0)
-                )
-            await interaction.followup.send(response.text)
+        await interaction.followup.send("더 이상 사용되지 않는 개발 명령어입니다. 커밋 4da0d33을 확인하세요.")
     elif 아이디 == 2 : 
         await interaction.response.defer(ephemeral=True)
         if 입력1 != None :
