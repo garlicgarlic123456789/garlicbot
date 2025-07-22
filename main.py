@@ -9510,14 +9510,15 @@ async def automod_setup(
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
         return
-    if interaction.guild.id != using_server and interaction.user.id != developer :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
+    if 정치발언검열 or 성적발언검열 : 
+        if interaction.guild.id != using_server and interaction.user.id != developer :
+            embed = discord.Embed(
+                title="오류",
+                description="정치 발언 및 성적인 발언 검열 기능은 아직 여러 서버들에서 지원되지 않습니다. 이 외의 검열 설정은 사용하실 수 있습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
     if not interaction.user.guild_permissions.administrator:
         embed = discord.Embed(
             title="오류",
