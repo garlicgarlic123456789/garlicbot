@@ -9017,27 +9017,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await 오리실험(interaction, user1, user2)
     elif 아이디 == 5 : 
         await interaction.response.defer(ephemeral=True)
-        admin = 0
-        for guild in bot.guilds:
-            bot_member = guild.get_member(bot.user.id)
-            has_admin = False
-
-            if bot_member:
-                for role in bot_member.roles:
-                    if role.permissions.administrator:
-                        has_admin = True
-                        admin += 1
-                        break
-
-            owner = guild.owner  # 서버 주인 (User 또는 Member 객체)
-
-            owner_display = owner.display_name if isinstance(owner, discord.Member) else owner.name
-            member_cnt = len(guild.members)
-            print(f"{guild.name} - 서버 ID: {guild.id}, 관리자 보유 여부: {has_admin}, 서버 주인: {owner_display} ({owner.id}), 멤버 수: {member_cnt}")
-        print("--------------------------------")
-        print(f"봇이 추가된 서버 수: {len(bot.guilds)}")
-        print(f"봇이 추가된 서버 중 관리자 권한이 있는 서버 수: {admin}/{len(bot.guilds)} ({admin/len(bot.guilds)*100:.3f}%%)")
-        await interaction.followup.send("서버 목록을 출력했습니다.")
+        await interaction.followup.send("더 이상 사용되지 않는 개발 명령어입니다. 커밋을 확인하세요.")
     elif 아이디 == 6 : 
         await interaction.response.defer()
         입력1 = int(입력1)
