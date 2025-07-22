@@ -11519,30 +11519,6 @@ async def link_check(interaction: discord.Interaction, 링크: str, 세부정보
         embed.set_footer(text = "검사 결과는 100% 정확하지 않을 수 있습니다. 이 검사 결과를 신뢰하여 생기는 모든 피해에 대한 책임은 사용자에게 있습니다.")
         await interaction.followup.send(embed = embed)
 
-
-    
-    
-@bot.tree.command(name="사과티콘", description="사과티콘 발송")
-@app_commands.choices(이모지 = [app_commands.Choice(name = "안녕하세요", value = "안녕하세요"), app_commands.Choice(name = "ㄹㅇ이에오", value = "레알이에오"), app_commands.Choice(name = "아니에요", value = "아니에요"), app_commands.Choice(name = "맞아요", value = "맞아요")])
-async def apple(interaction: discord.Interaction, 이모지: str):
-    hello_apple = discord.File("안녕하세요_사과티콘.png", filename="안녕하세요_사과티콘.png")
-    yes_apple = discord.File("맞아요_사과티콘.png", filename="맞아요_사과티콘.png")
-    no_apple = discord.File("아니에요_사과티콘.png", filename="아니에요_사과티콘.png")
-    real_apple = discord.File("레알이에오_사과티콘.png", filename="레알이에오_사과티콘.png")
-    if 이모지 == "안녕하세요" :
-        applefile = hello_apple
-    elif 이모지 == "레알이에오" :
-        applefile = real_apple
-    elif 이모지 == "아니에요" :
-        applefile = no_apple
-    elif 이모지 == "맞아요" :
-        applefile = yes_apple
-    else :
-        await interaction.response.send_message("**[오류!]** invaild_value", ephemeral=True)
-        return
-    
-    await interaction.response.send_message(file = applefile)
-
 @bot.tree.command(name="자동인증비활성화", description="자동 인증을 비활성화합니다.")
 async def disable_auto_verify(interaction: discord.Interaction, 사유: str = "*(사유 입력되지 않음)*"):
     if interaction.guild.id != using_server :
