@@ -2101,7 +2101,7 @@ async def on_raw_reaction_add(payload) :
 
     embed = discord.Embed(title="반응 추가됨", color=discord.Color.blue())
     embed.add_field(name="사용자", value=f"<@{payload.user_id}>", inline=True)
-    if payload.emoji.is_custom_emoji : 
+    if not payload.emoji.is_unicode_emoji : 
         embed.add_field(name="반응", value=f"<:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
     else : 
         embed.add_field(name="반응", value=f":{payload.emoji.name}:", inline=True)
