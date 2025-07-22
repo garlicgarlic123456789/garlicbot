@@ -4247,7 +4247,6 @@ async def on_member_join(member):
         channel = bot.get_channel(1320303102703702042)
         await channel.send(f"**[알림]** 레이드가 감지되었습니다. 관련 유저의 인증을 해제하고 임시로 자동 인증을 비활성화 및 소유자에게 멘션을 전송합니다.")
         recent_joins.clear()  # 리스트 초기화
-    
 
 @bot.event
 async def on_member_update(before, after):
