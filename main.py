@@ -2892,30 +2892,6 @@ async def on_message(message):
                 await message.delete()
                 return
     '''
-    # 봇이 스스로의 메시지에 반응하지 않도록 설정
-    if message.author.bot and message.guild.id == using_server:
-        # 메시지 보낸 사람의 ID가 1104370902344413245인지 확인
-        if message.author.id == 1104370902344413245:
-            # 정규표현식으로 메시지 파싱
-            pattern = r"^🎉 <@(\d+)> 님이 경험치 추첨에서 당첨되어 `(\d+)` 경험치를 받았어요!$"
-
-            # 정규표현식 매칭
-            match = re.match(pattern, message.content)
-            if match:
-                user_id, experience = match.groups()
-
-                # 로그 채널 가져오기
-                channel = bot.get_channel(xp_log_channel)
-                if channel:
-                    # 임베드 생성
-                    embed = discord.Embed(
-                        title="경험치 추첨 기록",
-                        description=f"<@{user_id}> 님이 경험치 추첨에서 당첨되어 {experience} 경험치를 받았습니다.",
-                        color=discord.Color.green()
-                    )
-                    # 임베드 전송
-                    await channel.send(embed=embed)
-        return
 
     if message.author.bot :
         return
