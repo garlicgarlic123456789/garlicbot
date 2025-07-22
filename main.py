@@ -11682,7 +11682,6 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     embed = discord.Embed(
         title="서버 보안 점검 결과",
         description = "서버 보안 점검 결과는 다음과 같습니다. [자세히 알아보기](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link)",
-        color=discord.Color.red() if dangerous_perms_found else int("a5f0ff", 16)
     )
 
     # 위험 권한 상태 메시지
