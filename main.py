@@ -4811,46 +4811,6 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             )
             await interaction.followup.send(embed = embed)
             return
-'''
-@bot.tree.command(name = "경험치샵", description = "경험치샵을 확인합니다.")
-async def view_shop(interaction: discord.Interaction) :
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    global exp_shop
-    embed_des = "경험치샵에 있는 상품의 목록입니다: \n\n**[경고!]** 여기에는 봇을 통해 구입하는 상품들만 표시됩니다! 더 많은 상품들을 <#1327116951805493279>에서 확인하세요!\n\n"
-    for i in exp_shop :
-        item = i["item"]
-        des = i["description"]
-        price = i["price"]
-        role = i["role"]
-        if role == 0 :
-            role = "부여되는 역할 없음"
-        else :
-            role = f"<@&{role}>"
-        embed_des += f"**{item}**: {des}\n가격: {price} 마늘, 부여되는 역할: {role}\n\n"
-
-    embed = discord.Embed(
-        title="경험치샵 상품 목록",
-        color=int("a5f0ff", 16),
-        description = embed_des
-    )
-    
-    await interaction.followup.send(embed = embed)
-'''
 
 class GambleButton(discord.ui.View):
     def __init__(self, author: discord.Member, xp_amount: int, choice: str):
