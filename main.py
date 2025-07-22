@@ -10554,87 +10554,6 @@ async def check_email():
 '''
 # 구분
 '''
-@bot.tree.command(name="투표생성", description="투표를 생성합니다.")
-@app_commands.describe(제목 = "투표 제목", 선택지 = "투표 선택지 (띄어쓰기 없이 쉼표로 구분)", 익명여부 = "익명 여부")
-@app_commands.choices(익명여부 = [app_commands.Choice(name = "True", value = "True"), app_commands.Choice(name = "False", value = "False")])
-async def make_vote(interaction: discord.Interaction, 제목: str, 선택지: str, 익명여부: str):
-    user_id = interaction.user.id
-    
-    await interaction.response.defer()
-
-    vote_choice = 선택지.split(',')
-
-    votes.append({"name": 제목, "choice": vote_choice, "anonymity": 익명여부, "user_id": user_id, "votes": {}, "ended": False})
-
-    index = len(votes) - 1
-
-    await interaction.followup.send(f"**[알림]** 투표가 생성되었습니다.\n투표 ID: #{index}\n투표 제목: {제목}\n투표 선택지: {선택지}\n익명 여부: {익명여부}")
-
-@bot.tree.command(name="투표", description="투표합니다.")
-@app_commands.describe(아이디 = "투표 ID", 선택지 = "선택지")
-async def vote(interaction: discord.Interaction, 아이디: int, 선택지: str):
-    user_id = interaction.user.id
-
-    # await interaction.response.defer()
-
-    if len(votes) - 1 < 아이디 :
-        await interaction.response.send_message(f"**[오류!]** 입력값이 올바르지 않습니다.", ephemeral = True)
-        return
-    
-    for key, value in votes[아이디]["votes"].items() :
-        if key == user_id :
-            await interaction.response.send_message(f"**[오류!]** 이미 투표한 사용자입니다.", ephemeral = True)
-            return
-    
-    if 선택지 in votes[아이디]["choice"] : 
-        votes[아이디]["votes"][user_id] = 선택지
-        await interaction.response.send_message(f"**[알림]** {선택지}에 성공적으로 투표되었습니다.", ephemeral = True)
-        return
-    else :
-        await interaction.response.send_message(f"**[알림]** 입력값이 올바르지 않습니다.", ephemeral = True)
-        return
-
-@bot.tree.command(name="투표종료", description="투표를 종료하고 결과를 확인합니다.")
-@app_commands.describe(아이디 = "투표 ID")
-async def end_vote(interaction: discord.Interaction, 아이디: int):
-    user_id = interaction.user.id
-    
-    await interaction.response.defer()
-    if len(votes) - 1 < 아이디:
-        await interaction.followup.send(f"**[오류!]** 입력값이 올바르지 않습니다.", ephemeral=False)
-        return
-    
-    if votes[아이디]["user_id"] == user_id:
-        output = f"## 투표 #{아이디} 정보\n투표 제목: {votes[아이디]['name']}\n선택지 목록: {votes[아이디]['choice']}\n익명 여부: {votes[아이디]['anonymity']}\n## 투표 #{아이디} 결과\n"
-        vote_list = []
-        vote_user_details = {}
-        
-        # 선택지별 투표 집계
-        for key, value in votes[아이디]["votes"].items():
-            vote_list.append(value)
-            
-            # 선택지별 투표한 사용자 정보 저장 (익명이 아닌 경우)
-            if votes[아이디]["anonymity"] == "False":
-                if value not in vote_user_details:
-                    vote_user_details[value] = []
-                vote_user_details[value].append(f"<@{key}>")  # 멘션 형태로 출력
-        
-        # 선택지별 투표 결과 출력
-        for i in votes[아이디]["choice"]:
-            cnt = vote_list.count(i)
-            output += f"* {i}: {cnt}표\n"
-            
-            # 익명 투표가 아닌 경우 투표한 사용자 details 추가
-            if votes[아이디]["anonymity"] == "False" and i in vote_user_details:
-                output += f"  투표자: {', '.join(vote_user_details[i])}\n"
-        
-        await interaction.followup.send(output, ephemeral=False)
-        return
-    else:
-        await interaction.followup.send(f"**[오류!]** 명령어 사용 권한이 부족합니다. 투표 생성자(이)여야 합니다.", ephemeral=False)
-'''
-
-'''
 # /신뢰배신 명령어 처리
 @bot.tree.command(name="신뢰배신", description="두 사용자를 위한 신뢰/배신 게임 스레드를 생성합니다.")
 @app_commands.describe(username1="첫 번째 사용자 선택", username2="두 번째 사용자 선택")
@@ -10870,7 +10789,6 @@ async def help(interaction: discord.Interaction) :
         color = int("a5f0ff", 16)
     )
     await interaction.response.send_message(embed = embed)
-
 
 # /권한회수 명령어 정의
 @bot.tree.command(name="권한회수", description="권한 남용 사태가 발생한 경우 특정 사용자의 관리자 권한을 회수합니다.")
