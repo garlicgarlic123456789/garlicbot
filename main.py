@@ -11659,27 +11659,6 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     
     dangerous = False
     warning = False
-    
-    # 권한 확인이 필요한 목록
-    dangerous_permissions = {
-        "administrator": "관리자",
-        "manage_guild": "서버 관리하기",
-        "manage_roles": "역할 관리하기",
-        "manage_channels": "채널 관리하기",
-        "create_expressions": "표현 생성하기",
-        "view_guild_insights": "서버 인사이트 보기",
-        "manage_webhooks": "웹후크 관리하기",
-        "manage_nicknames": "별명 관리하기",
-        "ban_members": "멤버 차단하기",
-        "kick_members": "멤버 추방하기",
-        "moderate_members": "타임아웃 멤버",
-        "mention_everyone": "@everyone, @here, 모든 역할 멘션하기",
-        "manage_messages": "메시지 관리",
-        "manage_threads": "스레드 관리하기",
-        "use_external_apps": "외부 앱 사용",
-        "manage_events": "이벤트 관리하기",
-        "create_events": "이벤트 생성하기",
-    }
 
     # 검사할 역할 설정
     check_role = 인증역할 if 인증역할 else interaction.guild.default_role
