@@ -11956,58 +11956,6 @@ async def apple(interaction: discord.Interaction, 이모지: str):
     
     await interaction.response.send_message(file = applefile)
 
-'''
-@bot.tree.command(name="기밀명령7", description="특정 사용자만 사용할 수 있는 기밀 명령어")
-@app_commands.describe(매개변수1="매개변수1", 매개변수2 = "매개변수2")
-async def mention_check(interaction: discord.Interaction, 매개변수1: discord.TextChannel):
-    user = interaction.user  # 명령어를 사용한 사용자
-    if interaction.user.id != 1305492487137267722 :
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"명령어 사용 권한이 부족합니다. *(기밀 정보)*(이)여야 합니다.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed = embed)
-        return
-    await interaction.response.defer()  # 작업 중 응답 대기 표시
-
-    embed = discord.Embed(
-        title=f"성공", # name
-        description=f"기밀 명령이 처리 중입니다. 처리 후 결과가 전송됩니다.",
-        color=int("a5f0ff", 16)
-    )
-    await interaction.followup.send(embed = embed)
-
-    try:
-        # mentions가 메시지 키워드 걸리는 거 목록임
-        mentions = []
-        async for message in 매개변수1.history(limit=100000):
-            if 매개변수2 in message.content: 
-                mentions.append(message)
-
-        
-        channel = bot.get_channel(owner_notify)
-
-        # 결과 생성
-        if mentions:
-            mention_links = "\n".join(
-                f"* [{msg.created_at.strftime('%Y-%m-%d %H:%M:%S')}] {msg.author}: {msg.jump_url}" for msg in mentions
-            )
-            if channel : 
-                await channel.send(
-                    f"{user.mention}님이 요청하신 기밀명령7의 처리 결과입니다: \n{mention_links}",
-                    ephemeral=True
-                )
-        else:
-            if channel : 
-                await channel.send(
-                    f"{user.mention}님이 요청하신 기밀명령7의 처리 결과입니다: \n*(비어 있음)*",
-                    ephemeral=True
-                )
-    except Exception as e:
-        await interaction.followup.send(f"오류 발생: {e}", ephemeral=True)
-'''
-
 @bot.tree.command(name="자동인증비활성화", description="자동 인증을 비활성화합니다.")
 async def disable_auto_verify(interaction: discord.Interaction, 사유: str = "*(사유 입력되지 않음)*"):
     if interaction.guild.id != using_server :
