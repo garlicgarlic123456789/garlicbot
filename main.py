@@ -2130,7 +2130,6 @@ async def exp_event():
                 await channel.send(embed=embed, view=ExpButton())
 
 async def handle_user_mentions(message):
-    """ 예약된 멘션을 처리하는 비동기 함수 """
     global mentions
     user_mentions = [m for m in mentions if m["user_id"] == message.author.id and m["done"] == 0 and (m["server_id"] == message.guild.id or m["server_id"] == 0)]
     
@@ -2161,7 +2160,6 @@ async def handle_user_mentions(message):
 
 warn_file = "personal_warn_settings.json"
 
-# === JSON 저장/불러오기 함수 ===
 def load_personal_warn():
     try:
         with open(warn_file, "r", encoding="utf-8") as f:
