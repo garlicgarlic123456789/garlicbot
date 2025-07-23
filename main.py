@@ -2747,7 +2747,23 @@ async def on_message(message):
 
             if len(mention_timestamps[user_id]) >= 4:
                 await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 15 * 60 * 60, False, None, False)
-    if not get_automod_exception_channel(message.guild.id, message.channel.id) : 
+    if True : 
+        temp = get_automod_exception_channel(message.guild.id, message.channel.id)
+        if temp == True : 
+            return
+        
+        if isinstance(message.channel, discord.Thread) : 
+            temp = get_automod_exception_channel(message.guild.id, message.channel.parent.id)
+            if temp == True : 
+                return
+            temp = get_automod_exception_channel(message.guild.id, message.channel.parent.category.id)
+            if temp == True : 
+                return
+        else : 
+            temp = get_automod_exception_channel(message.guild.id, message.channel.category.id)
+            if temp == True : 
+                return
+
         automod_setting = get_automod(message.guild.id)
         author_id = message.author.id
         guild = message.guild
