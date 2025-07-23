@@ -11498,7 +11498,7 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
         if invite_link_regex_automod == True : 
             break
         if automod_rule.enabled == True : 
-            if automod_rule.trigget.regex_patterns is not None : 
+            if automod_rule.trigger.regex_patterns is not None : 
                 for i in automod_rule.trigger.regex_patterns : 
                     regex = re.compile(i)
                     if regex.search("discord.gg/discord") is not None : 
