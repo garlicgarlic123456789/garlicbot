@@ -622,6 +622,9 @@ c.execute("CREATE TABLE IF NOT EXISTS log_channel (id INTEGER PRIMARY KEY AUTOIN
 c.execute("CREATE TABLE IF NOT EXISTS premium (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, premium INTEGER)") # 프리미엄 계정 여부
 c.execute("CREATE TABLE IF NOT EXISTS automod (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, political INTEGER, sexual INTEGER, invite_link INTEGER, mention INTEGER, whitelist_permission TEXT)") # 검열기능 사용 여부
 # -1은 기능 비활성회, 0은 삭제만 하고 타임아웃하지 않기, 1 이상은 타임아웃.
+
+c.execute("CREATE TABLE IF NOT EXISTS automod_exception_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER, on_off INTEGER)") # 자동검열 예외 채널
+
 c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, max INTEGER)") # 검열기능 사용 여부
 c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
 c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
@@ -635,6 +638,28 @@ c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREME
 c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
 c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
 '''
+
+def update_automod_exception_channel(server_id: int, channel_id: int, on_off: bool):
+    if on_off : 
+        on_off = 1
+    else : 
+        on_off = 0
+    c.execute("SELECT id FROM automod_exception_channel WHERE server_id = ? AND channel_id = ?", (server_id, channel_id))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE automod_exception_channel SET on_off = ? WHERE server_id = ? AND channel_id = ?", (on_off, server_id, channel_id))
+    else : 
+        c.execute("INSERT INTO automod_exception_channel (server_id, channel_id, on_off) VALUES (?, ?, ?)", (server_id, channel_id, on_off))
+
+def get_automod_exception_channel(server_id: int, channel_id: int):
+    c.execute("SELECT on_off FROM automod_exception_channel WHERE server_id = ? AND channel_id = ?", (server_id, channel_id))
+    row = c.fetchone()
+    if row:
+        if row[0] == 1 : 
+            return True
+        else : 
+            return False
+    return False
 
 def update_server_perm(server_id: int, command: str, role_user: str, role, user, perm):
     c.execute("SELECT id FROM server_perm WHERE server_id = ? AND command = ?", (server_id, command))
@@ -2721,7 +2746,7 @@ async def on_message(message):
 
             if len(mention_timestamps[user_id]) >= 4:
                 await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 15 * 60 * 60, False, None, False)
-    if True : 
+    if not get_automod_exception_channel(message.guild.id, message.channel.id) : 
         automod_setting = get_automod(message.guild.id)
         author_id = message.author.id
         guild = message.guild
@@ -8892,6 +8917,33 @@ async def 서버조언(interaction: discord.Interaction, 프롬프트: str, 메�
         return
     await interaction.response.send_message("처리 중입니다.")
     await advice_main(bot, interaction, await interaction.original_response(), 메시지제공여부, 시작메시지, 종료메시지, 채널제공여부, 프롬프트, 역할)
+
+@bot.tree.command(name = "자동검열예외채널설정", description = "자동 검열 예외 채널을 설정합니다.")
+@app_commands.default_permissions(administrator=True)
+async def automod_exception_channel_setup(interaction: discord.Interaction, 채널: discord.Channel, 예외여부: bool):
+    await interaction.response.defer()
+
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+
+    if not interaction.user.guild_permissions.administrator:
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `관리자`",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+    update_automod_exception_channel(interaction.guild.id, 채널.id, 예외여부)
+    embed = discord.Embed(
+        title="완료",
+        description=f"채널 {채널.mention}의 자동 검열 예외 설정이 완료되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name = "자동검열설정", description = "자동 검열 기능 사용 여부를 설정합니다.")
 @app_commands.describe(
