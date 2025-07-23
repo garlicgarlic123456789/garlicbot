@@ -1969,7 +1969,7 @@ async def on_raw_message_edit(payload) :
     if after.guild.id == using_server : 
         author_id = after.author.id
 
-        pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
+        pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
         if isinstance(after.channel, discord.Thread) : 
             if after.channel.parent_id != 1394966782426484796 : 
                 return
@@ -2770,7 +2770,7 @@ async def on_message(message):
         if automod_setting['invite_link'][0] : 
             if isinstance(message.channel, discord.Thread) and message.channel.parent.id == 1394966782426484796:
                 return
-            pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
+            pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
             if re.search(pattern1, message.content) :
                 await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
                 return
@@ -11015,7 +11015,7 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
         await interaction.followup.send(msg)
         return
 
-    pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
+    pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
     if re.search(pattern1, after.content) : 
         embed = discord.Embed(
             title=f"오류", # name
@@ -11246,7 +11246,7 @@ async def link_check(interaction: discord.Interaction, 링크: str, 세부정보
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
         return
-    pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
+    pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
     if re.search(pattern1, 링크) :
         embed = discord.Embed(
             title=f"오류", # name
