@@ -1969,7 +1969,7 @@ async def on_raw_message_edit(payload) :
     if after.guild.id == using_server : 
         author_id = after.author.id
 
-        pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
+        pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
         if isinstance(after.channel, discord.Thread) : 
             if after.channel.parent_id != 1394966782426484796 : 
                 return
@@ -2770,7 +2770,7 @@ async def on_message(message):
         if automod_setting['invite_link'][0] : 
             if isinstance(message.channel, discord.Thread) and message.channel.parent.id == 1394966782426484796:
                 return
-            pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
+            pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
             if re.search(pattern1, message.content) :
                 await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
                 return
@@ -11015,7 +11015,7 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
         await interaction.followup.send(msg)
         return
 
-    pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
+    pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
     if re.search(pattern1, after.content) : 
         embed = discord.Embed(
             title=f"오류", # name
@@ -11246,7 +11246,7 @@ async def link_check(interaction: discord.Interaction, 링크: str, 세부정보
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
         return
-    pattern1 = r"(?i)(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:(?:\.|%2e)(?:g|%67)(?:g|%67)(?:[:]|%3a)?(?:443)?(?:/|%2f)?|(?:a|%61)(?:p|%70)(?:p|%70)(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65)|(?:\.|%2e)(?:c|%63)(?:o|%6f)(?:m|%6d)(?:[:]|%3a)?(?:443)?(?:/|%2f)?(?:i|%69)(?:n|%6e)(?:v|%76)(?:i|%69)(?:t|%74)(?:e|%65))(?:[/:0-9A-Za-z%\-]*)?"
+    pattern1 = r"(?:(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app|%61%70%70)?)(?:\.|%2e)(?:com|%63%6f%6d|gg|%67%67)(?::443)?(?:/|%2f)(?:invite|%69%6e%76%69%74|[A-Za-z0-9\-_]+)(?:[/:0-9A-Za-z%\-]*)?"
     if re.search(pattern1, 링크) :
         embed = discord.Embed(
             title=f"오류", # name
@@ -11486,7 +11486,8 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     automod_rules = await interaction.guild.fetch_automod_rules()
 
     bot_automod = False
-    invite_link_keyword_automod = [False, False]
+    invite_link_keyword_automod = False
+    invite_link_keyword_automod2 = False
     invite_link_regex_automod = False
 
     automod = get_automod(interaction.guild.id)['invite_link'][0]
@@ -11503,22 +11504,22 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
                     regex = re.compile(i)
                     if regex.search("discord.gg/discord") is not None : 
                         if regex.search("discord.com/invite/discord") is not None : 
-                            if regex.search("discordapp.com/invite/discord") is not None : 
-                                if regex.search("discord.com:443/invite/discord") is not None : 
-                                    if regex.search("discord.gg:443/discord") is not None : 
-                                        invite_link_regex_automod = True
+                            if regex.search("discord.com:443/invite/discord") is not None : 
+                                if regex.search("discord.gg:443/discord") is not None : 
+                                    invite_link_regex_automod = True
             if automod_rule.trigger.keyword_filter is not None : 
+                print(automod_rule.trigger.keyword_filter)
                 for i in automod_rule.trigger.keyword_filter : 
                     if "discord.gg" in i : 
-                        invite_link_keyword_automod[0] = True
+                        invite_link_keyword_automod = True
                     if "discord.com/invite" in i : 
-                        invite_link_keyword_automod[1] = True
+                        invite_link_keyword_automod2 = True
     
     if bot_automod == True : 
         embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 마늘이 자동 검열 기능이 활성화되어 있습니다.", inline = False)
     elif invite_link_regex_automod == True : 
         embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있습니다.", inline = False)
-    elif invite_link_keyword_automod[0] == True and invite_link_keyword_automod[1] == True : 
+    elif invite_link_keyword_automod == True and invite_link_keyword_automod2 == True : 
         embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있으나, 정규표현식으로 되어 있지 않거나 정규표현식이 올바르지 않아 일부 우회가 가능합니다. 정규표현식을 통해 우회를 방지하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
         warning = True
     else : 
