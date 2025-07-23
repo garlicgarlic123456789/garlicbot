@@ -2756,13 +2756,16 @@ async def on_message(message):
             temp = get_automod_exception_channel(message.guild.id, message.channel.parent.id)
             if temp == True : 
                 return
-            temp = get_automod_exception_channel(message.guild.id, message.channel.parent.category.id)
-            if temp == True : 
-                return
+            
+            if message.channel.parent.category is not None : 
+                temp = get_automod_exception_channel(message.guild.id, message.channel.parent.category.id)
+                if temp == True : 
+                    return
         else : 
-            temp = get_automod_exception_channel(message.guild.id, message.channel.category.id)
-            if temp == True : 
-                return
+            if message.channel.category is not None : 
+                temp = get_automod_exception_channel(message.guild.id, message.channel.category.id)
+                if temp == True : 
+                    return
 
         automod_setting = get_automod(message.guild.id)
         author_id = message.author.id
