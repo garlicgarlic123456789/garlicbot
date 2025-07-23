@@ -11456,7 +11456,7 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
         all_bot_admin_msg = "모든 봇에게 관리자 권한을 일괄적으로 부여하고 있지 않습니다."
     
     
-    embed.add_field(name = "역할 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}", inline = False)
+    embed.add_field(name = "역할 권한 보안", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}", inline = False)
 
     check_role = 인증역할 if 인증역할 else interaction.guild.default_role
 
@@ -11481,7 +11481,50 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     else:
         status_msg = "일반 사용자에게 위험한 채널 권한이 부여되어 있지 않습니다."
     
-    embed.add_field(name = "채널 권한", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}", inline = False)
+    embed.add_field(name = "채널 권한 보안", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}", inline = False)
+
+    automod_rules = await interaction.guild.fetch_automod_rules()
+
+    bot_automod = False
+    invite_link_keyword_automod = [False, False]
+    invite_link_regex_automod = False
+
+    automod = get_automod(interaction.guild.id)['invite_link'][0]
+
+    if automod == True : 
+        bot_automod = True
+
+    for automod_rule in automod_rules : 
+        if invite_link_regex_automod == True : 
+            break
+        if automod_rule.enabled == True : 
+            if automod_rule.trigget.regex_patterns is not None : 
+                for i in automod_rule.trigger.regex_patterns : 
+                    regex = re.compile(i)
+                    if regex.search("discord.gg/discord") is not None : 
+                        if regex.search("discord.com/invite/discord") is not None : 
+                            if regex.search("discordapp.com/invite/discord") is not None : 
+                                if regex.search("discordapp.com/invite\\/discord") is not None : 
+                                    if regex.search("discord.com:443/invite/discord") is not None : 
+                                        if regex.search("discord.gg:443/discord") is not None : 
+                                            invite_link_regex_automod = True
+            if automod_rule.trigger.keyword_filter is not None : 
+                for i in automod_rule.trigger.keyword_filter : 
+                    if "discord.gg" in i : 
+                        invite_link_keyword_automod[0] = True
+                    if "discord.com/invite" in i : 
+                        invite_link_keyword_automod[1] = True
+    
+    if bot_automod == True : 
+        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 마늘이 자동 검열 기능이 활성화되어 있습니다.", inline = False)
+    elif invite_link_regex_automod == True : 
+        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있습니다.", inline = False)
+    elif invite_link_keyword_automod[0] == True and invite_link_keyword_automod[1] == True : 
+        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있으나, 정규표현식으로 되어 있지 않아 일부 우회가 가능합니다. 정규표현식을 통해 우회를 방지하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
+        warning = True
+    else : 
+        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있지 않습니다. 정규표현식을 통해 이러한 링크를 차단하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
+        dangerous = True
 
     if dangerous : 
         embed.color = discord.Color.red()
