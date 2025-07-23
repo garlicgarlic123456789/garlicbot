@@ -11504,10 +11504,9 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
                     if regex.search("discord.gg/discord") is not None : 
                         if regex.search("discord.com/invite/discord") is not None : 
                             if regex.search("discordapp.com/invite/discord") is not None : 
-                                if regex.search("discordapp.com/invite\\/discord") is not None : 
-                                    if regex.search("discord.com:443/invite/discord") is not None : 
-                                        if regex.search("discord.gg:443/discord") is not None : 
-                                            invite_link_regex_automod = True
+                                if regex.search("discord.com:443/invite/discord") is not None : 
+                                    if regex.search("discord.gg:443/discord") is not None : 
+                                        invite_link_regex_automod = True
             if automod_rule.trigger.keyword_filter is not None : 
                 for i in automod_rule.trigger.keyword_filter : 
                     if "discord.gg" in i : 
@@ -11520,7 +11519,7 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
     elif invite_link_regex_automod == True : 
         embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있습니다.", inline = False)
     elif invite_link_keyword_automod[0] == True and invite_link_keyword_automod[1] == True : 
-        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있으나, 정규표현식으로 되어 있지 않아 일부 우회가 가능합니다. 정규표현식을 통해 우회를 방지하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
+        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있으나, 정규표현식으로 되어 있지 않거나 정규표현식이 올바르지 않아 일부 우회가 가능합니다. 정규표현식을 통해 우회를 방지하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
         warning = True
     else : 
         embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있지 않습니다. 정규표현식을 통해 이러한 링크를 차단하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
