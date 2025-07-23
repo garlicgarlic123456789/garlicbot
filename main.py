@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import imaplib
 import time
+from discord import abc
 from threading import Lock
 import email
 from email.header import decode_header
@@ -8920,7 +8921,7 @@ async def 서버조언(interaction: discord.Interaction, 프롬프트: str, 메�
 
 @bot.tree.command(name = "자동검열예외채널설정", description = "자동 검열 예외 채널을 설정합니다.")
 @app_commands.default_permissions(administrator=True)
-async def automod_exception_channel_setup(interaction: discord.Interaction, 채널: discord.TextChannel, 예외여부: bool):
+async def automod_exception_channel_setup(interaction: discord.Interaction, 채널: discord.abc.GuildChannel, 예외여부: bool):
     await interaction.response.defer()
 
     status, until, reason = is_blocked(interaction.user)
