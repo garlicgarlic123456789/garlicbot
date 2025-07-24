@@ -1843,7 +1843,7 @@ async def on_raw_message_delete(payload) :
             author = cached_message.author.mention
             message_type = cached_message.type
             if message_type == discord.MessageType.reply : 
-                reply_to = f"{cached_message.reference.jump_url} ({cached_message.reference.id})"
+                reply_to = f"{cached_message.reference.jump_url} ({cached_message.reference.message_id})"
             else : 
                 reply_to = "*(답장 아님)*"
 
