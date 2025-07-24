@@ -1841,8 +1841,8 @@ async def on_raw_message_delete(payload) :
         if log_channel : 
             content = cached_message.content or "*(메시지 내용 없음)*"
             author = cached_message.author.mention
-            type = cached_message.type
-            if type == discord.MessageType.reply : 
+            message_type = cached_message.type
+            if message_type == discord.MessageType.reply : 
                 reply_to = f"{cached_message.reference.jump_url} ({cached_message.reference.id})"
             else : 
                 reply_to = "*(답장 아님)*"
