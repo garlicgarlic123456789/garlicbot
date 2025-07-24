@@ -241,6 +241,7 @@ dangerous_permissions = {
     "create_events": "이벤트 생성하기",
 }
 
+error = 1
 
 # JSON 파일에서 차단된 사용자 정보를 불러오는 함수
 def load_blocked_users2():

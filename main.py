@@ -82,8 +82,6 @@ from zoneinfo import ZoneInfo
 # API KEY 정보로드
 load_dotenv()
 
-error = 1
-
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
 # from IPython.display import Markdown
