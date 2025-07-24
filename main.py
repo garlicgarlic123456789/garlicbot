@@ -9628,6 +9628,14 @@ class train_command(app_commands.Group) :
                 역명 = "신촌(경의중앙선)"
             elif "지하" in 역명 or "2" in 역명 : 
                 역명 = "신촌"
+            else : 
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"경의선 신촌역과 2호선 신촌역을 구분하여 입력해 주세요.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
 
         try : 
             data = get_subway_info(역명)
