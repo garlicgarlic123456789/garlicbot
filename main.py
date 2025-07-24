@@ -1832,13 +1832,20 @@ async def on_raw_message_delete(payload) :
                 color=discord.Color.red(),
                 timestamp=discord.utils.utcnow()
             )
-            embed.add_field(name="삭제된 내용", value=content, inline=False)
+            embed.add_field(name="메시지 내용", value=content, inline=False)
+            embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
+            embed.add_field(name="답장 대상 메시지", value="*(알 수 없음)*", inline=False)
             await log_channel.send(embed=embed)
     else : 
         log_channel = bot.get_channel(log_id)
         if log_channel : 
             content = cached_message.content or "*(메시지 내용 없음)*"
             author = cached_message.author.mention
+            type = cached_message.type
+            if type == discord.MessageType.reply : 
+                reply_to = f"{cached_message.reference.jump_url} ({cached_message.reference.id})"
+            else : 
+                reply_to = "*(답장 아님)*"
 
             if len(content) > 1000 : 
                 content = content[:1000] + "\n\n(이후 생략)"
@@ -1849,7 +1856,9 @@ async def on_raw_message_delete(payload) :
                 color=discord.Color.red(),
                 timestamp=discord.utils.utcnow()
             )
-            embed.add_field(name="삭제된 내용", value=content, inline=False)
+            embed.add_field(name="메시지 내용", value=content, inline=False)
+            embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
+            embed.add_field(name="답장 대상 메시지", value=reply_to, inline=False)
             await log_channel.send(embed=embed)
 
 @bot.event
@@ -1932,8 +1941,9 @@ async def on_raw_message_edit(payload) :
             color=discord.Color.blue(),
             timestamp=discord.utils.utcnow()
         )
-        embed.add_field(name="수정 전 내용", value=before_content, inline=False)
-        embed.add_field(name="수정 후 내용", value=after_content, inline=False)
+        embed.add_field(name="수정 전 메시지 내용", value=before_content, inline=False)
+        embed.add_field(name="수정 후 메시지 내용", value=after_content, inline=False)
+        embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
         await log_channel.send(embed=embed)
 
     else : 
@@ -1958,8 +1968,9 @@ async def on_raw_message_edit(payload) :
             color=discord.Color.blue(),
             timestamp=discord.utils.utcnow()
         )
-        embed.add_field(name="수정 전 내용", value=before_content, inline=False)
-        embed.add_field(name="수정 후 내용", value=after_content, inline=False)
+        embed.add_field(name="수정 전 메시지 내용", value=before_content, inline=False)
+        embed.add_field(name="수정 후 메시지 내용", value=after_content, inline=False)
+        embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
         await log_channel.send(embed=embed)
     
     after = payload.message
