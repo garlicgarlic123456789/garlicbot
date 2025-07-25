@@ -9242,7 +9242,6 @@ async def on_message(message):
         setattr(message.author, 'last_message_time', message.created_at)
 
     await bot.process_commands(message)
-
 '''
 
 @bot.tree.command(name="격리", description="특정 사용자를 격리하고 조사용 채널로 보냅니다.")
