@@ -9385,7 +9385,6 @@ async def 모든역할회수(interaction: discord.Interaction, 사용자: discor
             )
             await interaction.response.send_message(embed=embed, ephemeral=False)
             return
-        
 
     await interaction.response.defer()
     
