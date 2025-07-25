@@ -9364,6 +9364,16 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
             await interaction.followup.send(embed=embed, ephemeral=False)
             return
     
+    role = interaction.guild.get_role(get_quarantine_role(interaction.guild.id)) # 조사격리역할
+    if role is None : 
+        embed = discord.Embed(
+            title="오류",
+            description="격리 역할의 값이 올바르지 않습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+    
     try:
         # 역할 제거
         roles = member.roles[1:]  # @everyone 역할 제외
