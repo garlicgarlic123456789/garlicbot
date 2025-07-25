@@ -9421,7 +9421,6 @@ async def 모든역할회수(interaction: discord.Interaction, 사용자: discor
         error += 1
         return
 
-
 @bot.tree.command(name="테러방지설정", description="이 서버의 테러 방지 설정을 변경합니다.")
 @app_commands.describe(추방차단테러 = "추방 및 차단 테러를 방지하는 기능 활성화 여부를 설정합니다.")
 @app_commands.choices(추방차단테러 = [app_commands.Choice(name="활성화", value="활성화"), app_commands.Choice(name="비활성화", value="비활성화")])
