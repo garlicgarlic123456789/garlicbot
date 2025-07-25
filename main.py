@@ -630,6 +630,7 @@ c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCR
 c.execute("CREATE TABLE IF NOT EXISTS role_description (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, role_id INTEGER, description TEXT)") # 역할 설명
 c.execute("CREATE TABLE IF NOT EXISTS server_perm (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, command TEXT, role_user text, role integer, user integer, perm text)") # 서버별 명령어 권한
 c.execute("CREATE TABLE IF NOT EXISTS channel_perm (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, command TEXT, channel TEXT, role_user text, role integer, user integer, perm text)") # 채널별 명령어 권한
+c.execute("CREATE TABLE IF NOT EXISTS quarantine_role (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, quarantine_role integer)") # 격리 역할
 '''
 c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
 c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -637,6 +638,21 @@ c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREME
 c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
 c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
 '''
+
+def update_quarantine_role(server_id: int, quarantine_role: int):
+    c.execute("SELECT id FROM quarantine_role WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE quarantine_role SET quarantine_role = ? WHERE server_id = ?", (quarantine_role, server_id))
+    else:
+        c.execute("INSERT INTO quarantine_role (server_id, quarantine_role) VALUES (?, ?)", (server_id, quarantine_role))
+
+def get_quarantine_role(server_id: int):
+    c.execute("SELECT quarantine_role FROM quarantine_role WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    if row:
+        return row[0]
+    return None
 
 def update_automod_exception_channel(server_id: int, channel_id: int, on_off: bool):
     if on_off : 
@@ -9244,23 +9260,66 @@ async def on_message(message):
     await bot.process_commands(message)
 '''
 
-@bot.tree.command(name="격리", description="특정 사용자를 격리하고 조사용 채널로 보냅니다.")
-async def 격리(interaction: discord.Interaction, 사용자: discord.User):
-    if interaction.guild.id != using_server :
+@bot.tree.command(name="격리역할설정", description="격리 역할을 설정합니다.")
+@app_commands.describe(격리역할 = "격리 역할 입력")
+async def 격리역할설정(interaction: discord.Interaction, 격리역할: discord.Role):
+    await interaction.response.defer()
+
+    global error
+
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+
+    if not interaction.user.guild_permissions.manage_roles:
         embed = discord.Embed(
             title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
             color=discord.Color.red()
         )
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=False)
         return
+    
+    try : 
+        update_quarantine_role(interaction.guild.id, 격리역할.id)
+    except Exception as e :
+        global error
+        print(f"오류 #{error}: {e}")
+        embed = discord.Embed(
+            title="오류",
+            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        error += 1
+        return
+    embed = discord.Embed(
+        title="완료",
+        description=f"격리 역할이 설정되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed)
+    return
+
+@bot.tree.command(name="격리", description="특정 사용자를 격리하고 조사용 채널로 보냅니다.")
+async def 격리(interaction: discord.Interaction, 사용자: discord.User):
+    await interaction.response.defer()
+
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+
     if 사용자.top_role >= interaction.user.top_role :
         embed = discord.Embed(
             title="오류",
             description="역할 회수 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
             color=discord.Color.red()
         )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed, ephemeral=False)
         return
     
     guild = interaction.guild
@@ -9270,7 +9329,7 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
             description="guild_only_command",
             color=discord.Color.red()
         )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed, ephemeral=False)
         return
 
     member = guild.get_member(사용자.id)
@@ -9280,39 +9339,39 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
             description="해당 사용자를 찾을 수 없습니다.",
             color=discord.Color.red()
         )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed, ephemeral=False)
         return
 
     # 명령어 실행 권한 확인
-    author = interaction.user
-    author_member = guild.get_member(author.id)
-    if author_member is None or discord.utils.get(author_member.roles, id=admin_id) is None:
-        embed = discord.Embed(
-            title="오류",
-            description="권한이 부족합니다. 다음 권한이 필요합니다: `관리자` 또는 `부관리자`",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
+    if interaction.guild.id == using_server : 
+        author = interaction.user
+        author_member = guild.get_member(author.id)
+        if author_member is None or discord.utils.get(author_member.roles, id=admin_id) is None:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다. 다음 권한이 필요합니다: `관리자` 또는 `부관리자`",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+    else : 
+        if not interaction.user.guild_permissions.manage_roles:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
     
     try:
         # 역할 제거
         roles = member.roles[1:]  # @everyone 역할 제외
         for role in roles:
-            await member.remove_roles(role, reason = f"사용자 {interaction.user.id}의 /격리 명령어 사용")
+            await member.remove_roles(role, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
 
-        role = interaction.guild.get_role(1333485716814172210) # 조사격리역할
-        await member.add_roles(role, reason = f"사용자 {interaction.user.id}의 /격리 명령어 사용")
+        role = interaction.guild.get_role(get_quarantine_role(interaction.guild.id)) # 조사격리역할
+        await member.add_roles(role, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
 
         embed = discord.Embed(
             title=f"완료", # name
