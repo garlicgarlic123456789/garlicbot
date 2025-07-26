@@ -8625,7 +8625,7 @@ async def status_loop():
     elif status_id % 3 == 1 : 
         activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_guild_count()}개의 서버에서 활동")
     elif status_id % 3 == 2 : 
-        activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_total_member_count()}명의 사용자와 함께 활동")
+        activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_total_member_count()}명의 사용자와 활동")
     await bot.change_presence(status=discord.Status.online, activity=activity)
 
 @bot.tree.command(name = "채널명령어권한설정", description = "채널별 명령어 권한을 설정합니다.")
