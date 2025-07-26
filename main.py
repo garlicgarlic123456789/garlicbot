@@ -2457,7 +2457,7 @@ async def on_message(message):
                             color=discord.Color.red()
                         )
                         error += 1
-                        await interaction.followup.send(embed=embed)
+                        await message.reply(embed=embed, mention_author=False)
                         return
                     add_blockhistory(사용자.id, 1316579106749681664, "경고 한도 도달", "ban", 0, message.guild.id)
                     embed = discord.Embed(
@@ -2643,7 +2643,7 @@ async def on_message(message):
                     description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                     color=discord.Color.red()
                 )
-                await interaction.followup.send(embed=embed)
+                await message.reply(embed=embed, mention_author=False)
                 error += 1
                 return
 
@@ -2726,7 +2726,7 @@ async def on_message(message):
                     description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                     color=discord.Color.red()
                 )
-                await interaction.followup.send(embed=embed)
+                await message.reply(embed=embed, mention_author=False)
                 error += 1
                 return
 
@@ -3910,7 +3910,7 @@ async def check_account(user_id):
     try:
         import json
         output_dict = json.loads(response)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         print(f"오류 #{error}: {e}")
         embed = discord.Embed(
             title="오류",
