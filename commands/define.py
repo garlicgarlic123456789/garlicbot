@@ -20,6 +20,8 @@ developer = 1305492487137267722 # 개발자
 
 import pytz
 
+status_id = 0
+
 kst = pytz.timezone('Asia/Seoul')
 
 using_server = 1320303102703702037

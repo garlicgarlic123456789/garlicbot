@@ -8541,6 +8541,7 @@ TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
 async def on_ready():
     bot.tree.add_command(train_command())
+    status_loop.start()
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
     exp_event.start()
@@ -8605,6 +8606,27 @@ async def on_ready():
         except Exception as e:
             invite_cache[guild.id] = []
             print(f"{guild.name} 서버의 초대 링크 캐싱 중 오류 발생: {e}")
+
+async def get_total_member_count():
+    total_members = 0
+    for guild in bot.guilds:
+        total_members += guild.member_count if guild.member_count is not None else 0
+    return total_members
+
+async def get_guild_count():
+    return len(bot.guilds)
+
+@tasks.loop(seconds=7.5)
+async def status_loop():
+    global status_id
+    status_id += 1
+    if status_id % 3 == 0 : 
+        activity = discord.Activity(type=discord.ActivityType.playing, name="마늘아 또는 마느라라고 불러주세요")
+    elif status_id % 3 == 1 : 
+        activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_guild_count()}개의 서버에서 활동")
+    elif status_id % 3 == 2 : 
+        activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_total_member_count()}명의 사용자와 함께 활동")
+    await bot.change_presence(status=discord.Status.online, activity=activity)
 
 @bot.tree.command(name = "채널명령어권한설정", description = "채널별 명령어 권한을 설정합니다.")
 @app_commands.describe(
