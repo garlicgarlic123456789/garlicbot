@@ -4782,6 +4782,9 @@ async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
     
     await interaction.followup.send(embed=embed)
 
+async def get_tag(user: discord.User) : 
+    return user.discriminator
+
 @bot.tree.command(name="사용자정보", description="해당 유저의 정보를 확인합니다.")
 @app_commands.describe(사용자="정보를 조회할 사용자")
 async def 사용자정보(interaction: discord.Interaction, 사용자: discord.User):
@@ -4812,6 +4815,7 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         embed.add_field(name="사용자 ID", value=f"`{str(사용자.id)}`", inline=False)
         embed.add_field(name="별명", value=사용자.display_name, inline=False)
         embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
+        embed.add_field(name="태그", value=get_tag(사용자), inline=False)
         embed.add_field(name="보유한 역할", value=roles_text, inline=False)
         if interaction.guild.id == using_server :
             exp_data = load_exp()
