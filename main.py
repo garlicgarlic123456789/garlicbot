@@ -10721,6 +10721,24 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
         await interaction.followup.send(embed = embed, ephemeral=False)
         return
     
+    if len(제목) > 256 : 
+        embed = discord.Embed(
+            title=f"오류", # name
+            description=f"제목이 256자를 초과합니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed, ephemeral=False)
+        return
+    
+    if len(내용) > 4096 : 
+        embed = discord.Embed(
+            title=f"오류", # name
+            description=f"내용이 4096자를 초과합니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed, ephemeral=False)
+        return
+    
     if interaction.guild.id != using_server :
         pass
     else: 
