@@ -4783,7 +4783,7 @@ async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
     await interaction.followup.send(embed=embed)
 
 async def get_tag(user: discord.User) : 
-    return user.tag
+    return user.discriminator
 
 @bot.tree.command(name="사용자정보", description="해당 유저의 정보를 확인합니다.")
 @app_commands.describe(사용자="정보를 조회할 사용자")
