@@ -11230,7 +11230,6 @@ async def security_check(interaction: discord.Interaction, 인증역할: Optiona
                                 if regex.search("discord.gg:443/discord") is not None : 
                                     invite_link_regex_automod = True
             if automod_rule.trigger.keyword_filter is not None : 
-                print(automod_rule.trigger.keyword_filter)
                 for i in automod_rule.trigger.keyword_filter : 
                     if "discord.gg" in i : 
                         invite_link_keyword_automod = True
