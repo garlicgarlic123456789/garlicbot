@@ -8620,11 +8620,9 @@ async def get_guild_count():
 async def status_loop():
     global status_id
     status_id += 1
-    if status_id % 3 == 0 : 
-        activity = discord.Activity(type=discord.ActivityType.playing, name="마늘아 또는 마느라라고 불러주세요")
-    elif status_id % 3 == 1 : 
+    elif status_id % 3 == 0 : 
         activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_guild_count()}개의 서버에서 활동")
-    elif status_id % 3 == 2 : 
+    elif status_id % 3 == 1 : 
         activity = discord.Activity(type=discord.ActivityType.playing, name=f"{await get_total_member_count()}명의 사용자와 활동")
     await bot.change_presence(status=discord.Status.online, activity=activity)
 
