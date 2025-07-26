@@ -4413,7 +4413,7 @@ exp_shop = [
 '''
 
 @bot.tree.command(name = "경험치샵구매", description = "경험치로 특정 상품을 구매합니다.")
-@app_commands.choices(상품명 = [app_commands.Choice(name = "파일 첨부 권한", value = "file"), app_commands.Choice(name = "투표 생성 권한", value = "vote"), app_commands.Choice(name = "비공개 스레드 생성 권한", value = "private_thread")])
+@app_commands.choices(상품명 = [app_commands.Choice(name = "파일 첨부 권한", value = "file"), app_commands.Choice(name = "투표 생성 권한", value = "vote"), app_commands.Choice(name = "비공개 스레드 생성 권한", value = "private_thread"), app_commands.Choice(name = "사운드보드 사용 권한", value = "soundboard")])
 async def buy_shop(interaction: discord.Interaction, 상품명: str):
     if interaction.guild.id != using_server :
         embed = discord.Embed(
@@ -4455,8 +4455,8 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
         if user_id not in exp_data:
             exp_data[user_id] = 0
 
-        if exp_data[user_id] >= 5000 :
-            exp_data[user_id] -= 5000
+        if exp_data[user_id] >= 3000 :
+            exp_data[user_id] -= 3000
             save_exp(exp_data)
             role = interaction.guild.get_role(1333390128072232980)
             await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
@@ -4527,6 +4527,40 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             exp_data[user_id] -= 7000
             save_exp(exp_data)
             role = interaction.guild.get_role(1320600850082693172)
+            await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
+            embed = discord.Embed(
+                title="성공",
+                color=int("a5f0ff", 16),
+                description = "성공적으로 구매 처리되었습니다."
+            )
+            await interaction.followup.send(embed = embed)
+        else :
+            embed = discord.Embed(
+                title="오류",
+                color=discord.Color.red(),
+                description = "경험치가 부족합니다."
+            )
+            await interaction.followup.send(embed = embed)
+            return
+    elif 상품명 == "soundboard" :
+        if any(role.id in [1398550480707256433] for role in interaction.user.roles):
+            embed = discord.Embed(
+                title="오류",
+                color=discord.Color.red(),
+                description = "이미 해당 역할이 있습니다."
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        exp_data = load_exp()
+        user_id = str(interaction.user.id)
+        
+        if user_id not in exp_data:
+            exp_data[user_id] = 0
+
+        if exp_data[user_id] >= 10000 :
+            exp_data[user_id] -= 10000
+            save_exp(exp_data)
+            role = interaction.guild.get_role(1398550480707256433)
             await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
             embed = discord.Embed(
                 title="성공",
