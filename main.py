@@ -10712,7 +10712,7 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
         return
 
     pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-    if re.search(pattern1, after.content) : 
+    if re.search(pattern1, 내용) or re.search(pattern1, 제목) : 
         embed = discord.Embed(
             title=f"오류", # name
             description=f"discord_link",
