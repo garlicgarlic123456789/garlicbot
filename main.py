@@ -8541,9 +8541,9 @@ TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
 async def on_ready():
     bot.tree.add_command(train_command())
-    status_loop.start()
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
+    status_loop.start()
     exp_event.start()
     check_voice_channels.start()
     bot.add_view(TicketView())  # persistent view 등록
