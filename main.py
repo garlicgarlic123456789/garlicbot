@@ -6375,7 +6375,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                 error += 1
                 return
             
-            if len(messages) > 1250 and interaction.user.id != developer : 
+            if len(messages) > 1000 and interaction.user.id != developer : 
                 embed = discord.Embed(
                     title=f"오류", # name
                     description=f"판단할 메시지 개수가 너무 많습니다.",
