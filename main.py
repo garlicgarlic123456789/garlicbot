@@ -1,5 +1,6 @@
 import discord
 import subprocess
+import statistics
 from discord.ext import commands, tasks
 import smtplib
 from email.mime.text import MIMEText
@@ -8985,12 +8986,27 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await check_account(int(입력1))
         await interaction.followup.send("처리되었습니다.")
     elif 아이디 == 18 : 
-        # 봇이 추가된 서버들의 인원 수 총합
+        # 봇이 추가된 서버들의 인원 수 총합, 평균, 표준편차
         await interaction.response.defer(ephemeral=True)
-        total_members = 0
+        member_counts = []
         for guild in bot.guilds : 
-            total_members += guild.member_count if guild.member_count is not None else 0
-        await interaction.followup.send(f"봇이 추가된 모든 서버의 인원 수 총합: {total_members}명")
+            if guild.member_count is not None:
+                member_counts.append(guild.member_count)
+        total_members = sum(member_counts)
+        if member_counts:
+            mean_members = statistics.mean(member_counts)
+            if len(member_counts) > 1:
+                stdev_members = statistics.stdev(member_counts)
+            else:
+                stdev_members = 0.0
+        else:
+            mean_members = 0.0
+            stdev_members = 0.0
+        await interaction.followup.send(
+            f"봇이 추가된 모든 서버의 인원 수 총합: {total_members}명\n"
+            f"평균: {mean_members:.2f}명\n"
+            f"표준편차: {stdev_members:.2f}명"
+        )
         return
 
 @bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
