@@ -4815,7 +4815,7 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         embed.add_field(name="사용자 ID", value=f"`{str(사용자.id)}`", inline=False)
         embed.add_field(name="별명", value=사용자.display_name, inline=False)
         embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
-        embed.add_field(name="태그", value=get_tag(사용자), inline=False)
+        embed.add_field(name="태그", value=await get_tag(사용자), inline=False)
         embed.add_field(name="보유한 역할", value=roles_text, inline=False)
         if interaction.guild.id == using_server :
             exp_data = load_exp()
