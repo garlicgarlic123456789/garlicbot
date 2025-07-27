@@ -626,6 +626,13 @@ c.execute('''
         blocked INTEGER NOT NULL
     )
 ''')
+c.execute('''
+    CREATE TABLE IF NOT EXISTS user_join_route (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        join_route TEXT
+    )
+''')
 c.execute("CREATE TABLE IF NOT EXISTS log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, editdelete INTEGER, reaction INTEGER, role INTEGER, image INTEGER)")
 c.execute("CREATE TABLE IF NOT EXISTS premium (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, premium INTEGER)") # 프리미엄 계정 여부
 c.execute("CREATE TABLE IF NOT EXISTS automod (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, political INTEGER, sexual INTEGER, invite_link INTEGER, mention INTEGER, whitelist_permission TEXT)") # 검열기능 사용 여부
@@ -647,6 +654,21 @@ c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREME
 c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
 c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
 '''
+
+def update_user_join_route(user_id: int, join_route: str):
+    c.execute("SELECT id FROM user_join_route WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE user_join_route SET join_route = ? WHERE user_id = ?", (join_route, user_id))
+    else:
+        c.execute("INSERT INTO user_join_route (user_id, join_route) VALUES (?, ?)", (user_id, join_route))
+
+def get_user_join_route(user_id: int):
+    c.execute("SELECT join_route FROM user_join_route WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row:
+        return row[0]
+    return None
 
 def update_mention_delay_block(blocker_id: int, blocked_id: int, blocked: bool):
     if blocked : 
@@ -9856,6 +9878,86 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
         color=역할.color # color=discord.Color.green()
     )
     await interaction.followup.send(embed=embed)
+
+# DB에서 고유한 join_route 값 가져오기
+def get_all_join_routes():
+    c.execute('SELECT DISTINCT join_route FROM user_join_route WHERE join_route IS NOT NULL')
+    results = c.fetchall()
+    conn.close()
+    return [row[0] for row in results]
+
+# 자동완성 함수
+async def join_route_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+) -> list[app_commands.Choice[str]]:
+    routes = get_all_join_routes()
+    return [
+        app_commands.Choice(name=route, value=route)
+        for route in routes if current.lower() in route.lower()
+    ][:25]  # 최대 25개만 반환 가능
+
+@bot.tree.command(name = "구분역할설정", description = "개발자용")
+@app_commands.default_permissions(administrator = True)
+@app_commands.describe(입력1 = "입력1")
+async def 구분역할설정(interaction: discord.Interaction, 입력1: str):
+    await interaction.response.defer(ephemeral=True)
+    유입경로 = 입력1
+    if interaction.guild.id != using_server :
+        embed = discord.Embed(
+            title="오류",
+            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+    if interaction.user.id != developer : 
+        embed = discord.Embed(
+            title="오류",
+            description="이 기능은 개발자만 사용할 수 있습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+    
+    update_user_join_route(interaction.user.id, 유입경로)
+    
+    embed = discord.Embed(
+        title="완료",
+        description=f"**{interaction.user.display_name}**님의 유입 경로가 성공적으로 설정되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed)
+    return
+
+@구분역할설정.autocomplete("입력1")
+async def route_autocomplete(
+    interaction: discord.Interaction,
+        current: str
+):
+    return await join_route_autocomplete(interaction, current)
+
+@bot.tree.command(name = "구분역할확인", description = "개발자용")
+@app_commands.default_permissions(administrator = True)
+@app_commands.describe(입력1 = "입력1")
+async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.User):
+    await interaction.response.defer(ephemeral=True)
+
+    join_route = get_user_join_route(입력1.id)
+    if join_route is None:
+        embed = discord.Embed(
+            title="오류",
+            description=f"{입력1.mention}님의 구분 역할은 설정되지 않았습니다.",
+            color=discord.Color.red()
+        )
+    else : 
+        embed = discord.Embed(
+            title="완료",
+            description=f"{입력1.mention}님의 구분 역할은 다음과 같습니다:\n\n{join_route}",
+            color=int("a5f0ff", 16)
+        )
+    await interaction.followup.send(embed=embed)
+    return
 
 @bot.tree.command(name = "유입경로확인", description = "유입경로를 확인합니다.")
 @app_commands.default_permissions(administrator = True)
