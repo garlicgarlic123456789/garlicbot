@@ -10943,7 +10943,7 @@ async def mention_delay(interaction: discord.Interaction, 사용자: discord.Mem
     if 전달범위 == "server_reply" : await interaction.response.defer(ephemeral=False)
     else : await interaction.response.defer(ephemeral=True)
 
-    if get_mention_delay_block(interaction.user.id, 사용자.id) : 
+    if get_mention_delay_block(사용자.id, interaction.user.id) : 
         embed = discord.Embed(
             title=f"오류",
             description=f"해당 사용자에 의해 차단된 작업입니다.",
