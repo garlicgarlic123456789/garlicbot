@@ -9137,7 +9137,7 @@ async def 해결처리(interaction: discord.Interaction, 해결처리: bool = Tr
             applied_tags = [interaction.channel.parent.get_tag(1376043660298162268)]
         else : 
             applied_tags = [interaction.channel.parent.get_tag(1376043604639744020)]
-        await interaction.channel.edit(applied_tags=applied_tags)
+        await interaction.channel.edit(applied_tags=applied_tags, reason=f"{interaction.user.display_name}({interaction.user.id})의 /해결처리 명령어 사용 (사유: {사유})")
         embed = discord.Embed(
             title = "완료",
             color = int("a5f0ff", 16),
