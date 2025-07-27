@@ -9083,6 +9083,14 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         return
     elif 아이디 == 19 : 
         await interaction.response.defer()
+        if True : 
+            embed = discord.Embed(
+                title="오류",
+                description="폐지된 명령입니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
         if interaction.guild.id != using_server :
             embed = discord.Embed(
                 title="오류",
@@ -9951,7 +9959,7 @@ async def 구분역할설정(interaction: discord.Interaction, 입력1: discord.
     
     embed = discord.Embed(
         title="완료",
-        description=f"**{interaction.user.display_name}**님의 유입 경로가 성공적으로 설정되었습니다.",
+        description=f"{입력1.mention}님의 유입 경로가 성공적으로 설정되었습니다.",
         color=int("a5f0ff", 16)
     )
     await interaction.followup.send(embed=embed)
