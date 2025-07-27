@@ -147,6 +147,9 @@ def setup(bot: commands.Bot):
                     deny=discord.Permissions(before_deny)
                 )
                 canceling_action.append(['overwrite_delete', log.target, log.extra, po])
+            
+            if log.action == discord.AuditLogAction.guild_update : 
+                canceling_action.append(['guild_update', log.target, dict(log.before)])
             '''
             if log.action == discord.AuditLogAction.channel_delete:
                 # log.before에서 삭제된 채널의 속성 정보를 추출
@@ -259,6 +262,13 @@ def setup(bot: commands.Bot):
             elif i[0] == 'overwrite_delete' :
                 try : 
                     await i[1].set_permissions(i[2], overwrite = i[3], reason=reason)
+                    action_cnt += 1
+                except Exception as e :
+                    print(e)
+                    action_error_cnt += 1
+            elif i[0] == 'guild_update' :
+                try : 
+                    await interaction.guild.edit(reason = reason, **i[2])
                     action_cnt += 1
                 except Exception as e :
                     print(e)
