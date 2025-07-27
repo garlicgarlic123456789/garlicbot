@@ -9118,6 +9118,45 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         
         await interaction.followup.send("처리되었습니다.")
 
+@bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
+@app_commands.describe(
+    해결처리="해결 처리 여부 (True는 해결, False는 아직 답변이 필요함을 의미)",
+    사유="해결 처리 사유",
+)
+async def 해결처리(interaction: discord.Interaction, 해결처리: bool = True, 사유: str = "*(사유 입력되지 않음)*"):
+    await interaction.response.defer()
+
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+
+    if isinstance(interaction.channel, discord.Thread) and interaction.channel.parent.id == 1376043452411674706:
+        if 해결처리 : 
+            applied_tags = [interaction.channel.parent.get_tag(1376043660298162268)]
+        else : 
+            applied_tags = [interaction.channel.parent.get_tag(1376043604639744020)]
+        await interaction.channel.edit(applied_tags=applied_tags)
+        embed = discord.Embed(
+            title = "완료",
+            color = int("a5f0ff", 16),
+        )
+        if 해결처리 : 
+            embed.description = f"{interaction.user.mention}님이 해당 이슈를 해결 상태로 수정했습니다. \n\n사유: {사유}"
+        else : 
+            embed.description = f"{interaction.user.mention}님이 해당 이슈를 답변 필요 상태로 수정했습니다. \n\n사유: {사유}"
+        await interaction.followup.send(embed=embed)
+    else : 
+        embed = discord.Embed(
+            title = "오류",
+            description = "이 명령어는 특정 채널에서만 사용 가능합니다.",
+            color = discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed)
+        return
+
+
 @bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
 @app_commands.describe(
     프롬프트="프롬프트 (조언 받고 싶은 내용)",
