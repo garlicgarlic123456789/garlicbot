@@ -9883,7 +9883,6 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
 def get_all_join_routes():
     c.execute('SELECT DISTINCT join_route FROM user_join_route WHERE join_route IS NOT NULL')
     results = c.fetchall()
-    conn.close()
     return [row[0] for row in results]
 
 # 자동완성 함수
