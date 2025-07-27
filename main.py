@@ -9899,10 +9899,10 @@ async def join_route_autocomplete(
 
 @bot.tree.command(name = "구분역할설정", description = "개발자용")
 @app_commands.default_permissions(administrator = True)
-@app_commands.describe(입력1 = "입력1")
-async def 구분역할설정(interaction: discord.Interaction, 입력1: str):
+@app_commands.describe(입력2 = "입력2")
+async def 구분역할설정(interaction: discord.Interaction, 입력1: discord.User, 입력2: str):
     await interaction.response.defer(ephemeral=True)
-    유입경로 = 입력1
+    유입경로 = 입력2
     if interaction.guild.id != using_server :
         embed = discord.Embed(
             title="오류",
@@ -9920,7 +9920,7 @@ async def 구분역할설정(interaction: discord.Interaction, 입력1: str):
         await interaction.followup.send(embed=embed)
         return
     
-    update_user_join_route(interaction.user.id, 유입경로)
+    update_user_join_route(입력1.id, 유입경로)
     
     embed = discord.Embed(
         title="완료",
@@ -9930,7 +9930,7 @@ async def 구분역할설정(interaction: discord.Interaction, 입력1: str):
     await interaction.followup.send(embed=embed)
     return
 
-@구분역할설정.autocomplete("입력1")
+@구분역할설정.autocomplete("입력2")
 async def route_autocomplete(
     interaction: discord.Interaction,
         current: str
