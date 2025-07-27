@@ -4032,7 +4032,8 @@ async def on_member_join(member):
                         print(f'{m.name}의 역할 제거 중 오류 발생')
         update_file("False")
         try: 
-            await guild.edit(invites_disabled = True, invites_disabled_until = discord.utils.utcnow() + timedelta(days=1))
+            await guild.edit(invites_disabled = True, invites_disabled_until = discord.utils.utcnow() + timedelta(days=1), reason = "레이드 감지")
+            await guild.edit(dms_disabled_until = discord.utils.utcnow() + timedelta(days=1), reason = "레이드 감지")
         except Exception as e : 
             print("오류")
         channel = bot.get_channel(owner_notify)
