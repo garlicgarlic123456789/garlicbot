@@ -2243,10 +2243,10 @@ async def handle_user_mentions(message):
         
         save_mentions(mentions)
         if dm_text != "" : 
-            embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{dm_text}", color=int("a5f0ff", 16))
+            embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n-# 특정 사용자로부터 오는 멘션 알림을 차단하시려면 </멘션지연차단:1398856385772523540>을 사용해 주세요.\n\n{dm_text}", color=int("a5f0ff", 16))
             await message.author.send(embed=embed)
         if mention_text != "" : 
-            embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n\n{mention_text}", color=int("a5f0ff", 16))
+            embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n-# 특정 사용자로부터 오는 멘션 알림을 차단하시려면 </멘션지연차단:1398856385772523540>을 사용해 주세요.\n\n{mention_text}", color=int("a5f0ff", 16))
             await message.reply(embed=embed, mention_author=False)
 
 warn_file = "personal_warn_settings.json"
