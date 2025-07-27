@@ -2055,8 +2055,14 @@ async def on_raw_message_edit(payload) :
                 if re.search(pattern1, after.content) :
                     await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
                     return
+                elif "discord://-/invite/" in after.content : 
+                    await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
+                    return
         else : 
             if re.search(pattern1, after.content) :
+                await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
+                return
+            elif "discord://-/invite/" in after.content : 
                 await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
                 return
         
@@ -2855,8 +2861,14 @@ async def on_message(message):
             if re.search(pattern1, message.content) :
                 await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
                 return
+            elif "discord://-/invite/" in message.content : 
+                await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
+                return
             elif message.message_snapshots : 
                 if re.search(pattern1, message.message_snapshots[0].content) : 
+                    await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
+                    return
+                elif "discord://-/invite/" in message.message_snapshots[0].content : 
                     await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
                     return
         
