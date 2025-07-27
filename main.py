@@ -8210,9 +8210,82 @@ async def delete_invites(interaction: discord.Interaction, user: discord.User):
         await interaction.followup.send(f"{user.id}가 만든 초대 링크 {deleted_count}개를 삭제했습니다.")
 
 
+@bot.tree.command(name = "보안조치", description = "보안 조치를 실행합니다. (서버 참가를 중단하거나, DM 전송을 중단시킵니다)")
+@app_commands.guild_only()
+@app_commands.default_permissions(moderate_members = True)
+@app_commands.describe(서버참가중단시간 = "서버 참가를 중단시킬 시간 (단위 포함하여 입력)", DM정지시간 = "DM 전송을 중단시킬 시간 (단위 포함하여 입력)")
+async def 보안조치(interaction: discord.Interaction, 서버참가중단시간: str, DM정지시간: str, 사유: str = "*(사유 입력되지 않음)*") : 
+    if not interaction.user.guild_permissions.moderate_members : 
+        embed = discord.Embed(
+            title = "오류",
+            description = "권한이 부족합니다. 다음 권한이 필요합니다: `타임아웃 멤버`",
+            color = discord.Color.red()
+        )
+        await interaction.response.send_message(embed = embed)
+        return
+    
+    await interaction.response.defer()
 
-# is_blocked 함수: discord.User 객체를 받아 해당 사용자가 차단 중인지 확인
-
+    try : 
+        if DM정지시간.endswith("초") : 
+            DM정지시간 = int(DM정지시간.replace("초", ""))
+        elif DM정지시간.endswith("분") : 
+            DM정지시간 = int(DM정지시간.replace("분", "")) * 60
+        elif DM정지시간.endswith("시간") : 
+            DM정지시간 = int(DM정지시간.replace("시간", "")) * 60 * 60
+        elif DM정지시간.endswith("일") : 
+            DM정지시간 = int(DM정지시간.replace("일", "")) * 24 * 60 * 60
+        else : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "시간 형식이 올바르지 않습니다. (초, 분, 시간, 일 단위 포함하여 입력)",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        if 서버참가중단시간.endswith("초") : 
+            서버참가중단시간 = int(서버참가중단시간.replace("초", ""))
+        elif 서버참가중단시간.endswith("분") : 
+            서버참가중단시간 = int(서버참가중단시간.replace("분", "")) * 60
+        elif 서버참가중단시간.endswith("시간") : 
+            서버참가중단시간 = int(서버참가중단시간.replace("시간", "")) * 60 * 60
+        elif 서버참가중단시간.endswith("일") : 
+            서버참가중단시간 = int(서버참가중단시간.replace("일", "")) * 24 * 60 * 60
+        else : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "시간 형식이 올바르지 않습니다. (초, 분, 시간, 일 단위 포함하여 입력)",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+    except Exception as e : 
+        embed = discord.Embed(
+            title = "오류",
+            description = f"시간 형식이 올바르지 않습니다. (초, 분, 시간, 일 단위 포함하여 입력)\n{e}",
+            color = discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed)
+        return
+    
+    if DM정지시간 > 0 : 
+        dm_disabled_until = discord.utils.utcnow() + timedelta(seconds = DM정지시간)
+    else : 
+        dm_disabled_until = None
+    
+    if 서버참가중단시간 > 0 : 
+        server_join_disabled_until = discord.utils.utcnow() + timedelta(seconds = 서버참가중단시간)
+    else : 
+        server_join_disabled_until = None
+    
+    await interaction.guild.edit(dm_disabled_until = dm_disabled_until, server_join_disabled_until = server_join_disabled_until, reason = f"{interaction.user.display_name} ({interaction.user.id}) 의 /보안조치 명령어 사용 (사유: {사유})")
+    embed = discord.Embed(
+        title = "완료",
+        description = f"완료",
+        color = int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed = embed)
+    return
 
 # /이용제한 명령어: 지정한 유저를 차단 기간 동안 제한합니다.
 @bot.tree.command(name="이용제한", description="유저를 지정된 기간 동안 이용제한합니다.")
