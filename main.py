@@ -9081,6 +9081,34 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
             f"표준편차: {stdev_members:.2f}명"
         )
         return
+    elif 아이디 == 19 : 
+        await interaction.response.defer()
+        if interaction.guild.id != using_server :
+            embed = discord.Embed(
+                title="오류",
+                description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+        if interaction.user.id != developer : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 기능은 개발자만 사용할 수 있습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+        
+        roles = interaction.guild.roles
+
+        for role in roles : 
+            if role.name.startswith("구분: ") : 
+                members = role.members
+                for member in members : 
+                    update_user_join_route(member.id, role.name[4:])
+        
+        await interaction.followup.send("처리되었습니다.")
 
 @bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
 @app_commands.describe(
