@@ -6468,8 +6468,7 @@ def create_chain2_legacy(message) :
         app_commands.Choice(name = "비활성화", value = "False"),
     ],
     버전 = [
-        app_commands.Choice(name = "버전 4 (GPT-4.1 mini가 메시지 기록 및 이전 제재 내역으로 판결하는 더 개선된 최신 버전)", value = "v4"),
-        app_commands.Choice(name = "버전 3 (GPT-4.1 mini가 메시지 기록 및 이전 제재 내역으로 판결하는 이전 버전)", value = "v3"),
+        app_commands.Choice(name = "버전 3 (GPT-4.1 mini가 메시지 기록 및 이전 제재 내역으로 판결)", value = "v3"),
         app_commands.Choice(name = "버전 1 (Gemini 2.0 Flash가 메시지 기록으로 판결)", value = "v1"),
     ]
 )
