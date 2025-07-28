@@ -6499,8 +6499,17 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         # JSON 파싱 시도
         try:
             import json
-            output_dict = json.loads(output)
-        except json.JSONDecodeError:
+            # output이 문자열인 경우 JSON 파싱, 이미 리스트인 경우 그대로 사용
+            if isinstance(output, str):
+                output_dict = json.loads(output)
+            else:
+                output_dict = output
+                
+            # 이중 배열인 경우 첫 번째 요소 사용
+            if isinstance(output_dict, list) and len(output_dict) > 0 and isinstance(output_dict[0], list):
+                output_dict = output_dict[0]
+                
+        except json.JSONDecodeError as e:
             print(f"오류 #{error}: {e}")
             embed = discord.Embed(
                 title="오류",
