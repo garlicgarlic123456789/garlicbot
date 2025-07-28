@@ -3093,7 +3093,7 @@ async def anti_nuke_revoke_permissions(admin_id: int, guild: discord.Guild):
 
     success = True
     for role in member.roles:
-        if role.name != "@everyone":
+        if role.id != guild.id:
             try:
                 await member.remove_roles(role, reason="테러 감지")
             except Exception:
