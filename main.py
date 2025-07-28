@@ -78,6 +78,8 @@ from commands import close_threads
 from commands import remove_all_roles
 from commands.invite_log_check import *
 from commands.train_command import *
+from commands import security_check
+from commands.database import *
 
 from zoneinfo import ZoneInfo
 
@@ -600,412 +602,7 @@ user1_choice = None
 user2_choice = None
 game_active = False  # 게임 활성화 여부를 저장하는 플래그
 
-conn = sqlite3.connect("garlicbot.db", isolation_level = None)
-
-c = conn.cursor()
-c.execute("CREATE TABLE IF NOT EXISTS blockhistory (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, addinfo integar, server_id integar)") # 제재 내역 테이블
-c.execute("CREATE TABLE IF NOT EXISTS channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id integar, message_log integar, reaction_log integar, punish_log_publish integar, punish_log_private integar)") # 서버정보 테이블
-c.execute("CREATE TABLE IF NOT EXISTS blacklist (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, reason text, image_link text, image_private integar, report_user integar, reliability integar)") # 악성유저 테이블
-c.execute("CREATE TABLE IF NOT EXISTS anti_nuke_option (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, ban_kick INTEGER)") # 테러방지
-c.execute("CREATE TABLE IF NOT EXISTS anti_nuke_log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER)") # 테러방지
-c.execute("CREATE TABLE IF NOT EXISTS anti_nuke_whitelist (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, ban_kick INTEGER)") # 테러 방지 화이트리스트
-c.execute("CREATE TABLE IF NOT EXISTS block_log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER)") # 제재 로그 채널
-c.execute("CREATE TABLE IF NOT EXISTS server_link_block (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, time INTEGER)") # 제재 로그 채널
-c.execute("CREATE TABLE IF NOT EXISTS invite_log (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, link TEXT, server_id INTEGER)") # 초대 로그
-c.execute('''
-    CREATE TABLE IF NOT EXISTS accounts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        main_id INTEGER NOT NULL,
-        sub_id INTEGER NOT NULL
-    )
-''')
-c.execute('''
-    CREATE TABLE IF NOT EXISTS mention_delay_block (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        blocker_id INTEGER NOT NULL,
-        blocked_id INTEGER NOT NULL,
-        blocked INTEGER NOT NULL
-    )
-''')
-c.execute('''
-    CREATE TABLE IF NOT EXISTS user_join_route (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        join_route TEXT
-    )
-''')
-c.execute("CREATE TABLE IF NOT EXISTS log_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, editdelete INTEGER, reaction INTEGER, role INTEGER, image INTEGER)")
-c.execute("CREATE TABLE IF NOT EXISTS premium (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, premium INTEGER)") # 프리미엄 계정 여부
-c.execute("CREATE TABLE IF NOT EXISTS automod (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, political INTEGER, sexual INTEGER, invite_link INTEGER, mention INTEGER, whitelist_permission TEXT)") # 검열기능 사용 여부
-# -1은 기능 비활성회, 0은 삭제만 하고 타임아웃하지 않기, 1 이상은 타임아웃.
-
-c.execute("CREATE TABLE IF NOT EXISTS automod_exception_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER, on_off INTEGER)") # 자동검열 예외 채널
-
-c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, max INTEGER)") # 검열기능 사용 여부
-c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
-c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
-c.execute("CREATE TABLE IF NOT EXISTS role_description (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, role_id INTEGER, description TEXT)") # 역할 설명
-c.execute("CREATE TABLE IF NOT EXISTS server_perm (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, command TEXT, role_user text, role integer, user integer, perm text)") # 서버별 명령어 권한
-c.execute("CREATE TABLE IF NOT EXISTS channel_perm (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, command TEXT, channel TEXT, role_user text, role integer, user integer, perm text)") # 채널별 명령어 권한
-c.execute("CREATE TABLE IF NOT EXISTS quarantine_role (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, quarantine_role integer)") # 격리 역할
-'''
-c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
-c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
-c.execute("CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar, dispatch_interval integar, name text UNIQUE, train text)") # 운행 계통
-c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
-c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
-'''
-
-def update_user_join_route(user_id: int, join_route: str):
-    c.execute("SELECT id FROM user_join_route WHERE user_id = ?", (user_id,))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE user_join_route SET join_route = ? WHERE user_id = ?", (join_route, user_id))
-    else:
-        c.execute("INSERT INTO user_join_route (user_id, join_route) VALUES (?, ?)", (user_id, join_route))
-
-def get_user_join_route(user_id: int):
-    c.execute("SELECT join_route FROM user_join_route WHERE user_id = ?", (user_id,))
-    row = c.fetchone()
-    if row:
-        return row[0]
-    return None
-
-def update_mention_delay_block(blocker_id: int, blocked_id: int, blocked: bool):
-    if blocked : 
-        blocked = 1
-    else : 
-        blocked = 0
-    c.execute("SELECT id FROM mention_delay_block WHERE blocker_id = ? AND blocked_id = ?", (blocker_id, blocked_id))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE mention_delay_block SET blocked = ? WHERE blocker_id = ? AND blocked_id = ?", (blocked, blocker_id, blocked_id))
-    else:
-        c.execute("INSERT INTO mention_delay_block (blocker_id, blocked_id, blocked) VALUES (?, ?, ?)", (blocker_id, blocked_id, blocked))
-
-def get_mention_delay_block(blocker_id: int, blocked_id: int):
-    c.execute("SELECT blocked FROM mention_delay_block WHERE blocker_id = ? AND blocked_id = ?", (blocker_id, blocked_id))
-    row = c.fetchone()
-    if row:
-        if row[0] == 1 : 
-            return True
-        else : 
-            return False
-    return False
-
-def update_quarantine_role(server_id: int, quarantine_role: int):
-    c.execute("SELECT id FROM quarantine_role WHERE server_id = ?", (server_id,))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE quarantine_role SET quarantine_role = ? WHERE server_id = ?", (quarantine_role, server_id))
-    else:
-        c.execute("INSERT INTO quarantine_role (server_id, quarantine_role) VALUES (?, ?)", (server_id, quarantine_role))
-
-def get_quarantine_role(server_id: int):
-    c.execute("SELECT quarantine_role FROM quarantine_role WHERE server_id = ?", (server_id,))
-    row = c.fetchone()
-    if row:
-        return row[0]
-    return None
-
-def update_automod_exception_channel(server_id: int, channel_id: int, on_off: bool):
-    if on_off : 
-        on_off = 1
-    else : 
-        on_off = 0
-    c.execute("SELECT id FROM automod_exception_channel WHERE server_id = ? AND channel_id = ?", (server_id, channel_id))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE automod_exception_channel SET on_off = ? WHERE server_id = ? AND channel_id = ?", (on_off, server_id, channel_id))
-    else : 
-        c.execute("INSERT INTO automod_exception_channel (server_id, channel_id, on_off) VALUES (?, ?, ?)", (server_id, channel_id, on_off))
-
-def get_automod_exception_channel(server_id: int, channel_id: int):
-    c.execute("SELECT on_off FROM automod_exception_channel WHERE server_id = ? AND channel_id = ?", (server_id, channel_id))
-    row = c.fetchone()
-    if row:
-        if row[0] == 1 : 
-            return True
-        else : 
-            return False
-    return False
-
-def update_server_perm(server_id: int, command: str, role_user: str, role, user, perm):
-    c.execute("SELECT id FROM server_perm WHERE server_id = ? AND command = ?", (server_id, command))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE server_perm SET role_user = ?, role = ?, user = ?, perm = ? WHERE server_id = ? AND command = ?", (role_user, role, user, perm, server_id, command))
-    else:
-        c.execute("INSERT INTO server_perm (server_id, command, role_user, role, user, perm) VALUES (?, ?, ?, ?, ?, ?)", (server_id, command, role_user, role, user, perm))
-
-def get_server_perm(server_id: int, command: str, role, user):
-    if role is not None : 
-        c.execute("SELECT perm FROM server_perm WHERE server_id = ? AND command = ? AND role = ?", (server_id, command, role))
-    elif user is not None : 
-        c.execute("SELECT perm FROM server_perm WHERE server_id = ? AND command = ? AND user = ?", (server_id, command, user))
-    else : 
-        return None
-    
-    row = c.fetchone()
-    if row:
-        return row[0]
-    return None
-
-def update_channel_perm(server_id: int, command: str, channel: str, role_user: str, role, user, perm):
-    c.execute("SELECT id FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND role = ?", (server_id, command, channel, role))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE channel_perm SET perm = ? WHERE server_id = ? AND command = ? AND channel = ? AND role_user = ? AND role = ?", (perm, server_id, command, channel, role_user, role))
-    else:
-        c.execute("INSERT INTO channel_perm (server_id, command, channel, role_user, role, user, perm) VALUES (?, ?, ?, ?, ?, ?, ?)", (server_id, command, channel, role_user, role, user, perm))
-
-def get_channel_perm(server_id: int, command: str, channel: str, role, user):
-    if role is not None : 
-        c.execute("SELECT perm FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND role = ?", (server_id, command, channel, role))
-    elif user is not None : 
-        c.execute("SELECT perm FROM channel_perm WHERE server_id = ? AND command = ? AND channel = ? AND user = ?", (server_id, command, channel, user))
-    else : 
-        return None
-    
-    row = c.fetchone()
-    if row:
-        return row[0]
-    return None
-
-async def check_perm(message, command: str):
-    server_id = message.guild.id
-    user = message.author.id
-    channel = message.channel.id
-
-    perm = get_channel_perm(server_id, command, channel, None, user)
-    if perm is not None : 
-        return perm
-    
-    role = message.author.roles
-
-    # 유저가 가진 역할 상위 역할부터 정렬
-    role = sorted(role, key=lambda x: x.position, reverse=True)
-
-    for i in role : 
-        perm = get_channel_perm(server_id, command, channel, i.id, None)
-        if perm is not None : 
-            return perm
-    
-    for i in role : 
-        perm = get_server_perm(server_id, command, i.id, None)
-        if perm is not None : 
-            return perm
-
-    return "allow"
-
-def update_role_description(server_id: int, role_id: int, description):
-    c.execute("SELECT id FROM role_description WHERE server_id = ? AND role_id = ?", (server_id, role_id))
-    row = c.fetchone()
-    if row:
-        c.execute("UPDATE role_description SET description = ? WHERE server_id = ? AND role_id = ?", (description, server_id, role_id))
-    else:
-        c.execute("INSERT INTO role_description (server_id, role_id, description) VALUES (?, ?, ?)", (server_id, role_id, description))
-
-def get_role_description(server_id: int, role_id: int):
-    c.execute("SELECT description FROM role_description WHERE server_id = ? AND role_id = ?", (server_id, role_id))
-    row = c.fetchone()
-    if row:
-        return row[0]
-    return None
-
-def update_anonymous_setting(server_id: int, onoff: bool, log_channel):
-    if onoff : 
-        onoff = 1
-    else : 
-        onoff = 0
-    # user_id 존재 여부 확인
-    c.execute("SELECT id FROM anonymous WHERE server_id = ?", (server_id,))
-    row = c.fetchone()
-
-    if row:
-        # 존재하면 업데이트
-        c.execute("UPDATE anonymous SET onoff = ?, log_channel = ? WHERE server_id = ?", (onoff, log_channel, server_id))
-    else:
-        # 없으면 삽입
-        c.execute("INSERT INTO anonymous (server_id, onoff, log_channel) VALUES (?, ?, ?)", (server_id, onoff, log_channel))
-
-def get_anonymous_setting(server_id: int) : 
-    c.execute("""
-        SELECT onoff, log_channel
-        FROM anonymous
-        WHERE server_id = ?
-    """, (server_id,))
-    row = c.fetchone()
-    
-    if row:
-        onoff, log_channel = row[0], row[1]
-
-        if onoff == 1 : 
-            onoff = True
-        elif onoff == 0 : 
-            onoff = False
-        else : 
-            onoff = None
-        
-        return onoff, log_channel
-    else : 
-        return False, None
-
-def update_warn_max(server_id: int, max_warn):
-    # user_id 존재 여부 확인
-    c.execute("SELECT id FROM warn_max WHERE server_id = ?", (server_id,))
-    row = c.fetchone()
-
-    if row:
-        # 존재하면 업데이트
-        c.execute("UPDATE warn_max SET max = ? WHERE server_id = ?", (max_warn, server_id))
-    else:
-        # 없으면 삽입
-        c.execute("INSERT INTO warn_max (server_id, max) VALUES (?, ?)", (server_id, max_warn))
-
-def get_warn_max(server_id: int):
-    c.execute("SELECT max FROM warn_max WHERE server_id = ?", (server_id,))
-    result = c.fetchone()
-    if result:
-        return result[0]
-    return None
-
-# premium 값 업데이트 또는 삽입 (fetchone 방식)
-def update_premium(user_id: int, premium: bool):
-    premium_value = 1 if premium else 0
-
-    # user_id 존재 여부 확인
-    c.execute("SELECT id FROM premium WHERE user_id = ?", (user_id,))
-    row = c.fetchone()
-
-    if row:
-        # 존재하면 업데이트
-        c.execute("UPDATE premium SET premium = ? WHERE user_id = ?", (premium_value, user_id))
-    else:
-        # 없으면 삽입
-        c.execute("INSERT INTO premium (user_id, premium) VALUES (?, ?)", (user_id, premium_value))
-
-
-def get_premium(user_id: int) -> bool:
-    c.execute("SELECT premium FROM premium WHERE user_id = ?", (user_id,))
-    result = c.fetchone()
-    if result:
-        return bool(result[0])
-    return False
-
-
-#server_id INTEGER, political INTEGER, sexual INTEGER, invite_link INTEGER, mention INTEGER)") # 검열기능 사용 여부
-
-def update_automod(server_id, political: list, sexual: list, invite_link: list, mention: list, whitelist_permission):
-    # 먼저 server_id가 있는지 확인
-    c.execute("SELECT id FROM automod WHERE server_id = ?", (server_id,))
-    row = c.fetchone()
-
-    political = political[1] if political[0] else -1
-    sexual = sexual[1] if sexual[0] else -1
-    invite_link = invite_link[1] if invite_link[0] else -1
-    mention = mention[1] if mention[0] else -1
-    
-    if row:
-        # 존재할 경우 update
-        c.execute("""
-            UPDATE automod 
-            SET political = ?, sexual = ?, invite_link = ?, mention = ?, whitelist_permission = ?
-            WHERE server_id = ?
-        """, (political, sexual, invite_link, mention, whitelist_permission, server_id))
-    else:
-        # 없을 경우 insert
-        c.execute("""
-            INSERT INTO automod (server_id, political, sexual, invite_link, mention, whitelist_permission)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (server_id, political, sexual, invite_link, mention, whitelist_permission))
-
-def get_automod(server_id):
-    c.execute("""
-        SELECT political, sexual, invite_link, mention, whitelist_permission
-        FROM automod
-        WHERE server_id = ?
-    """, (server_id,))
-    row = c.fetchone()
-    
-    if row:
-        political, sexual, invite_link, mention, whitelist_permission = row[0], row[1], row[2], row[3], row[4]
-        if political == -1 : 
-            political = [False, 0]
-        else : 
-            political = [True, political]
-        if sexual == -1 :
-            sexual = [False, 0]
-        else : 
-            sexual = [True, sexual]
-        if invite_link == -1 :
-            invite_link = [False, 0]
-        else : 
-            invite_link = [True, invite_link]
-        if mention == -1 :
-            mention = [False, 0]
-        else : 
-            mention = [True, mention]
-        if whitelist_permission is None:
-            whitelist_permission = 'admin'
-        
-        return {
-            'political': political,
-            'sexual': sexual,
-            'invite_link': invite_link,
-            'mention': mention,
-            'whitelist_permission': whitelist_permission
-        }
-    else:
-        return {
-            'political': [False, 0],  # 검열 기능 비활성화
-            'sexual': [False, 0],
-            'invite_link': [False, 0],
-            'mention': [False, 0],
-            'whitelist_permission': 'admin'
-        }
-
-def update_log_channel(server_id, editdelete, reaction, role, image):
-    # 먼저 server_id가 있는지 확인
-    c.execute("SELECT id FROM log_channel WHERE server_id = ?", (server_id,))
-    row = c.fetchone()
-    
-    if row:
-        # 존재할 경우 update
-        c.execute("""
-            UPDATE log_channel 
-            SET editdelete = ?, reaction = ?, role = ?, image = ?
-            WHERE server_id = ?
-        """, (editdelete, reaction, role, image, server_id))
-    else:
-        # 없을 경우 insert
-        c.execute("""
-            INSERT INTO log_channel (server_id, editdelete, reaction, role, image)
-            VALUES (?, ?, ?, ?, ?)
-        """, (server_id, editdelete, reaction, role, image))
-
-def get_log_channel(server_id):
-    c.execute("""
-        SELECT editdelete, reaction, role, image
-        FROM log_channel
-        WHERE server_id = ?
-    """, (server_id,))
-    row = c.fetchone()
-    
-    if row:
-        return {
-            'editdelete': row[0],  # None일 경우 자동으로 Python의 None
-            'reaction': row[1],
-            'role': row[2],
-            'image': row[3]
-        }
-    else:
-        return {
-            'editdelete': None,
-            'reaction': None,
-            'role': None,
-            'image': None
-        }
+init_db()
 
 # 서버별 초대코드 캐시
 invite_cache = {}
@@ -1013,20 +610,6 @@ invite_cache = {}
 do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900]
 
 mention_timestamps = defaultdict(list)
-
-def import_invite_log(server_id: int, user_id: int) -> list[str | None]:
-    c.execute("SELECT link FROM invite_log WHERE user_id = ? AND server_id = ?", (user_id, server_id))
-    rows = c.fetchall()
-    
-    if not rows:
-        return [None]
-    
-    return [row[0] for row in rows]
-
-
-# 초대 로그 저장 함수
-def save_invite_log(user_id: int, link: str | None, server_id: int):
-    c.execute("INSERT INTO invite_log (user_id, link, server_id) VALUES (?, ?, ?)", (user_id, link, server_id))
 
 async def scan_url(link: str) : 
     try : 
@@ -1056,194 +639,6 @@ async def scan_url(link: str) :
     except Exception as e :
         print("함수 scan_url에서의 오류: ", str(e))
         return None
-
-
-def migrate_blockhistory(before: int, after: int, server_id: int):
-    # user_id가 before이고 server_id가 일치하는 모든 row의 user_id 값을 after로 업데이트
-    c.execute(
-        "UPDATE blockhistory SET user_id = ? WHERE user_id = ? AND server_id = ?",
-        (after, before, server_id)
-    )
-
-
-def add_account_relation(main_id: int, sub_id: int):
-    c.execute('''
-        INSERT INTO accounts (main_id, sub_id) VALUES (?, ?)
-    ''', (main_id, sub_id))
-
-def get_related_accounts(account_id: int):
-    # 그래프 탐색을 위한 준비
-    visited = set()
-    to_visit = [account_id]
-
-    while to_visit:
-        current = to_visit.pop()
-        if current in visited:
-            continue
-        visited.add(current)
-
-        # main_id → sub_id
-        c.execute('SELECT sub_id FROM accounts WHERE main_id = ?', (current,))
-        subs = [row[0] for row in c.fetchall()]
-
-        # sub_id → main_id
-        c.execute('SELECT main_id FROM accounts WHERE sub_id = ?', (current,))
-        mains = [row[0] for row in c.fetchall()]
-
-        # 방문하지 않은 연결된 노드 추가
-        to_visit.extend([acc for acc in subs + mains if acc not in visited])
-    return sorted(visited)
-
-def remove_account_relation(main_id: int, sub_id: int):
-    c.execute('''
-        DELETE FROM accounts WHERE main_id = ? AND sub_id = ?
-    ''', (main_id, sub_id))
-
-def update_block_log_channel(server_id: int, channel_id: int):
-    # server_id로 row 존재 여부 확인
-    c.execute("SELECT 1 FROM block_log_channel WHERE server_id = ?", (server_id,))
-    exists = c.fetchone()
-
-    if exists:
-        # 있으면 channel_id 업데이트
-        c.execute("""
-            UPDATE block_log_channel 
-            SET channel_id = ? 
-            WHERE server_id = ?
-        """, (channel_id, server_id))
-    else:
-        # 없으면 새 row 삽입
-        c.execute("""
-            INSERT INTO block_log_channel (server_id, channel_id) 
-            VALUES (?, ?)
-        """, (server_id, channel_id))
-
-def get_block_log_channel(server_id: int):
-
-    # server_id로 channel_id 조회
-    c.execute("SELECT channel_id FROM block_log_channel WHERE server_id = ?", (server_id,))
-    result = c.fetchone()
-
-    if result is not None:
-        return result[0]  # channel_id 반환
-    else:
-        return 0  # 해당 server_id가 없을 경우
-
-def update_anti_nuke_log_channel(server_id: int, channel_id: int):
-    # server_id로 row 존재 여부 확인
-    c.execute("SELECT 1 FROM anti_nuke_log_channel WHERE server_id = ?", (server_id,))
-    exists = c.fetchone()
-
-    if exists:
-        # 있으면 channel_id 업데이트
-        c.execute("""
-            UPDATE anti_nuke_log_channel 
-            SET channel_id = ? 
-            WHERE server_id = ?
-        """, (channel_id, server_id))
-    else:
-        # 없으면 새 row 삽입
-        c.execute("""
-            INSERT INTO anti_nuke_log_channel (server_id, channel_id) 
-            VALUES (?, ?)
-        """, (server_id, channel_id))
-
-def get_anti_nuke_log_channel(server_id: int):
-
-    # server_id로 channel_id 조회
-    c.execute("SELECT channel_id FROM anti_nuke_log_channel WHERE server_id = ?", (server_id,))
-    result = c.fetchone()
-
-    if result is not None:
-        return result[0]  # channel_id 반환
-    else:
-        return None  # 해당 server_id가 없을 경우
-
-def update_anti_nuke_option(server_id: int, ban_kick: bool):
-    # bool 값을 정수로 변환
-    ban_kick_value = 1 if ban_kick else 0
-
-    # server_id에 해당하는 행이 있는지 확인
-    c.execute("SELECT 1 FROM anti_nuke_option WHERE server_id = ?", (server_id,))
-    exists = c.fetchone()
-
-    if exists:
-        # 있으면 업데이트
-        c.execute("UPDATE anti_nuke_option SET ban_kick = ? WHERE server_id = ?", (ban_kick_value, server_id))
-    else:
-        # 없으면 새 행 삽입
-        c.execute("INSERT INTO anti_nuke_option (server_id, ban_kick) VALUES (?, ?)", (server_id, ban_kick_value))
-
-
-def get_anti_nuke_option(server_id: int):
-    # ban_kick 값 조회
-    c.execute("SELECT ban_kick FROM anti_nuke_option WHERE server_id = ?", (server_id,))
-    result = c.fetchone()
-
-    if result is not None:
-        return bool(result[0])  # 1이면 True, 0이면 False
-    else:
-        return False  # 해당 server_id가 없을 경우
-
-def update_anti_nuke_option(server_id: int, time: int):
-
-    # server_id에 해당하는 행이 있는지 확인
-    c.execute("SELECT 1 FROM server_link_block WHERE server_id = ?", (server_id,))
-    exists = c.fetchone()
-
-    if exists:
-        # 있으면 업데이트
-        c.execute("UPDATE server_link_block SET time = ? WHERE server_id = ?", (time, server_id))
-    else:
-        # 없으면 새 행 삽입
-        c.execute("INSERT INTO server_link_block (server_id, time) VALUES (?, ?)", (server_id, time))
-
-def get_server_link_block(server_id: int):
-    c.execute("SELECT time FROM server_link_block WHERE server_id = ?", (server_id,))
-    result = c.fetchone()
-
-    if result is not None:
-        return result[0]
-    else:
-        return 0  # 해당 server_id가 없을 경우
-
-def update_anti_nuke_whitelist(server_id: int, user_id: int, ban_kick: bool):
-    # bool 값을 정수로 변환
-    ban_kick_value = 1 if ban_kick else 0
-
-    # server_id와 user_id로 해당 row 존재 여부 확인
-    c.execute("""
-        SELECT 1 FROM anti_nuke_whitelist 
-        WHERE server_id = ? AND user_id = ?
-    """, (server_id, user_id))
-    exists = c.fetchone()
-
-    if exists:
-        # 있으면 ban_kick 값 업데이트
-        c.execute("""
-            UPDATE anti_nuke_whitelist 
-            SET ban_kick = ? 
-            WHERE server_id = ? AND user_id = ?
-        """, (ban_kick_value, server_id, user_id))
-    else:
-        # 없으면 새 row 삽입
-        c.execute("""
-            INSERT INTO anti_nuke_whitelist (server_id, user_id, ban_kick) 
-            VALUES (?, ?, ?)
-        """, (server_id, user_id, ban_kick_value))
-
-def get_anti_nuke_whitelist(server_id: int, user_id: int):
-    # ban_kick 값 조회
-    c.execute("""
-        SELECT ban_kick FROM anti_nuke_whitelist 
-        WHERE server_id = ? AND user_id = ?
-    """, (server_id, user_id))
-    result = c.fetchone()
-
-    if result is not None:
-        return bool(result[0])  # 1이면 True, 0이면 False
-    else:
-        return False  # 해당 row가 없을 경우 False 반환
 
 spamming_filter_whitelist = [1325846757636047030, 1329825168435970100] # 도배 방지 기능 화이트리스트 (역할 ID)
 anti_nuke_whitelist = [1331147542536126515] # 테러감지 화이트리스트 역할id
@@ -1414,43 +809,12 @@ def check_blocked(member_id):
 
 last_exp_time = {}
 
-# c.execute("CREATE TABLE IF NOT EXISTS blacklist (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, reason text, image_link text, image_private integar, report_user integar, reliability integar)") # 악성유저 테이블
-def add_blacklist(user_id, reason, image_link, image_private, report_user, reliability):
-    c.execute("""
-        INSERT INTO blacklist (user_id, reason, image_link, image_private, report_user, reliability)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (user_id, reason, image_link, image_private, report_user, reliability))
-
-def check_blacklist(user_id):
-    c.execute("SELECT reason, image_link, image_private, report_user, reliability FROM blacklist WHERE user_id = ?", (user_id,))
-    result = c.fetchone()
-
-    if result:
-        return [True, result[0], result[1], result[2], result[3], result[4]]
-    else:
-        return [False, None, None, None, None, None]
-def delete_blacklist(user_id) :
-    c.execute("DELETE FROM blacklist WHERE user_id = ?", (user_id,))
-
-def add_blockhistory(user_id: int, admin_id, reason: str, blocktype: str, addinfo: int, server_id: int):
-    c.execute("""
-        INSERT INTO blockhistory (user_id, admin_id, reason, type, addinfo, server_id)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (user_id, admin_id, reason, blocktype, addinfo, server_id))
-
 def load_exp():
     try:
         with open(EXP_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-
-# 시작하기
-def db_add_channel(server_id, message_log, reaction_log, punish_log_publish, punish_log_private):# 데이터 삽입
-    c.execute("""
-        INSERT INTO channel (server_id, message_log, reaction_log, punish_log_publish, punish_log_private)
-        VALUES (?, ?, ?, ?, ?)
-    """, (server_id, message_log, reaction_log, punish_log_publish, punish_log_private))
 
 # 경험치 데이터 저장 함수
 def save_exp(data):
@@ -1555,9 +919,6 @@ def read_denial_list():
     with open(DENIAL_LIST_FILE, 'r', encoding='utf-8') as f:
         return set(line.strip() for line in f if line.strip())
 
-def check_user_exists(user_id):
-    c.execute("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = ?)", (user_id,))
-    return c.fetchone()[0]  # 1이면 존재, 0이면 존재하지 않음
 
 '''
 def to_markdown(text):
@@ -1622,9 +983,6 @@ def save_blocked_users(blocked_users):
     with open('blocked_users.json', 'w', encoding='utf-8') as f:
         json.dump(blocked_users, f, ensure_ascii=False, indent=2)
 
-def check_rail_exists(channel_id) :
-    c.execute("SELECT EXISTS(SELECT 1 FROM rails WHERE channel_id = ?)", (channel_id,))
-    return c.fetchone()[0]  # 1이면 존재, 0이면 존재하지 않음
 
 def get_message_link(message):
     return f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
@@ -4248,50 +3606,6 @@ async def chat_xp_edit(interaction: discord.Interaction, 경험치: int) :
     EXP_GAIN = 경험치
     await interaction.response.send_message("경험치지급량 수정됨. 봇 종료 전까지 유효합니다.")
 
-def process_attendance(server_id, user_id):
-    # 현재 날짜 정보
-    today = datetime.now()
-    year, month, date = today.year, today.month, today.day
-
-    # 기존 출석 정보 확인
-    c.execute("SELECT year, month, date, streak FROM attendance WHERE server_id = ? AND user_id = ?", (server_id, user_id))
-    row = c.fetchone()
-
-    if row:
-        last_date = datetime(row[0], row[1], row[2])
-        streak = row[3]
-
-        if last_date.date() == today.date():
-            # 이미 오늘 출석함
-            return False, streak
-
-        elif last_date.date() == (today - timedelta(days=1)).date():
-            # 어제도 출석했다면 연속 출석
-            streak += 1
-            max_streak = streak
-        else:
-            # 연속 출석 실패
-            max_streak = streak
-            streak = 1
-
-        # 기존 레코드 업데이트
-        c.execute("""
-            UPDATE attendance
-            SET year = ?, month = ?, date = ?, streak = ?, max_streak = ?
-            WHERE server_id = ? AND user_id = ?
-        """, (year, month, date, streak, max_streak, server_id, user_id))
-
-    else:
-        # 첫 출석 기록
-        streak = 1
-        max_streak = 1
-        c.execute("""
-            INSERT INTO attendance (server_id, user_id, year, month, date, streak, max_streak)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (server_id, user_id, year, month, date, streak, max_streak))
-    
-    return True, streak
-
 @bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치(마늘)를 받습니다.")
 async def attendance(interaction: discord.Interaction):
     if interaction.guild.id != using_server :
@@ -6562,6 +5876,9 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         blockhistory = {}
 
         for i in user_list : 
+            conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+            c = conn.cursor()
+            
             c.execute(
                 "SELECT type, reason, addinfo FROM blockhistory WHERE user_id = ? AND server_id = ? ORDER BY id DESC", 
                 (i, interaction.guild.id)
@@ -6591,6 +5908,8 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
                     blockhistory[i] += f"서버에서 차단. 사유: {j[1]}\n"
                 elif j[0] == "unban" : 
                     blockhistory[i] += f"서버에서 차단 해제. 사유: {j[1]}\n"
+            
+            conn.close()
         
         print(blockhistory)
 
@@ -7953,6 +7272,9 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
         await interaction.followup.send(msg)
         return
     
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
     if 사용자 and 관리자 : 
         c.execute(
             "SELECT * FROM blockhistory WHERE user_id = ? AND admin_id = ? AND server_id = ? ORDER BY id DESC", 
@@ -7979,6 +7301,8 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
     if not records:
         await interaction.followup.send("제재 내역이 없습니다.", ephemeral=False)
         return
+    
+    conn.close()
 
     view = ModerationLogView(records, 사용자)
     await interaction.followup.send(embed=view.get_embed(), view=view)
@@ -9843,22 +9167,6 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
     )
     await interaction.followup.send(embed=embed)
 
-# DB에서 고유한 join_route 값 가져오기
-def get_all_join_routes():
-    c.execute('SELECT DISTINCT join_route FROM user_join_route WHERE join_route IS NOT NULL')
-    results = c.fetchall()
-    return [row[0] for row in results]
-
-# 자동완성 함수
-async def join_route_autocomplete(
-    interaction: discord.Interaction,
-    current: str
-) -> list[app_commands.Choice[str]]:
-    routes = get_all_join_routes()
-    return [
-        app_commands.Choice(name=route, value=route)
-        for route in routes if current.lower() in route.lower()
-    ][:25]  # 최대 25개만 반환 가능
 
 @bot.tree.command(name = "구분역할설정", description = "개발자용")
 @app_commands.default_permissions(administrator = True)
@@ -11318,156 +10626,6 @@ async def 제재내역수동추가(interaction: discord.Interaction, 유저: dis
     await interaction.response.send_message(embed=embed, ephemeral=True)
     return
 
-async def check_all_bot_admin_perm(interaction):
-    # 모든 역할을 순회
-    for role in interaction.guild.roles:
-        # 관리자 권한이 없으면 패스
-        if not role.permissions.administrator:
-            continue
-
-        # 이 역할이 부여된 멤버들 가져오기
-        members_with_role = [member for member in interaction.guild.members if role in member.roles]
-
-        # 조건 1: 역할이 부여된 봇 계정이 5명 이상인지 확인
-        if len(members_with_role) >= 5 and all(member.bot for member in members_with_role):
-            return True  # 조건을 만족하는 역할이 존재
-
-    return False  # 끝까지 돌았는데 조건을 만족하는 역할이 없음
-
-@bot.tree.command(name="보안점검", description="서버의 권한 설정을 검토합니다.")
-@app_commands.default_permissions(administrator=True)
-async def security_check(interaction: discord.Interaction, 인증역할: Optional[discord.Role] = None):
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    dangerous = False
-    warning = False
-
-    # 검사할 역할 설정
-    check_role = 인증역할 if 인증역할 else interaction.guild.default_role
-    if 인증역할 is not None : 
-        check_role2 = interaction.guild.default_role
-    else : 
-        check_role2 = None
-
-    # 위험 권한 확인
-    dangerous_perms_found = []
-    for perm, perm_name in dangerous_permissions.items():
-        if getattr(check_role.permissions, perm):
-            dangerous_perms_found.append(perm_name)
-        if check_role2 is not None : 
-            if getattr(check_role2.permissions, perm):
-                dangerous_perms_found.append(perm_name)
-    
-    description = ""
-
-    # 임베드 생성
-    embed = discord.Embed(
-        title="서버 보안 점검 결과",
-        description = "서버 보안 점검 결과는 다음과 같습니다. [자세히 알아보기](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link)",
-    )
-
-    # 위험 권한 상태 메시지
-    if dangerous_perms_found:
-        status_msg = f"일반 사용자에게 위험한 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다: " + \
-                     ", ".join(f"{perm}" for perm in dangerous_perms_found)
-        dangerous = True
-    else:
-        status_msg = "일반 사용자에게 위험한 권한이 부여되어 있지 않습니다."
-    
-    all_bot_admin = await check_all_bot_admin_perm(interaction)
-
-    if all_bot_admin : 
-        all_bot_admin_msg = "모든 봇에게 관리자 권한을 일괄적으로 부여하는 것은 권장되지 않습니다. 봇별로 개별적으로 권한을 다르게 부여하시기 바랍니다."
-        warning = True
-    else : 
-        all_bot_admin_msg = "모든 봇에게 관리자 권한을 일괄적으로 부여하고 있지 않습니다."
-    
-    
-    embed.add_field(name = "역할 권한 보안", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 모든 봇 관리자 권한 부여 여부: {all_bot_admin_msg}", inline = False)
-
-    check_role = 인증역할 if 인증역할 else interaction.guild.default_role
-
-    dangerous_perms_found = []
-
-    for channel in interaction.guild.channels:
-        overwrites = channel.overwrites_for(check_role)
-        for perm, perm_name in dangerous_permissions.items():
-            if getattr(overwrites, perm, None):  # 채널에서 명시적으로 허용된 권한만 체크
-                dangerous_perms_found.append(f"{channel.mention}: {perm_name}")
-    if check_role2 is not None : 
-        for channel in interaction.guild.channels:
-            overwrites = channel.overwrites_for(check_role2)
-            for perm, perm_name in dangerous_permissions.items():
-                if getattr(overwrites, perm, None):  # 채널에서 명시적으로 허용된 권한만 체크
-                    dangerous_perms_found.append(f"{channel.mention}: {perm_name}")
-
-    if dangerous_perms_found:
-        status_msg = f"일반 사용자에게 위험한 채널 권한 {len(dangerous_perms_found)}개가 부여되어 있습니다: " + \
-                     ", ".join(f"{perm}" for perm in dangerous_perms_found)
-        dangerous = True
-    else:
-        status_msg = "일반 사용자에게 위험한 채널 권한이 부여되어 있지 않습니다."
-    
-    embed.add_field(name = "채널 권한 보안", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}", inline = False)
-
-    automod_rules = await interaction.guild.fetch_automod_rules()
-
-    bot_automod = False
-    invite_link_keyword_automod = False
-    invite_link_keyword_automod2 = False
-    invite_link_regex_automod = False
-
-    automod = get_automod(interaction.guild.id)['invite_link'][0]
-
-    if automod == True : 
-        bot_automod = True
-
-    for automod_rule in automod_rules : 
-        if invite_link_regex_automod == True : 
-            break
-        if automod_rule.enabled == True : 
-            if automod_rule.trigger.regex_patterns is not None : 
-                for i in automod_rule.trigger.regex_patterns : 
-                    regex = re.compile(i)
-                    if regex.search("discord.gg/discord") is not None : 
-                        if regex.search("discord.com/invite/discord") is not None : 
-                            if regex.search("discord.com:443/invite/discord") is not None : 
-                                if regex.search("discord.gg:443/discord") is not None : 
-                                    invite_link_regex_automod = True
-            if automod_rule.trigger.keyword_filter is not None : 
-                for i in automod_rule.trigger.keyword_filter : 
-                    if "discord.gg" in i : 
-                        invite_link_keyword_automod = True
-                    if "discord.com/invite" in i : 
-                        invite_link_keyword_automod2 = True
-    
-    if bot_automod == True : 
-        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 마늘이 자동 검열 기능이 활성화되어 있습니다.", inline = False)
-    elif invite_link_regex_automod == True : 
-        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있습니다.", inline = False)
-    elif invite_link_keyword_automod == True and invite_link_keyword_automod2 == True : 
-        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있으나, 정규표현식으로 되어 있지 않거나 정규표현식이 올바르지 않아 일부 우회가 가능합니다. 정규표현식을 통해 우회를 방지하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
-        warning = True
-    else : 
-        embed.add_field(name = "특정 메시지 차단 보안", value = "- 초대 링크 자동 차단: 디스코드 서버 초대 링크를 무단으로 게시하는 것을 차단하는 Automod가 활성화되어 있지 않습니다. 정규표현식을 통해 이러한 링크를 차단하는 방법을 [자세히 알아보세요](https://asdfasdfqwer.notion.site/1fc4a653ce0180038f81f2fb001c7943?source=copy_link).", inline = False)
-        dangerous = True
-
-    if dangerous : 
-        embed.color = discord.Color.red()
-    elif warning : 
-        embed.color = discord.Color.yellow()
-    else : 
-        embed.color = int("a5f0ff", 16)
-
-    await interaction.followup.send(embed=embed)
-
 '''
 @bot.tree.command(name="선로신설", description="해당 채널에 선로를 새로 건설합니다.")
 @app_commands.describe(name = "노선명", rail_cnt="선로 수 (예: 1은 단선, 2는 복선, 4는 복복선)")
@@ -11730,6 +10888,7 @@ timestamp.setup(bot)
 ping.setup(bot)
 close_threads.setup(bot)
 remove_all_roles.setup(bot)
+security_check.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
