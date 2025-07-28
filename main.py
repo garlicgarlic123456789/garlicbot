@@ -6248,7 +6248,7 @@ def create_chain1(message) :
         ("human", "{messages}")
     ])
     llm = ChatOpenAI(
-        temperature=0.1,
+        temperature=0.3,
         model="gpt-4.1-mini",
     )
     output_parser = StrOutputParser()
@@ -6326,7 +6326,7 @@ def create_chain2(message) :
         ("human", "유저들의 규정 위반 메시지: \n{messages}\n\n이전 제재 내역: {before_blockhistory}")
     ])
     llm = ChatOpenAI(
-        temperature=0.1,
+        temperature=0.3,
         model="gpt-4.1-mini",
     )
     output_parser = StrOutputParser()
