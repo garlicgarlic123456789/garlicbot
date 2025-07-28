@@ -2,7 +2,7 @@ import discord
 
 from discord import app_commands
 
-from define import *
+from commands.define import *
 
 
 def setup(bot) : 
