@@ -6231,8 +6231,14 @@ def create_chain1(message) :
 출력 형식은 json으로 다음 예시와 같게 출력합니다. (규정 위반이 없을 시 빈 json 반환)
 
 {{
-    "유저id": "위반한 메시지 내용",
-    "유저id": "위반한 메시지 내용",
+    {{
+        "user_id": "위반한 유저 id",
+        "message_content": "위반한 메시지 내용",
+    }},
+    {{
+        "user_id": "위반한 유저 id",
+        "message_content": "위반한 메시지 내용",
+    }}
 }}
 
 하나의 유저가 같은 메시지를 보낸 것이 여러번 위반일 때에는 한 번만 json에 언급합니다. (단, 여러명의 유저가 같은 메시지를 보낸 경우에는 여러번 json에 언급할 수 있습니다.)
@@ -6241,8 +6247,14 @@ def create_chain1(message) :
 
 예: 유저 id가 1인 유저가 "섹스"라고 성적인 말을 했고, 유저 id가 2인 유저가 "노무현"이라고 정치인 언급을 한 경우:
 {{
-    "1": "섹스",
-    "2": "노무현",
+    {{
+        "user_id": "1",
+        "message_content": "섹스",
+    }},
+    {{
+        "user_id": "2",
+        "message_content": "노무현",
+    }},
 }}
         """),
         ("human", "{messages}")
@@ -6509,10 +6521,10 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed=embed)
             return
 
-        user_list = list(output_dict.keys())
+        user_list = []
 
-        for i in range(len(user_list)) : 
-            user_list[i] = int(user_list[i])
+        for i in output_dict : 
+            user_list.append(int(i["user_id"]))
 
         # 제재할 건이 있는 유저들의 이전 제재 내역 불러오기 (최대 15건)
         blockhistory = {}
