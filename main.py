@@ -6230,7 +6230,7 @@ def create_chain1(message) :
 
 출력 형식은 json으로 다음 예시와 같게 출력합니다. (규정 위반이 없을 시 빈 json 반환)
 
-[
+[[
     {{
         "user_id": "위반한 유저 id",
         "message_content": "위반한 메시지 내용",
@@ -6238,15 +6238,15 @@ def create_chain1(message) :
     {{
         "user_id": "위반한 유저 id",
         "message_content": "위반한 메시지 내용",
-    }}
-}
+    }},
+]]
 
 하나의 유저가 같은 메시지를 보낸 것이 여러번 위반일 때에는 한 번만 json에 언급합니다. (단, 여러명의 유저가 같은 메시지를 보낸 경우에는 여러번 json에 언급할 수 있습니다.)
 
 절대로 같은 유저 id가 보낸 같은 메시지를 여러번 json으로 주지 마세요.
 
 예: 유저 id가 1인 유저가 "섹스"라고 성적인 말을 했고, 유저 id가 2인 유저가 "노무현"이라고 정치인 언급을 한 경우:
-{{
+[[
     {{
         "user_id": "1",
         "message_content": "섹스",
@@ -6255,7 +6255,7 @@ def create_chain1(message) :
         "user_id": "2",
         "message_content": "노무현",
     }},
-}}
+]]
         """),
         ("human", "{messages}")
     ])
