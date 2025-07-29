@@ -44,6 +44,7 @@ async def invite_log_check(link) :
     elif link == "NjVYgJwPAV" : return "한국철도 태그서버 홍보 채널 홍보지"
     elif link == "Tyx95yycEE" : return "디스보드"
     elif link == "aT4K7gvaCT" : return "디스보드"
+    elif link == "FFW3cGxnhM" : return "디스보드"
     elif link == "6FUtVZzTd9" : return "서대문구 알피서버 연합 채널 홍보지"
     elif link == "6uQaMRG6dh" : return "the winds of liberty 연합 채널 홍보지"
     elif link == "JwswzMuN8W" : return "기부니가 좋아져요! 홍보 채널 홍보지 또는 한국 게임 서버 (블루 서버) 홍보 채널 홍보지"
