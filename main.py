@@ -9214,6 +9214,15 @@ async def route_autocomplete(
 async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.User):
     await interaction.response.defer(ephemeral=True)
 
+    if interaction.user.id != developer : 
+        embed = discord.Embed(
+            title="오류",
+            description="이 기능은 개발자만 사용할 수 있습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+
     join_route = get_user_join_route(입력1.id)
     if join_route is None:
         embed = discord.Embed(
