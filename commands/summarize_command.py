@@ -12,19 +12,14 @@ class summarize_command(app_commands.Group) :
         super().__init__(name="요약", description="요약 관련 명령어")
     
     @app_commands.command(name="대화", description="특정 메시지 범위에 해당되는 메시지들을 요약합니다.")
-    @app_commands.describe(
-        시작="요약을 시작할 메시지의 링크",
-        끝="요약을 끝낼 메시지의 링크 (선택)",
-        프롬프트="요약 프롬프트 (선택)",
-        개인응답 = "개인응답 여부 (선택, 기본 값 \'비활성화\')"
-    )
+    @app_commands.describe(시작="요약을 시작할 메시지의 링크", 끝="요약을 끝낼 메시지의 링크 (선택)", 프롬프트="요약 프롬프트 (선택)", 개인응답="개인응답 여부 (선택, 기본 값 \'비활성화\')")
     @app_commands.choices(
         개인응답 = [
             app_commands.Choice(name = "활성화", value = "True"),
             app_commands.Choice(name = "비활성화", value = "False"),
         ]
     )
-    async def summarize_message(interaction: discord.Interaction, 시작: str, 끝: str = None, 프롬프트: str = "이 대화를 한국어로 요약해 주세요.", 개인응답: str = "False"):
+    async def summarize_message(self, interaction: discord.Interaction, 시작: str, 끝: str = None, 프롬프트: str = "이 대화를 한국어로 요약해 주세요.", 개인응답: str = "False"):
         if 개인응답 == "False" : 
             await interaction.response.defer()
         else :
@@ -150,18 +145,14 @@ class summarize_command(app_commands.Group) :
             return
     
     @app_commands.command(name="유튜브", description="특정 링크에 해당되는 유튜브 영상을 요약합니다.")
-    @app_commands.describe(
-        링크="요약할 유튜브 영상의 링크",
-        프롬프트="요약 프롬프트 (선택)",
-        개인응답 = "개인응답 여부 (선택, 기본 값 \'비활성화\')"
-    )
+    @app_commands.describe(링크="요약할 유튜브 영상의 링크", 프롬프트="요약 프롬프트 (선택)", 개인응답="개인응답 여부 (선택, 기본 값 \'비활성화\')")
     @app_commands.choices(
         개인응답 = [
             app_commands.Choice(name = "활성화", value = "True"),
             app_commands.Choice(name = "비활성화", value = "False"),
         ]
     )
-    async def summarize_youtube(interaction: discord.Interaction, 링크: str, 프롬프트: str = "이 대화를 한국어로 요약해 주세요.", 개인응답: str = "False"):
+    async def summarize_youtube(self, interaction: discord.Interaction, 링크: str, 프롬프트: str = "이 대화를 한국어로 요약해 주세요.", 개인응답: str = "False"):
         if 개인응답 == "False" : 
             await interaction.response.defer()
         else :
