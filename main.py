@@ -1875,7 +1875,7 @@ async def on_message(message):
         if automod_setting['mention'][0] :
             if message.channel.id != 1320304882393153586: 
                 if message.guild.id == using_server : 
-                    if "<@&1375687128708677682>" in message.content or "<@&1378253467940028498>" in message.content or "<@&1378256091070074900>" in message.content : 
+                    if "<@&1400872501378158764>" in message.content or "<@&1375687128708677682>" in message.content or "<@&1378253467940028498>" in message.content or "<@&1378256091070074900>" in message.content : 
                         return
                 for i in automod_keyword6 :
                     if i in message.content :
