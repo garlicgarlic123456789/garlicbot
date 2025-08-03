@@ -24,6 +24,7 @@ async def invite_log_check(link) :
     elif link == "DRFEAZWVqj" : return "내 프로필 내 소개란"
     elif link == "QVJ5nbFfDu" : return "내 프로필 내 소개란"
     elif link == "ujUrqCZ3tM" : return "내 프로필 내 소개란"
+    elif link == "NxpjEFzVyA" : return "내 프로필 내 소개란"
     elif link == "VMT59yEVv6" : return "올비전 서포트 서버 홍보 채널 홍보지"
     elif link == "6pXet92r8n" : return "secret forest 연합 채널 홍보지"
     elif link == "auPkDxXBQ9" : return "cocomeda 연합 채널 홍보지"
