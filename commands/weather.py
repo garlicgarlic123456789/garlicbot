@@ -4,6 +4,7 @@ from discord import app_commands
 import aiohttp
 import os
 from dotenv import load_dotenv
+from commands.define import *
 
 REGION_COORDS = {
     '서울': {'lat': 37.5665, 'lon': 126.9780},
@@ -58,7 +59,13 @@ def setup(bot):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    await interaction.followup.send("❗ 날씨 정보를 가져올 수 없습니다.")
+                    embed = discord.Embed(
+                        title = "오류",
+                        description = "오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+                        color = int("a5f0ff", 16)
+                    )
+                    await interaction.followup.send(embed=embed)
+                    error += 1
                     return
                 data = await resp.json()
 
@@ -68,7 +75,7 @@ def setup(bot):
         humidity = data['main']['humidity']
         emoji = get_weather_emoji(weather)
 
-        embed = discord.Embed(title=f"{지역.name}의 현재 날씨", description=f"{emoji} {weather}", color=discord.Color.blue())
+        embed = discord.Embed(title=f"{지역.name}의 현재 날씨", description=f"{emoji} {weather}", color=int("a5f0ff", 16))
         embed.add_field(name="🌡 온도", value=f"{temp}°C", inline=True)
         embed.add_field(name="🥵 체감온도", value=f"{feels_like}°C", inline=True)
         embed.add_field(name="💧 습도", value=f"{humidity}%", inline=True)
