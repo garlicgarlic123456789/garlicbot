@@ -60,11 +60,11 @@ def setup(bot):
             async with session.get(url) as resp:
                 if resp.status != 200:
                     global error
-                    print(f"오류 #{error}: {resp.status}")
+                    print(f"오류 #{error}: {resp.status}, {resp.reason}")
                     embed = discord.Embed(
                         title = "오류",
                         description = f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
-                        color = int("a5f0ff", 16)
+                        color = discord.Color.red()
                     )
                     await interaction.followup.send(embed=embed)
                     error += 1
