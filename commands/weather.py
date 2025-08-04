@@ -41,7 +41,7 @@ def get_weather_emoji(desc):
     return "🌫️"
 
 
-async def setup(bot):
+def setup(bot):
     @bot.tree.command(name="날씨", description="지역을 선택하여 현재 날씨를 확인합니다.")
     @app_commands.describe(지역="날씨를 볼 지역 선택")
     @app_commands.choices(지역=REGION_CHOICES)

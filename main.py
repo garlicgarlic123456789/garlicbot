@@ -81,7 +81,7 @@ from commands.train_command import *
 from commands.summarize_command import *
 from commands import security_check
 from commands.database import *
-from commands.weather import *
+from commands import weather
 
 from zoneinfo import ZoneInfo
 
