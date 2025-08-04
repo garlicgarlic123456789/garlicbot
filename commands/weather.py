@@ -63,7 +63,7 @@ def setup(bot):
                     print(f"오류 #{error}: {resp.status}")
                     embed = discord.Embed(
                         title = "오류",
-                        description = "오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+                        description = f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                         color = int("a5f0ff", 16)
                     )
                     await interaction.followup.send(embed=embed)
