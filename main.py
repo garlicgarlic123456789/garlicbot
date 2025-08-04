@@ -81,6 +81,7 @@ from commands.train_command import *
 from commands.summarize_command import *
 from commands import security_check
 from commands.database import *
+from commands.weather import *
 
 from zoneinfo import ZoneInfo
 
@@ -10103,6 +10104,7 @@ ping.setup(bot)
 close_threads.setup(bot)
 remove_all_roles.setup(bot)
 security_check.setup(bot)
+weather.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
