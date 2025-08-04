@@ -6,6 +6,10 @@ import requests
 import asyncio
 import time
 from commands.fuction_collect_message import fetch_messages
+from dotenv import load_dotenv
+import os
+from youtube_transcript_api import YouTubeTranscriptApi
+load_dotenv()
 
 class summarize_command(app_commands.Group) : 
     def __init__(self):
@@ -169,6 +173,30 @@ class summarize_command(app_commands.Group) :
             await interaction.followup.send(embed = embed)
             return
         
-        await interaction.followup.send(f"아직 개발 중입니다.")
+        if interaction.user.id != developer : 
+            embed = discord.Embed(
+                title="오류",
+                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        else : 
+            transcript = await self.get_youtube_subtitle(링크)
+            for entry in transcript:
+                print(entry['text'])
+            await interaction.followup.send(f"아직 개발 중입니다.")
+            return
+        
+    
+    async def get_youtube_subtitle(self, id: str) : 
+        # 자막 리스트 확인
+        available_transcripts = YouTubeTranscriptApi.list_transcripts(id)
+
+        # 한국어 자막 가져오기 (ko)
+        korean_transcript = available_transcripts.find_transcript(['ko'])
+        transcript = korean_transcript.fetch()
+        
+        return transcript
         
     
