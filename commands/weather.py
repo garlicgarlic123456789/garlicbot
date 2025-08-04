@@ -59,6 +59,7 @@ def setup(bot):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
+                    global error
                     print(f"오류 #{error}: {resp.status}")
                     embed = discord.Embed(
                         title = "오류",
