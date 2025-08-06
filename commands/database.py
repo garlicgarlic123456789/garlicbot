@@ -123,7 +123,7 @@ def update_xp(server_id: int, user_id: int, xp: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     
-    c.execute("SELECT id FROM xp WHERE server_id = ? AND user_id = ?", (server_id, user_id))
+    c.execute("SELECT xp FROM xp WHERE server_id = ? AND user_id = ?", (server_id, user_id))
     row = c.fetchone()
     
     if row : 
