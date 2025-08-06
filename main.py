@@ -2698,6 +2698,10 @@ async def on_message(message):
 
         now = asyncio.get_event_loop().time()
         
+        # last_exp_time 딕셔너리 초기화
+        if server_id not in last_exp_time:
+            last_exp_time[server_id] = {}
+        
         # 경험치 추가 쿨다운 확인
         if user_id in last_exp_time[server_id] and now - last_exp_time[server_id][user_id] < cooldown:
             return
