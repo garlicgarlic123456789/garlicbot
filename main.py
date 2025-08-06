@@ -7510,7 +7510,6 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
     status_loop.start()
     exp_event.start()
-    check_voice_channels.start()
     bot.add_view(TicketView())  # persistent view 등록
 
     channel = bot.get_channel(ticket_channel_id)
