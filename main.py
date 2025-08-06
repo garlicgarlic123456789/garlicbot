@@ -8086,7 +8086,8 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
     elif 아이디 == 22 : 
         await interaction.response.defer()
         temp = load_exp()
-        print(temp)
+        for i, j in temp.items() : 
+            update_xp(1320303102703702037, i, j)
         await interaction.followup.send(f"cmd 확인바람")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
