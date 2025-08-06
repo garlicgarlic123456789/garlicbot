@@ -412,6 +412,8 @@ def check_blocked(member_id):
 last_exp_time = {}
 
 def load_exp():
+    print("load_exp는 더 이상 사용되지 않는 함수이므로, return합니다.")
+    return 0
     try:
         with open(EXP_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -3225,14 +3227,6 @@ def format_duration(duration):
     minutes, seconds = divmod(remainder, 60)
     return f"{int(hours)}시간 {int(minutes)}분 {int(seconds)}초"
 
-@bot.tree.command(name = "경험치지급량수정", description = "경험치지급량수정")
-async def chat_xp_edit(interaction: discord.Interaction, 경험치: int) :
-    if interaction.user.id != developer :
-        await interaction.response.send_message("권한 부족.")
-    global EXP_GAIN
-    EXP_GAIN = 경험치
-    await interaction.response.send_message("경험치지급량 수정됨. 봇 종료 전까지 유효합니다.")
-
 @bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치(마늘)를 받습니다.")
 async def attendance(interaction: discord.Interaction):
     await interaction.response.defer()
@@ -3305,10 +3299,12 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
 
     lvl = return_level(exp)
 
+    unit = xp_setting[interaction.guild.id][5]
+
     embed = discord.Embed(
         title="경험치 확인",
         color=int("a5f0ff", 16),
-        description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} 마늘을 보유 중입니다."
+        description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을 보유 중입니다."
     )
     
     await interaction.followup.send(embed = embed)
@@ -3417,15 +3413,8 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             )
             await interaction.followup.send(embed = embed)
             return
-        exp_data = load_exp()
-        user_id = str(interaction.user.id)
-        
-        if user_id not in exp_data:
-            exp_data[user_id] = 0
-
-        if exp_data[user_id] >= 3000 :
-            exp_data[user_id] -= 3000
-            save_exp(exp_data)
+        if get_xp(interaction.guild.id, interaction.user.id) >= 3000 :
+            update_xp(interaction.guild.id, interaction.user.id, -3000)
             role = interaction.guild.get_role(1333390128072232980)
             await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
             embed = discord.Embed(
@@ -3451,15 +3440,8 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             )
             await interaction.followup.send(embed = embed)
             return
-        exp_data = load_exp()
-        user_id = str(interaction.user.id)
-        
-        if user_id not in exp_data:
-            exp_data[user_id] = 0
-
-        if exp_data[user_id] >= 7000 :
-            exp_data[user_id] -= 7000
-            save_exp(exp_data)
+        if get_xp(interaction.guild.id, interaction.user.id) >= 7000 :
+            update_xp(interaction.guild.id, interaction.user.id, -7000)
             role = interaction.guild.get_role(1320315949005537310)
             await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
             embed = discord.Embed(
@@ -3485,15 +3467,8 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             )
             await interaction.followup.send(embed = embed)
             return
-        exp_data = load_exp()
-        user_id = str(interaction.user.id)
-        
-        if user_id not in exp_data:
-            exp_data[user_id] = 0
-
-        if exp_data[user_id] >= 7000 :
-            exp_data[user_id] -= 7000
-            save_exp(exp_data)
+        if get_xp(interaction.guild.id, interaction.user.id) >= 7000 :
+            update_xp(interaction.guild.id, interaction.user.id, -7000)
             role = interaction.guild.get_role(1320600850082693172)
             await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
             embed = discord.Embed(
@@ -3519,15 +3494,8 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             )
             await interaction.followup.send(embed = embed)
             return
-        exp_data = load_exp()
-        user_id = str(interaction.user.id)
-        
-        if user_id not in exp_data:
-            exp_data[user_id] = 0
-
-        if exp_data[user_id] >= 10000 :
-            exp_data[user_id] -= 10000
-            save_exp(exp_data)
+        if get_xp(interaction.guild.id, interaction.user.id) >= 10000 :
+            update_xp(interaction.guild.id, interaction.user.id, -10000)
             role = interaction.guild.get_role(1398550480707256433)
             await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
             embed = discord.Embed(
@@ -3546,11 +3514,12 @@ async def buy_shop(interaction: discord.Interaction, 상품명: str):
             return
 
 class GambleButton(discord.ui.View):
-    def __init__(self, author: discord.Member, xp_amount: int, choice: str):
+    def __init__(self, author: discord.Member, xp_amount: int, choice: str, unit: str):
         super().__init__(timeout=600)  # 60초 후 버튼 비활성화
         self.author = author
         self.xp_amount = xp_amount
         self.choice = choice
+        self.unit = unit
         self.lock = asyncio.Lock()
         self.already_played = False
 
@@ -3567,16 +3536,15 @@ class GambleButton(discord.ui.View):
                 msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
                 await interaction.response.send_message(msg, ephemeral = True)
                 return
-
-            exp_data = load_exp()
+            
             user_id = interaction.user.id
             maker_id = self.author.id
 
             if get_xp(interaction.guild.id, user_id) < self.xp_amount :
-                await interaction.response.send_message("**[오류!]** 게임 참가자의 마늘(XP)이 부족합니다.", ephemeral=True)
+                await interaction.response.send_message(f"**[오류!]** 게임 참가자의 {self.unit}이 부족합니다.", ephemeral=True)
                 return
             if get_xp(interaction.guild.id, maker_id) < self.xp_amount :
-                await interaction.response.send_message("**[오류!]** 게임 생성자의 마늘(XP)이 부족합니다.", ephemeral=True)
+                await interaction.response.send_message(f"**[오류!]** 게임 생성자의 {self.unit}이 부족합니다.", ephemeral=True)
                 return
             
             self.disable_all_buttons()
@@ -3599,7 +3567,7 @@ class GambleButton(discord.ui.View):
             update_xp(interaction.guild.id, loser_id, -1 * self.xp_amount)
             
             await interaction.followup.send(
-                f"<@{winner.id}>님이 승리하고 <@{loser.id}>님이 패배하였습니다. 정답은 **{correct}**이었고 걸린 경험치는 `{self.xp_amount}`입니다."
+                f"<@{winner.id}>님이 승리하고 <@{loser.id}>님이 패배하였습니다. 정답은 **{correct}**이었고 걸린 {self.unit}는 `{self.xp_amount}`입니다."
             )
 
     @discord.ui.button(label="홀", style=discord.ButtonStyle.primary)
@@ -3635,15 +3603,18 @@ async def gamble(interaction: discord.Interaction, amount: int, choice: app_comm
         await interaction.response.send_message("**[오류!]** amount의 값은 150000 이하여야 합니다.")
         return
     await interaction.response.defer(ephemeral = True)
+
+    unit = xp_setting[interaction.guild.id][5]
+
     embed = discord.Embed(
         title="경험치 도박 게임!",
         description=(
-            f"<@{interaction.user.id}>님이 경험치 `{amount}` 마늘을 걸고 게임을 생성하였습니다.\n"
+            f"<@{interaction.user.id}>님이 경험치 `{amount}` {unit}을 걸고 게임을 생성하였습니다.\n"
             "홀 또는 짝 중 해당 유저가 고른 것이 무엇인지 맞춰보세요."
         ),
         color=discord.Color.gold()
     )
-    view = GambleButton(interaction.user, amount, choice.value)
+    view = GambleButton(interaction.user, amount, choice.value, unit)
     await interaction.channel.send(embed=embed, view=view)
     await interaction.followup.send("도박 게임이 생성되었습니다!")
 
@@ -3661,7 +3632,7 @@ async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경
     embed = discord.Embed(
         title="성공",
         color=int("a5f0ff", 16),
-        description = f"{member.mention}님의 경험치가 {amount}만큼 변경되었습니다. 현재 경험치: {exp_data[user_id]}"
+        description = f"{member.mention}님의 경험치가 {amount}만큼 변경되었습니다. 현재 경험치: {get_xp(interaction.guild.id, member.id)}"
     )
     
     await interaction.followup.send(embed = embed)
@@ -3736,7 +3707,7 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         lvl = return_level(exp)
 
         embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
-        embed.add_field(name="보유한 마늘", value=f"{exp} {unit}", inline=False)
+        embed.add_field(name="보유한 경험치", value=f"{exp} {unit}", inline=False)
         
         embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
         embed.add_field(name = "서버 참가일", value = f"{사용자.joined_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
@@ -3782,7 +3753,7 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         lvl = return_level(exp)
 
         embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
-        embed.add_field(name="보유한 마늘", value=f"{exp} {unit}", inline=False)
+        embed.add_field(name="보유한 경험치", value=f"{exp} {unit}", inline=False)
         
         embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
         
