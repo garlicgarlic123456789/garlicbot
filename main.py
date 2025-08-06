@@ -2688,6 +2688,9 @@ async def on_message(message):
         user_id = message.author.id
         server_id = message.guild.id
 
+        if server_id not in xp_setting : 
+            return
+
         if not xp_setting[server_id][0] : 
             return
         
