@@ -33,7 +33,7 @@ def setup(bot):
         voice_xp_cooldown = 음성경험치쿨다운
         unit = 단위
 
-        if onoff and chat_xp is None and voice_xp is None and unit is None and chat_xp_cooldown is None and voice_xp_cooldown is None : 
+        if onoff and (chat_xp is None or voice_xp is None or unit is None or chat_xp_cooldown is None or voice_xp_cooldown is None) : 
             embed = discord.Embed(
                 title = "오류",
                 description = "필수 입력란이 비어 있습니다.",
