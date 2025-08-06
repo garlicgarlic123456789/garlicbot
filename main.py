@@ -3235,14 +3235,6 @@ async def chat_xp_edit(interaction: discord.Interaction, 경험치: int) :
 
 @bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치(마늘)를 받습니다.")
 async def attendance(interaction: discord.Interaction):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
     
@@ -3271,23 +3263,16 @@ async def attendance(interaction: discord.Interaction):
         streak_bonus += random.randrange(300, 501, 10)
     
     check_xp = random.randrange(1000, 2001, 10)
-    if any(role.id == server_booster_role_id for role in interaction.user.roles):
+    if interaction.guild.id == using_server and any(role.id == server_booster_role_id for role in interaction.user.roles):
         boost_check_xp = random.randrange(300, 1001, 10)
     else : 
         boost_check_xp = 0
     user_id = str(interaction.user.id)
     today_date = datetime.now(kst).strftime("%Y-%m-%d")
 
-    exp_data = load_exp()
-    user_id = str(interaction.user.id)
-    
-    if user_id not in exp_data:
-        exp_data[user_id] = 0
-    
-    exp_data[user_id] += check_xp
-    exp_data[user_id] += boost_check_xp
-    exp_data[user_id] += streak_bonus
-    save_exp(exp_data)
+    total_xp = check_xp + boost_check_xp + streak_bonus
+    update_xp(interaction.guild.id, interaction.user.id, total_xp)
+
     if boost_check_xp > 0 and streak_bonus > 0: 
         await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` 마늘(서버 부스터 보너스 `{boost_check_xp}` 마늘 포함, 연속 출석 보너스 `{streak_bonus}` 마늘 포함)이 지급되었습니다.")
     elif streak_bonus > 0 :
