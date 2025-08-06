@@ -55,7 +55,7 @@ def setup(bot):
             update_xp_setting(interaction.guild.id, onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit)
             embed = discord.Embed(
                 title = "완료",
-                description = "경험치 기능이 활성화되었습니다.",
+                description = "경험치 기능이 활성화되었습니다.\n\n참고: 아직 음성방 경험치 기능은 개발 중입니다.",
                 color = int("a5f0ff", 16)
             )
             await interaction.followup.send(embed = embed)
