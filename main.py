@@ -76,6 +76,7 @@ from commands import timestamp
 from commands import ping
 from commands import close_threads
 from commands import remove_all_roles
+from commands import xp_setup
 from commands.invite_log_check import *
 from commands.train_command import *
 from commands.summarize_command import *
