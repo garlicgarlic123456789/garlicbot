@@ -8083,6 +8083,10 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.response.defer()
         temp = get_xp(interaction.guild.id, interaction.user.id)
         await interaction.followup.send(f"경험치: {temp}")
+    elif 아이디 == 22 : 
+        await interaction.response.defer()
+        temp = load_exp()
+        await interaction.followup.send(f"경험치: {temp}")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
 @app_commands.describe(
