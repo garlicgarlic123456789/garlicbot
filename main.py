@@ -2681,25 +2681,23 @@ async def on_message(message):
         else :
             chattime[user_id] = {}
             chattime[user_id][channel_id] = [datetime.now(), datetime.now()]
-        # 경험치봇 코드 추가 예정
+        
         if message.author.bot:
             return
         
-        user_id = str(message.author.id)
+        user_id = message.author.id
+        server_id = message.guild.id
+        cooldown = xp_setting[server_id][2]
+        gain_xp = xp_setting[server_id][1]
+
         now = asyncio.get_event_loop().time()
         
         # 경험치 추가 쿨다운 확인
-        if user_id in last_exp_time and now - last_exp_time[user_id] < EXP_COOLDOWN:
+        if user_id in last_exp_time[server_id] and now - last_exp_time[server_id][user_id] < cooldown:
             return
         
-        # 경험치 추가
-        exp_data = load_exp()
-        if user_id not in exp_data:
-            exp_data[user_id] = 0
-        exp_data[user_id] += EXP_GAIN
-        save_exp(exp_data)
-        
-        last_exp_time[user_id] = now
+        last_exp_time[server_id][user_id] = now
+        update_xp(server_id, user_id, gain_xp)
 
 ban_time_list = {}
 
@@ -8064,6 +8062,10 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         temp = get_xp_setting(interaction.guild.id)
         temp2 = get_xp_setting_dict(interaction.guild.id)
         await interaction.followup.send(f"경험치 기능 설정값:\n- db: {temp}\n- 딕셔너리: {temp2}")
+    elif 아이디 == 21 : 
+        await interaction.response.defer()
+        temp = get_xp(interaction.guild.id, interaction.user.id)
+        await interaction.followup.send(f"경험치: {temp}")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
 @app_commands.describe(
