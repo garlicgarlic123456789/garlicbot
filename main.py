@@ -3238,6 +3238,14 @@ async def attendance(interaction: discord.Interaction):
         await interaction.followup.send(msg)
         return
     
+    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+        embed = discord.Embed(
+            title="오류",
+            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
     attendance_check, streak = process_attendance(interaction.guild.id, interaction.user.id)
 
     if not attendance_check:
@@ -3284,6 +3292,15 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
     member = 사용자
     await interaction.response.defer()
 
+    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+        embed = discord.Embed(
+            title="오류",
+            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+
     status, until, reason = is_blocked(interaction.user)
     
     # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
@@ -3312,6 +3329,14 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
 @bot.tree.command(name="경험치선물", description = "특정 사용자에게 경험치를 선물합니다.")
 async def gift_exp(interaction: discord.Interaction, member: discord.User, amount: int):
     await interaction.response.defer()
+    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+        embed = discord.Embed(
+            title="오류",
+            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
     if member.bot : 
         embed = discord.Embed(
             title="오류",
@@ -3589,6 +3614,14 @@ class GambleButton(discord.ui.View):
     app_commands.Choice(name="짝", value="짝")
 ])
 async def gamble(interaction: discord.Interaction, amount: int, choice: app_commands.Choice[str]):
+    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+        embed = discord.Embed(
+            title="오류",
+            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
     status, until, reason = is_blocked(interaction.user)
     
     # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
@@ -3622,6 +3655,14 @@ async def gamble(interaction: discord.Interaction, amount: int, choice: app_comm
 @app_commands.describe(사용자="경험치를 추가할 사용자", 경험치="추가할 경험치 양 (음수 값을 입력 시 차감)")
 @app_commands.default_permissions(administrator = True)
 async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경험치: int):
+    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+        embed = discord.Embed(
+            title="오류",
+            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
     member = 사용자
     amount = 경험치
 
@@ -3639,6 +3680,14 @@ async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경
 
 @bot.tree.command(name="경험치순위", description = "경험치 순위를 확인합니다.")
 async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
+    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+        embed = discord.Embed(
+            title="오류",
+            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return
     page = 페이지
     await interaction.response.defer()
 
@@ -3701,13 +3750,14 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         embed.add_field(name="별명", value=사용자.display_name, inline=False)
         embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
         embed.add_field(name="보유한 역할", value=roles_text, inline=False)
-        exp = get_xp(interaction.guild.id, 사용자.id)
-        unit = xp_setting[interaction.guild.id][5]
+        if interaction.guild.id in xp_setting and xp_setting[interaction.guild.id][0] == True :
+            exp = get_xp(interaction.guild.id, 사용자.id)
+            unit = xp_setting[interaction.guild.id][5]
 
-        lvl = return_level(exp)
+            lvl = return_level(exp)
 
-        embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
-        embed.add_field(name="보유한 경험치", value=f"{exp} {unit}", inline=False)
+            embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
+            embed.add_field(name="보유한 경험치", value=f"{exp} {unit}", inline=False)
         
         embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
         embed.add_field(name = "서버 참가일", value = f"{사용자.joined_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
@@ -3748,12 +3798,14 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         embed.add_field(name="사용자 ID", value=f"`{str(사용자.id)}`", inline=False)
         embed.add_field(name="별명", value=사용자.display_name, inline=False)
         embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
-        unit = xp_setting[interaction.guild.id][5]
+        if interaction.guild.id in xp_setting and xp_setting[interaction.guild.id][0] == True :
+            exp = get_xp(interaction.guild.id, 사용자.id)
+            unit = xp_setting[interaction.guild.id][5]
 
-        lvl = return_level(exp)
+            lvl = return_level(exp)
 
-        embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
-        embed.add_field(name="보유한 경험치", value=f"{exp} {unit}", inline=False)
+            embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
+            embed.add_field(name="보유한 경험치", value=f"{exp} {unit}", inline=False)
         
         embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
         
