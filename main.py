@@ -2692,13 +2692,14 @@ async def on_message(message):
             return
         
         cooldown = xp_setting[server_id][2]
-        gain_xp = xp_setting[server_id][1]
 
         now = asyncio.get_event_loop().time()
         
         # 경험치 추가 쿨다운 확인
         if user_id in last_exp_time[server_id] and now - last_exp_time[server_id][user_id] < cooldown:
             return
+        
+        gain_xp = xp_setting[server_id][1]
         
         last_exp_time[server_id][user_id] = now
         update_xp(server_id, user_id, gain_xp)
