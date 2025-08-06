@@ -5060,7 +5060,7 @@ async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Me
 
     await interaction.followup.send(embed = embed)
 
-
+'''
 VOICE_CHANNEL_IDS = [1325835990014754946, 1337017098974531696, 1360922829268455464] # 경치 주는 음성채널
 
 
@@ -5087,6 +5087,7 @@ async def check_voice_channels():
                 exp_data[user_id] += 150
 
             save_exp(exp_data)
+'''
 
 @bot.tree.command(name="동일인여부확인", description = "두 유저의 말투 비교를 통해 두 유저 간 말투를 비교하여 두 유저가 동일인일 가능성을 분석합니다.")
 async def oritest(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
