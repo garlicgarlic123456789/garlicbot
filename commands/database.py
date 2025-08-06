@@ -63,6 +63,63 @@ def init_db() :
     '''
     conn.close()
 
+def update_xp_setting(server_id: int, onoff: bool, chat_xp: int, chat_xp_cooldown: int, voice_xp: int, voice_xp_cooldown: int, unit: str):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT id FROM xp_setting WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    
+    if row:
+        c.execute("UPDATE xp_setting SET onoff = ?, chat_xp = ?, chat_xp_cooldown = ?, voice_xp = ?, voice_xp_cooldown = ?, unit = ? WHERE server_id = ?", (onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit, server_id))
+    else:
+        c.execute("INSERT INTO xp_setting (server_id, onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit) VALUES (?, ?, ?, ?, ?, ?, ?)", (server_id, onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit))
+    
+    conn.close()
+
+def get_xp_setting(server_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit FROM xp_setting WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    conn.close()
+    if row : 
+        onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit = row
+        if onoff == 1 : 
+            onoff = True
+        else : 
+            onoff = False
+        return onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit
+    return False, 0, 0, 0, 0, "마늘"
+
+def update_xp(server_id: int, user_id: int, xp: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT id FROM xp WHERE server_id = ? AND user_id = ?", (server_id, user_id))
+    row = c.fetchone()
+    
+    if row : 
+        current_xp = row[0]
+        new_xp = current_xp + xp
+        c.execute("UPDATE xp SET xp = ? WHERE server_id = ? AND user_id = ?", (new_xp, server_id, user_id))
+    else : 
+        c.execute("INSERT INTO xp (server_id, user_id, xp) VALUES (?, ?, ?)", (server_id, user_id, xp))
+    
+    conn.close()
+
+def get_xp(server_id: int, user_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM xp WHERE server_id = ? AND user_id = ?", (server_id, user_id))
+    row = c.fetchone()
+    conn.close()
+    if row : 
+        return row[0]
+    return 0
+
 def update_user_join_route(user_id: int, join_route: str):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
