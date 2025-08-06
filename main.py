@@ -3331,14 +3331,6 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
 @bot.tree.command(name="경험치선물", description = "특정 사용자에게 경험치를 선물합니다.")
 async def gift_exp(interaction: discord.Interaction, member: discord.User, amount: int):
     await interaction.response.defer()
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
     if member.bot : 
         embed = discord.Embed(
             title="오류",
@@ -3363,19 +3355,6 @@ async def gift_exp(interaction: discord.Interaction, member: discord.User, amoun
         )
         await interaction.followup.send(embed=embed)
         return
-    
-    exp_data = load_exp()
-    sender_id = str(interaction.user.id)
-    receiver_id = str(member.id)
-    
-    if sender_id not in exp_data or exp_data[sender_id] < amount:
-        embed = discord.Embed(
-            title="오류",
-            description="경험치가 부족합니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
 
     status, until, reason = is_blocked(interaction.user)
     
@@ -3385,11 +3364,17 @@ async def gift_exp(interaction: discord.Interaction, member: discord.User, amoun
         await interaction.followup.send(msg)
         return
     
-    exp_data[sender_id] -= amount
-    if receiver_id not in exp_data:
-        exp_data[receiver_id] = 0
-    exp_data[receiver_id] += amount
-    save_exp(exp_data)
+    if get_xp(interaction.guild.id, interaction.user.id) < amount : 
+        embed = discord.Embed(
+            title="오류",
+            description="경험치가 부족합니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+    
+    update_xp(interaction.guild.id, interaction.user.id, -amount)
+    update_xp(interaction.guild.id, member.id, amount)
 
     embed = discord.Embed(
         title="완료",
