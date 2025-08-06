@@ -3647,38 +3647,16 @@ async def gamble(interaction: discord.Interaction, amount: int, choice: app_comm
     await interaction.channel.send(embed=embed, view=view)
     await interaction.followup.send("도박 게임이 생성되었습니다!")
 
-@bot.tree.command(name="경험치추가", description = "특정 사용자의 경험치를 수정합니다.")
+@bot.tree.command(name="경험치수정", description = "특정 사용자의 경험치를 수정합니다.")
+@app_commands.describe(사용자="경험치를 추가할 사용자", 경험치="추가할 경험치 양 (음수 값을 입력 시 차감)")
+@app_commands.default_permissions(administrator = True)
 async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경험치: int):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
     member = 사용자
     amount = 경험치
-    
-    if interaction.user.id != developer:
-        embed = discord.Embed(
-            title="오류",
-            description="권한이 부족합니다. 다음 권한이 필요합니다: `개발자`",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
 
     await interaction.response.defer()
     
-    exp_data = load_exp()
-    user_id = str(member.id)
-    
-    if user_id not in exp_data:
-        exp_data[user_id] = 0
-    
-    exp_data[user_id] += amount
-    save_exp(exp_data)
+    update_xp(interaction.guild.id, member.id, amount)
 
     embed = discord.Embed(
         title="성공",
@@ -3690,14 +3668,6 @@ async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경
 
 @bot.tree.command(name="경험치순위", description = "경험치 순위를 확인합니다.")
 async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
     page = 페이지
     await interaction.response.defer()
 
@@ -3709,7 +3679,7 @@ async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
         await interaction.followup.send(msg)
         return
     
-    exp_data = load_exp()
+    exp_data = get_all_xp(interaction.guild.id)
     sorted_exp = sorted(exp_data.items(), key=lambda x: x[1], reverse=True)
     
     start_idx = (page - 1) * PAGE_SIZE

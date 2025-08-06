@@ -135,6 +135,17 @@ def update_xp(server_id: int, user_id: int, xp: int):
     
     conn.close()
 
+def get_all_xp(server_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT user_id, xp FROM xp WHERE server_id = ?", (server_id,))
+    rows = c.fetchall()
+    conn.close()
+    users_xp = {}
+    for i in rows : 
+        users_xp[i[0]] = i[1]
+    return users_xp
+
 def get_xp(server_id: int, user_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
