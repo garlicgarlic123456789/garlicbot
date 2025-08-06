@@ -2695,6 +2695,11 @@ async def on_message(message):
             return
         
         cooldown = xp_setting[server_id][2]
+    
+        if cooldown == 0 : 
+            gain_xp = xp_setting[server_id][1]
+            update_xp(server_id, user_id, gain_xp)
+            return
 
         now = asyncio.get_event_loop().time()
         
