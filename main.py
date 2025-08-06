@@ -10106,6 +10106,7 @@ close_threads.setup(bot)
 remove_all_roles.setup(bot)
 security_check.setup(bot)
 weather.setup(bot)
+xp_setup.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
