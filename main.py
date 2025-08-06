@@ -217,6 +217,8 @@ user2_choice = None
 game_active = False  # 게임 활성화 여부를 저장하는 플래그
 
 init_db()
+get_all_xp_setting()
+print(xp_setting)
 
 # 서버별 초대코드 캐시
 invite_cache = {}

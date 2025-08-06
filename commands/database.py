@@ -4,6 +4,8 @@ from datetime import timedelta
 import discord
 from discord import app_commands
 
+from commands.define import xp_setting
+
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -63,9 +65,26 @@ def init_db() :
     '''
     conn.close()
 
+def get_all_xp_setting():
+    global xp_setting
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT server_id FROM xp_setting")
+    rows = c.fetchall()
+    conn.close()
+    for i in rows : 
+        xp_setting[i[0]] = get_xp_setting(i[0])
+
 def update_xp_setting(server_id: int, onoff: bool, chat_xp: int, chat_xp_cooldown: int, voice_xp: int, voice_xp_cooldown: int, unit: str):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
+
+    onoff_bool = onoff
+
+    if onoff : 
+        onoff = 1
+    else : 
+        onoff = 0
     
     c.execute("SELECT id FROM xp_setting WHERE server_id = ?", (server_id,))
     row = c.fetchone()
@@ -75,6 +94,8 @@ def update_xp_setting(server_id: int, onoff: bool, chat_xp: int, chat_xp_cooldow
     else:
         c.execute("INSERT INTO xp_setting (server_id, onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit) VALUES (?, ?, ?, ?, ?, ?, ?)", (server_id, onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit))
     
+    xp_setting[server_id] = [onoff_bool, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit]
+
     conn.close()
 
 def get_xp_setting(server_id: int):
@@ -90,8 +111,8 @@ def get_xp_setting(server_id: int):
             onoff = True
         else : 
             onoff = False
-        return onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit
-    return False, None, None, None, None, None
+        return [onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit]
+    return [False, None, None, None, None, None]
 
 def update_xp(server_id: int, user_id: int, xp: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
