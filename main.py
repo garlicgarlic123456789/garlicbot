@@ -3569,18 +3569,13 @@ class GambleButton(discord.ui.View):
                 return
 
             exp_data = load_exp()
-            user_id = str(interaction.user.id)
-            maker_id = str(self.author.id)
-            
-            if user_id not in exp_data:
-                exp_data[user_id] = 0
-            if maker_id not in exp_data:
-                exp_data[maker_id] = 0
+            user_id = interaction.user.id
+            maker_id = self.author.id
 
-            if exp_data[user_id] < self.xp_amount :
+            if get_xp(interaction.guild.id, user_id) < self.xp_amount :
                 await interaction.response.send_message("**[오류!]** 게임 참가자의 마늘(XP)이 부족합니다.", ephemeral=True)
                 return
-            if exp_data[maker_id] < self.xp_amount :
+            if get_xp(interaction.guild.id, maker_id) < self.xp_amount :
                 await interaction.response.send_message("**[오류!]** 게임 생성자의 마늘(XP)이 부족합니다.", ephemeral=True)
                 return
             
@@ -3597,20 +3592,11 @@ class GambleButton(discord.ui.View):
             winner = interaction.user if user_choice == correct else self.author
             loser = self.author if winner == interaction.user else interaction.user
 
-            exp_data = load_exp()
-
-            winner_id = str(winner.id)
-            loser_id = str(loser.id)
+            winner_id = winner.id
+            loser_id = loser.id
             
-            if winner_id not in exp_data:
-                exp_data[winner_id] = 0
-            
-            exp_data[winner_id] += self.xp_amount
-            if loser_id not in exp_data:
-                exp_data[loser_id] = 0
-            
-            exp_data[loser_id] -= self.xp_amount
-            save_exp(exp_data)
+            update_xp(interaction.guild.id, winner_id, self.xp_amount)
+            update_xp(interaction.guild.id, loser_id, -1 * self.xp_amount)
             
             await interaction.followup.send(
                 f"<@{winner.id}>님이 승리하고 <@{loser.id}>님이 패배하였습니다. 정답은 **{correct}**이었고 걸린 경험치는 `{self.xp_amount}`입니다."
@@ -3635,14 +3621,6 @@ class GambleButton(discord.ui.View):
     app_commands.Choice(name="짝", value="짝")
 ])
 async def gamble(interaction: discord.Interaction, amount: int, choice: app_commands.Choice[str]):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
     status, until, reason = is_blocked(interaction.user)
     
     # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
