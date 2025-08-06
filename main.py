@@ -3302,14 +3302,6 @@ async def attendance(interaction: discord.Interaction):
 
 @bot.tree.command(name="경험치확인", description = "특정 사용자의 경험치를 조회합니다.")
 async def check_exp(interaction: discord.Interaction, 사용자: discord.User = None):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
     member = 사용자
     await interaction.response.defer()
 
@@ -3324,9 +3316,7 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
     if member is None:
         member = interaction.user
     
-    exp_data = load_exp()
-    user_id = str(member.id)
-    exp = exp_data.get(user_id, 0)
+    exp = get_xp(interaction.guild.id, member.id)
 
     lvl = return_level(exp)
 
