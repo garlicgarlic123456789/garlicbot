@@ -91,7 +91,7 @@ def get_xp_setting(server_id: int):
         else : 
             onoff = False
         return onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit
-    return False, 0, 0, 0, 0, "마늘"
+    return False, None, None, None, None, None
 
 def update_xp(server_id: int, user_id: int, xp: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
