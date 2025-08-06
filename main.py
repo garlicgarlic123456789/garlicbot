@@ -8062,7 +8062,8 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
     elif 아이디 == 20 : 
         await interaction.response.defer()
         temp = get_xp_setting(interaction.guild.id)
-        await interaction.followup.send(f"경험치 기능 설정값:\n- db: {temp}\n- 딕셔너리: {xp_setting[interaction.guild.id]}")
+        temp2 = get_xp_setting_dict(interaction.guild.id)
+        await interaction.followup.send(f"경험치 기능 설정값:\n- db: {temp}\n- 딕셔너리: {temp2}")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
 @app_commands.describe(

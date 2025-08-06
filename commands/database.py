@@ -98,6 +98,11 @@ def update_xp_setting(server_id: int, onoff: bool, chat_xp: int, chat_xp_cooldow
 
     conn.close()
 
+def get_xp_setting_dict(server_id: int):
+    if server_id not in xp_setting : 
+        return [False, None, None, None, None, None]
+    return xp_setting[server_id]
+
 def get_xp_setting(server_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
