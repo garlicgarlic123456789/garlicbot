@@ -1167,17 +1167,11 @@ class ExpButton(discord.ui.View):
         button.disabled = True  # 버튼 비활성화
         await interaction.message.edit(view=self)
 
-        exp_data = load_exp()
-        user_id = str(interaction.user.id)
-        
-        if user_id not in exp_data:
-            exp_data[user_id] = 0
-        
-        exp_data[user_id] += self.exp_amount
+        server_id = interaction.guild.id
         if any(role.id == server_booster_role_id for role in interaction.user.roles):
-            exp_data[user_id] += self.boost_exp_amount
-
-        save_exp(exp_data)
+            update_xp(server_id, interaction.user.id, self.exp_amount + self.boost_exp_amount)
+        else : 
+            update_xp(server_id, interaction.user.id, self.exp_amount)
 
         if any(role.id == server_booster_role_id for role in interaction.user.roles):
             await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount + self.boost_exp_amount}` 마늘을 받았습니다! (서버 부스터 보너스 `{self.boost_exp_amount}` 마늘 포함)", ephemeral=False)
