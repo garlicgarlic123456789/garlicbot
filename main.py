@@ -3688,10 +3688,12 @@ async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
     
     embed = discord.Embed(title="경험치 순위", color=int("a5f0ff", 16))
     description = ""
+
+    unit = xp_setting[interaction.guild.id][5]
     
     for rank, (user_id, exp) in enumerate(rankings, start=start_idx + 1):
         user = await bot.fetch_user(int(user_id))
-        description += f"{rank}위: {user.mention} {return_level(exp)} 레벨 - {exp} 마늘\n"
+        description += f"{rank}위: {user.mention} {return_level(exp)} 레벨 - {exp} {unit}\n"
     
     embed.description = description if description else "해당 페이지에 데이터가 없습니다."
     
@@ -3728,15 +3730,13 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         embed.add_field(name="별명", value=사용자.display_name, inline=False)
         embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
         embed.add_field(name="보유한 역할", value=roles_text, inline=False)
-        if interaction.guild.id == using_server :
-            exp_data = load_exp()
-            user_id = str(사용자.id)
-            exp = exp_data.get(user_id, 0)
+        exp = get_xp(interaction.guild.id, 사용자.id)
+        unit = xp_setting[interaction.guild.id][5]
 
-            lvl = return_level(exp)
+        lvl = return_level(exp)
 
-            embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
-            embed.add_field(name="보유한 마늘", value=f"{exp} 마늘", inline=False)
+        embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
+        embed.add_field(name="보유한 마늘", value=f"{exp} {unit}", inline=False)
         
         embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
         embed.add_field(name = "서버 참가일", value = f"{사용자.joined_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
@@ -3777,15 +3777,12 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
         embed.add_field(name="사용자 ID", value=f"`{str(사용자.id)}`", inline=False)
         embed.add_field(name="별명", value=사용자.display_name, inline=False)
         embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
-        if interaction.guild.id == using_server :
-            exp_data = load_exp()
-            user_id = str(사용자.id)
-            exp = exp_data.get(user_id, 0)
+        unit = xp_setting[interaction.guild.id][5]
 
-            lvl = return_level(exp)
+        lvl = return_level(exp)
 
-            embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
-            embed.add_field(name="보유한 마늘", value=f"{exp} 마늘", inline=False)
+        embed.add_field(name="레벨", value=f"{lvl} 레벨", inline=False)
+        embed.add_field(name="보유한 마늘", value=f"{exp} {unit}", inline=False)
         
         embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
         
