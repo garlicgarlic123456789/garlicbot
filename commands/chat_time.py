@@ -55,7 +55,7 @@ def setup(bot):
                     if session_start is None:
                         session_start = timestamp
                         session_end = timestamp
-                    elif (timestamp - session_end).total_seconds() / 60 <= 3:
+                    elif (timestamp - session_end).total_seconds() / 60 <= 2:
                         session_end = timestamp
                     else:
                         total_time += (session_end - session_start).total_seconds() / 60
