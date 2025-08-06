@@ -2651,11 +2651,8 @@ async def on_message(message):
         global mentions
         asyncio.create_task(handle_user_mentions(message))  # 비동기 처리
         await bot.process_commands(message)
-    
-        if message.guild.id != using_server:
-            return
         
-        if "<@1305492487137267722>" in message.content or "<@!1305492487137267722>" in message.content : 
+        if message.guild.id == using_server and ("<@1305492487137267722>" in message.content or "<@!1305492487137267722>" in message.content) : 
             if message.author.id not in maneul_mention_no_warn : 
                 embed = discord.Embed(
                     title = f"마늘요리님 멘션 관련 안내",
@@ -2670,6 +2667,8 @@ async def on_message(message):
         if status:
             return
         
+        '''
+        # 철도봇 관련 이전 코드
         user_id = message.author.id
         channel_id = message.channel.id
 
@@ -2681,6 +2680,7 @@ async def on_message(message):
         else :
             chattime[user_id] = {}
             chattime[user_id][channel_id] = [datetime.now(), datetime.now()]
+        '''
         
         if message.author.bot:
             return
