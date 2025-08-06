@@ -8084,6 +8084,9 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         temp = get_xp(interaction.guild.id, interaction.user.id)
         await interaction.followup.send(f"경험치: {temp}")
     elif 아이디 == 22 : 
+        if True : 
+            await interaction.response.send_message("폐지된 개발 명령.")
+            return
         await interaction.response.defer()
         temp = load_exp()
         for i, j in temp.items() : 
