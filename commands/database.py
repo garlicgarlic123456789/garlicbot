@@ -112,6 +112,8 @@ def get_xp_setting(server_id: int):
     conn.close()
     if row : 
         onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit = row
+        if unit is None : 
+            unit = ""
         if onoff == 1 : 
             onoff = True
         else : 

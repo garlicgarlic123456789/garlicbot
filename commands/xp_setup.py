@@ -52,8 +52,6 @@ def setup(bot):
             await interaction.followup.send(embed = embed)
             return
         else : 
-            if 단위 is None : 
-                단위 = ""
             update_xp_setting(interaction.guild.id, onoff, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit)
             embed = discord.Embed(
                 title = "완료",
