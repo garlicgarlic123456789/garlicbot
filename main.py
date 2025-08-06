@@ -7137,6 +7137,7 @@ async def 차단확인(interaction: discord.Interaction, 유저: discord.User):
     
     await interaction.followup.send(msg)
 
+'''
 @bot.tree.command(name = "광질", description = "마인크래프트 광질을 시작합니다.")
 @app_commands.describe(일자굴길이 = "일자굴 길이. 일자굴 1블록 당 20 경험치 필요.")
 async def minecraft(interaction: discord.Interaction, 일자굴길이: int) :
@@ -7217,6 +7218,7 @@ async def minecraft(interaction: discord.Interaction, 일자굴길이: int) :
     exp_data[user_id] += gold * 30
     save_exp(exp_data)
     await interaction.followup.send(f"다이아몬드 {diamond}개, 에메랄드 {emerald}개, 철 {iron}개, 금 {gold}개를 채굴했습니다! 총 {20 * 일자굴길이} 마늘(XP)를 소비했고 {diamond*500 + emerald * 200 + iron*10+gold*30} 마늘(XP)을 획득했어요.")
+'''
 
 @bot.tree.command(name = "도움말광질")
 async def mine_help(interaction: discord.Interaction) :
