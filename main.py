@@ -1007,7 +1007,7 @@ async def on_raw_message_edit(payload) :
         author_id = after.author.id
 
         pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-        if isinstance(after.channel, discord.Thread) and after.channel.parent.id != 1394966782426484796 : 
+        if isinstance(after.channel, discord.Thread) and after.channel.parent.id == 1394966782426484796 : 
             return
         else : 
             if re.search(pattern1, after.content) :
