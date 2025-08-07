@@ -24,6 +24,17 @@ punishment_list = [
     "상대방에게 애교권 주기",
 ]
 
+quotes = [
+    "성공은 최종적인 것이 아니며, 실패는 치명적인 것이 아니다. 중요한 것은 계속하려는 용기이다. - 윈스턴 처칠",
+    "인생은 용감한 모험이거나 아무것도 아니다. - 헬렌 켈러",
+    "미래는 현재 우리가 무엇을 하는가에 달려 있다. - 마하트마 간디",
+    "꿈을 꾸는 자만이 그 꿈을 이룰 수 있다. - 슈바이처",
+    "가장 큰 위험은 위험 없는 삶이다. - 스티븐 코비",
+    "행복은 습관이다. 그것을 연습하라. - 엘버트 허버드",
+    "모든 어려움 뒤에는 기회가 숨어 있다. - 앨버트 아인슈타인",
+    "당신이 할 수 있다고 믿든, 할 수 없다고 믿든, 당신이 옳다. - 헨리 포드"
+]
+
 def setup(bot):
     @bot.tree.command(name = "추천받기", description = "점심 메뉴, 철도 여행지 등을 추천 받습니다.")
     @app_commands.choices(종류 = [
@@ -35,6 +46,7 @@ def setup(bot):
         app_commands.Choice(name = "유저 추천", value = "유저 추천"),
         app_commands.Choice(name = "벌칙 추천", value = "벌칙 추천"),
         app_commands.Choice(name = "홀짝 추천", value = "홀짝 추천"),
+        app_commands.Choice(name = "명언 추천", value = "명언 추천"),
     ])
     async def suggest_random(interaction: discord.Interaction, 종류: str) :
         global train_random_list, train_random_list_seoul
@@ -102,3 +114,12 @@ def setup(bot):
                 temp = "짝"
             await interaction.followup.send(f"추천 결과: {temp}")
             return
+        elif 종류 == "명언 추천" :
+            global quotes
+            quote = random.choice(quotes)
+            embed = discord.Embed(
+                title="✨ 오늘의 명언",
+                description=f"\"{quote}\"",
+                color=discord.Color.gold()
+            )
+            await interaction.followup.send(embed=embed)
