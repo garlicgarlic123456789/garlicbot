@@ -2646,7 +2646,7 @@ async def on_message(message):
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
-                print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.output_text}\n----------")
+                print(f"마늘이 (GPT-5 nano) 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.output_text}\n----------")
                 add_likeability(str(message.author.id), 1)
             '''
             elif match2 is not None :
