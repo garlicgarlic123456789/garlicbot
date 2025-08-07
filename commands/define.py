@@ -24,6 +24,8 @@ load_dotenv()
 
 xp_setting = {}
 
+gpt_chat_threads = {}
+
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
 # from IPython.display import Markdown

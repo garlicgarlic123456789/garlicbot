@@ -2616,10 +2616,23 @@ async def on_message(message):
                     
                     ai_cooldowns[user_id] = now
                 
+                user_id = message.author.id
+
+                if user_id not in gpt_chat_threads : 
+                    thread_id = get_gpt_chat_thread(user_id)
+                    if thread_id is None : 
+                        thread = client.beta.threads.create()
+                        thread_id = thread.id
+                        update_gpt_chat_thread(user_id, thread_id)
+                    gpt_chat_threads[user_id] = thread_id
+                
+                thread_id = gpt_chat_threads[user_id]
+                
                 if message.attachments is None or len(message.attachments) == 0 : 
                     response = client.responses.create(
                         model="gpt-5-nano",
                         input=[{
+                            "thread_id": thread_id,
                             "role": "user",
                             "content": [
                                 {"type": "input_text", "text": message.content[4:]},
@@ -2633,6 +2646,7 @@ async def on_message(message):
                     response = client.responses.create(
                         model="gpt-5-nano",
                         input=[{
+                            "thread_id": thread_id,
                             "role": "user",
                             "content": [
                                 {"type": "input_text", "text": message.content[4:]},
@@ -2640,9 +2654,14 @@ async def on_message(message):
                             ],
                         }],
                     )
+                
+                result = response.output_text
+                if len(result) > 4000 : 
+                    result = result[:4000]
+                    result = result + "\n\n(AI 답변이 4000자를 초과하여 이하 생략)"
                 embed = discord.Embed(
                     title = f"답변",
-                    description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{response.output_text}",
+                    description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\nGPT-5 nano의 답변은 다음과 같습니다: \n\n{result}",
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
