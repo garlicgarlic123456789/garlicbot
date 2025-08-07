@@ -1007,16 +1007,8 @@ async def on_raw_message_edit(payload) :
         author_id = after.author.id
 
         pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-        if isinstance(after.channel, discord.Thread) : 
-            if after.channel.parent_id != 1394966782426484796 : 
-                return
-            else : 
-                if re.search(pattern1, after.content) :
-                    await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
-                    return
-                elif "discord://-/invite/" in after.content : 
-                    await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
-                    return
+        if isinstance(after.channel, discord.Thread) and after.channel.parent_id != 1394966782426484796 : 
+            return
         else : 
             if re.search(pattern1, after.content) :
                 await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
