@@ -3287,7 +3287,7 @@ async def reset_chat(interaction: discord.Interaction):
     reset_gpt_chat_thread(interaction.user.id)
     embed = discord.Embed(
         title="완료",
-        description="마늘아 <할 말>로 대화한 이력이 초기화되었습니다.",
+        description="`마늘아 <할 말>`로 대화한 이력이 초기화되었습니다.",
         color=int("a5f0ff", 16)
     )
     await interaction.followup.send(embed=embed)
