@@ -5920,6 +5920,9 @@ gpt_4_1_cooldowns_d = 60 * 15
 @bot.tree.command(name="생성형인공지능", description="생성형 AI와 대화합니다.")
 @app_commands.choices(
     모델 = [
+        app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델이자 가장 뛰어난 모델)", value = "GPT-5"),
+        app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 최신 모델의 더 빠른 버전)", value = "GPT-5-mini"),
+        app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 최신 모델의 가장 빠른 버전)", value = "GPT-5-nano"),
         app_commands.Choice(name = "Gemini 1.5 Flash (Google에서 개발한 빠르게 답변하는 이전 모델의 경량화 버전)", value = "Gemini 1.5 Flash"),
         app_commands.Choice(name = "Gemini 2.0 Flash (Google에서 개발한 빠르게 답변하는 최신 모델의 경량화 버전)", value = "Gemini 2.0 Flash"),
         app_commands.Choice(name = "Gemini 2.0 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.0 Flash Lite"),
@@ -5931,8 +5934,6 @@ gpt_4_1_cooldowns_d = 60 * 15
         app_commands.Choice(name = "o4-mini (OpenAI에서 개발한 더 빠른 추론 모델)", value = "o4-mini"),
         app_commands.Choice(name = "o3-mini (OpenAI에서 개발한 빠른 추론 모델)", value = "o3-mini"),
         app_commands.Choice(name = "판사 (Gemini 2.0 Flash 기반의 디스코드 사건 판결에 적합한 모델)", value = "판사"),
-        app_commands.Choice(name = "마느리 (Gemini 2.0 Flash 기반의 귀여운 말투를 사용하는 최신 모델)", value = "마느리"),
-        app_commands.Choice(name = "귀여운 마늘이 (Gemini 2.0 Flash 기반의 귀여운 말투를 사용하는 이전 모델)", value = "귀여운 마늘이"),
     ]
 )
 @app_commands.describe(
@@ -6053,6 +6054,55 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             return
         response = await asyncio.to_thread(cute_model3.generate_content, 프롬프트)
         result = response.text
+    elif 모델 == "GPT-5" or 모델 == "GPT-5-mini" or 모델 == "GPT-5-nano" :
+        if interaction.guild.id != using_server and get_premium(interaction.user.id) == False :
+            user_id = interaction.user.id
+            now = datetime.utcnow()
+            # 마지막 사용 시간이 존재하면 남은 쿨타임 계산
+            if user_id in ai_cooldowns:
+                elapsed = (now - ai_cooldowns[user_id]).total_seconds()
+                if elapsed < COOLDOWN_DURATION:
+                    remaining = int(COOLDOWN_DURATION - elapsed)
+                    minutes = remaining // 60
+                    seconds = remaining % 60
+                    embed = discord.Embed(
+                        title="오류",
+                        description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델 사용에 대해 쿨타임 중입니다. 다음 시간 후에 다시 사용 가능합니다: {minutes * 60 + seconds}초\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=embed, ephemeral=False)
+                    return
+            
+            ai_cooldowns[user_id] = now
+        
+        model_name = 모델.lower().replace(" ", "-")
+
+        if 파일 is None : 
+            response = client.responses.create(
+                model=model_name,
+                input=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": 프롬프트},
+                    ],
+                }],
+            )
+        else : 
+            response = client.responses.create(
+                model=model_name,
+                input=[{
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": 프롬프트},
+                        {
+                            "type": "input_image",
+                            "image_url": 파일,
+                        },
+                    ],
+                }],
+            )
+        result = response.output_text
+
     elif 모델 == "GPT-4o mini" :
         if 파일 is not None : 
             embed = discord.Embed(
