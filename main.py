@@ -3216,7 +3216,7 @@ def format_duration(duration):
     minutes, seconds = divmod(remainder, 60)
     return f"{int(hours)}시간 {int(minutes)}분 {int(seconds)}초"
 
-@bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치(마늘)를 받습니다.")
+@bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치를 받습니다.")
 async def attendance(interaction: discord.Interaction):
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -3264,14 +3264,16 @@ async def attendance(interaction: discord.Interaction):
     total_xp = check_xp + boost_check_xp + streak_bonus
     update_xp(interaction.guild.id, interaction.user.id, total_xp)
 
+    unit = xp_setting[interaction.guild.id][5]
+
     if boost_check_xp > 0 and streak_bonus > 0: 
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` 마늘(서버 부스터 보너스 `{boost_check_xp}` 마늘 포함, 연속 출석 보너스 `{streak_bonus}` 마늘 포함)이 지급되었습니다.")
+        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함, 연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
     elif streak_bonus > 0 :
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` 마늘(연속 출석 보너스 `{streak_bonus}` 마늘 포함)이 지급되었습니다.")
+        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` {unit}(연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
     elif boost_check_xp > 0 :
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp+boost_check_xp}` 마늘(서버 부스터 보너스 `{boost_check_xp}` 마늘 포함)이 지급되었습니다.")
+        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp+boost_check_xp}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함)(이)가 지급되었습니다.")
     else : 
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp}` 마늘이 지급되었습니다.")
+        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp}` {unit}(이)가 지급되었습니다.")
 
 
 
@@ -3310,7 +3312,7 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
     embed = discord.Embed(
         title="경험치 확인",
         color=int("a5f0ff", 16),
-        description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을 보유 중입니다."
+        description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을(를) 보유 중입니다."
     )
     
     await interaction.followup.send(embed = embed)
@@ -3337,7 +3339,7 @@ async def gift_exp(interaction: discord.Interaction, member: discord.User, amoun
     if amount <= 0:
         embed = discord.Embed(
             title="오류",
-            description="amount의 값은 1 이상이어야 합니다.",
+            description="선물하려는 경험치의 양이 비정상적입니다.",
             color=discord.Color.red()
         )
         await interaction.followup.send(embed=embed)
@@ -3345,7 +3347,7 @@ async def gift_exp(interaction: discord.Interaction, member: discord.User, amoun
     if interaction.user.id == member.id :
         embed = discord.Embed(
             title="오류",
-            description="member의 값이 올바르지 않습니다.",
+            description="자신에게는 경험치를 선물할 수 없습니다.",
             color=discord.Color.red()
         )
         await interaction.followup.send(embed=embed)
@@ -3371,10 +3373,12 @@ async def gift_exp(interaction: discord.Interaction, member: discord.User, amoun
     update_xp(interaction.guild.id, interaction.user.id, -amount)
     update_xp(interaction.guild.id, member.id, amount)
 
+    unit = xp_setting[interaction.guild.id][5]
+
     embed = discord.Embed(
         title="완료",
         color=int("a5f0ff", 16),
-        description = f"{interaction.user.mention}님이 {member.mention}님에게 {amount} 마늘을 선물하였습니다."
+        description = f"{interaction.user.mention}님이 {member.mention}님에게 {amount} {unit}을(를) 선물하였습니다."
     )
     
     await interaction.followup.send(embed = embed)
@@ -3555,10 +3559,10 @@ class GambleButton(discord.ui.View):
             maker_id = self.author.id
 
             if get_xp(interaction.guild.id, user_id) < self.xp_amount :
-                await interaction.response.send_message(f"**[오류!]** 게임 참가자의 {self.unit}이 부족합니다.", ephemeral=True)
+                await interaction.response.send_message(f"**[오류!]** 게임 참가자의 {self.unit}이(가) 부족합니다.", ephemeral=True)
                 return
             if get_xp(interaction.guild.id, maker_id) < self.xp_amount :
-                await interaction.response.send_message(f"**[오류!]** 게임 생성자의 {self.unit}이 부족합니다.", ephemeral=True)
+                await interaction.response.send_message(f"**[오류!]** 게임 생성자의 {self.unit}이(가) 부족합니다.", ephemeral=True)
                 return
             
             self.disable_all_buttons()
@@ -3581,7 +3585,7 @@ class GambleButton(discord.ui.View):
             update_xp(interaction.guild.id, loser_id, -1 * self.xp_amount)
             
             await interaction.followup.send(
-                f"<@{winner.id}>님이 승리하고 <@{loser.id}>님이 패배하였습니다. 정답은 **{correct}**이었고 걸린 {self.unit}는 `{self.xp_amount}`입니다."
+                f"<@{winner.id}>님이 승리하고 <@{loser.id}>님이 패배하였습니다. 정답은 **{correct}**이었고 걸린 {self.unit}은(는) `{self.xp_amount}`입니다."
             )
 
     @discord.ui.button(label="홀", style=discord.ButtonStyle.primary)
@@ -3631,7 +3635,7 @@ async def gamble(interaction: discord.Interaction, amount: int, choice: app_comm
     embed = discord.Embed(
         title="경험치 도박 게임!",
         description=(
-            f"<@{interaction.user.id}>님이 경험치 `{amount}` {unit}을 걸고 게임을 생성하였습니다.\n"
+            f"<@{interaction.user.id}>님이 경험치 `{amount}` {unit}을(를) 걸고 게임을 생성하였습니다.\n"
             "홀 또는 짝 중 해당 유저가 고른 것이 무엇인지 맞춰보세요."
         ),
         color=discord.Color.gold()
@@ -3705,6 +3709,7 @@ async def exp_ranking(interaction: discord.Interaction, 페이지: int = 1):
         description += f"{rank}위: {user.mention} {return_level(exp)} 레벨 - {exp} {unit}\n"
     
     embed.description = description if description else "해당 페이지에 데이터가 없습니다."
+    embed.set_footer(text=f"페이지 {page} / {len(sorted_exp) // PAGE_SIZE + 1}")
     
     await interaction.followup.send(embed=embed)
 
