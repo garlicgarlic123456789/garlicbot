@@ -2644,7 +2644,7 @@ async def on_message(message):
                     for attachment in message.attachments:
                         image_list.append({"type": "input_image", "image_url": attachment.url})
                     response = client.responses.create(
-                        "thread_id": thread_id,
+                        thread_id=thread_id,
                         model="gpt-5-nano",
                         input=[{
                             "role": "user",
