@@ -5941,7 +5941,7 @@ gpt_4_1_cooldowns_d = 60 * 15
     모델 = "사용할 모델",
     파일 = "파일 입력 (선택)"
 )
-async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-4.1 nano", 파일: discord.Attachment = None):
+async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5 nano", 파일: discord.Attachment = None):
     # API 요청 보내기
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
