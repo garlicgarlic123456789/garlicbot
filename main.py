@@ -96,7 +96,7 @@ weather_api_key = os.getenv("WEATHER_API_KEY")  # 기상청 API 키
 
 gpt_client = OpenAI()
 
-assistant = client.beta.assistants.create()
+assistant = client.beta.assistants.create(model = "gpt-5-nano")
 assistant_id = assistant.id
 
 ban_nuke_cnt = 3 # 이 횟수를 초과해야 테러로 감지
