@@ -66,6 +66,13 @@ def init_db() :
     '''
     conn.close()
 
+def reset_gpt_chat_thread(user_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("DELETE FROM gpt_chat_threads WHERE user_id = ?", (user_id,))
+    conn.close()
+
 def update_gpt_chat_thread(user_id: int, thread_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()

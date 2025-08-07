@@ -3271,6 +3271,27 @@ def format_duration(duration):
     minutes, seconds = divmod(remainder, 60)
     return f"{int(hours)}시간 {int(minutes)}분 {int(seconds)}초"
 
+@bot.tree.command(name = "대화초기화", description = "마늘아 <할 말>로 대화한 이력을 초기화합니다.")
+async def reset_chat(interaction: discord.Interaction):
+    await interaction.response.defer()
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        embed = discord.Embed(
+            title="오류",
+            description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 사용자로 설정되어 있지 않습니다. {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+    
+    reset_gpt_chat_thread(interaction.user.id)
+    embed = discord.Embed(
+        title="완료",
+        description="마늘아 <할 말>로 대화한 이력이 초기화되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed)
+
 @bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치를 받습니다.")
 async def attendance(interaction: discord.Interaction):
     await interaction.response.defer()
