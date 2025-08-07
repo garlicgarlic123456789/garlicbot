@@ -9486,7 +9486,7 @@ async def mention_delay_block(interaction: discord.Interaction, 사용자: disco
 @app_commands.choices(전달범위 = [
     app_commands.Choice(name = "이 서버 (답장으로 전달)", value = "server_reply"),
     app_commands.Choice(name = "이 서버 (DM으로 전달)", value = "server_dm"),
-    app_commands.Choice(name = "모든 서버 (DM으로 전달)", value = "all"),
+    app_commands.Choice(name = "마늘이 봇이 도입된 모든 서버 (DM으로 전달)", value = "all"),
 ])
 async def mention_delay(interaction: discord.Interaction, 사용자: discord.Member, 내용: str, 전달범위: str = "server_reply"):
     if 전달범위 == "server_reply" : await interaction.response.defer(ephemeral=False)
