@@ -96,6 +96,9 @@ weather_api_key = os.getenv("WEATHER_API_KEY")  # 기상청 API 키
 
 gpt_client = OpenAI()
 
+assistant = client.beta.assistants.create()
+assistant_id = assistant.id
+
 ban_nuke_cnt = 3 # 이 횟수를 초과해야 테러로 감지
 '''
 PERMISSION_MAP = {
@@ -2629,33 +2632,47 @@ async def on_message(message):
                 thread_id = gpt_chat_threads[user_id]
                 
                 if message.attachments is None or len(message.attachments) == 0 : 
-                    response = client.responses.create(
-                        model="gpt-5-nano",
-                        input=[{
-                            "thread_id": thread_id,
-                            "role": "user",
-                            "content": [
-                                {"type": "input_text", "text": message.content[4:]},
-                            ],
-                        }],
-                    )
+                    message_content = {
+                        "role": "user",
+                        "content": [
+                            {"type": "input_text", "text": message.content[4:]},
+                        ]
+                    }
                 else : 
                     image_list = []
                     for attachment in message.attachments:
                         image_list.append({"type": "input_image", "image_url": attachment.url})
-                    response = client.responses.create(
-                        thread_id=thread_id,
-                        model="gpt-5-nano",
-                        input=[{
-                            "role": "user",
-                            "content": [
-                                {"type": "input_text", "text": message.content[4:]},
-                                *image_list,
-                            ],
-                        }],
-                    )
+                    message_content = {
+                        "role": "user",
+                        "content": [
+                            {"type": "input_text", "text": message.content[4:]},
+                            *image_list,
+                        ],
+                    }
                 
-                result = response.output_text
+                await client.beta.threads.messages.create(
+                    thread_id=thread_id,
+                    role="user",
+                    content=message_content,
+                )
+
+                run = await client.beta.threads.runs.create(
+                    thread_id=thread_id,
+                    assistant_id=assistant_id,
+                )
+
+                while True:
+                    run = await client.beta.threads.runs.retrieve(
+                        thread_id=thread_id,
+                        run_id=run.id,
+                    )
+                    if run.status == "completed":
+                        break
+                    await asyncio.sleep(0.5)  # 블로킹이 아닌 논블로킹 대기
+                
+                msgs = await client.beta.threads.messages.list(thread_id=thread_id)
+                result = msgs.data[-1].content[0].text.value
+
                 if len(result) > 4000 : 
                     result = result[:4000]
                     result = result + "\n\n(AI 답변이 4000자를 초과하여 이하 생략)"
