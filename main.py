@@ -2596,29 +2596,57 @@ async def on_message(message):
                     await message.reply(embed = embed, mention_author=False)
                     return
                 '''
-                if True : 
-                    if normal_chat_dict.get(message.author.id) is not None :
-                        response = await asyncio.to_thread(
-                            normal_chat_dict[message.author.id].send_message,
-                            message.content[4:],
-                            generation_config=genai.types.GenerationConfig(temperature=1.0)
-                        )
-                    else :
-                        normal_chat_dict[message.author.id] = await asyncio.to_thread(
-                            two_lite_model.start_chat,
-                        )
-                        response = await asyncio.to_thread(
-                            normal_chat_dict[message.author.id].send_message,
-                            message.content[4:],
-                            generation_config=genai.types.GenerationConfig(temperature=1.0)
-                        )
+                if get_premium(message.author.id) == False :
+                    user_id = message.author.id
+                    now = datetime.utcnow()
+                    # 마지막 사용 시간이 존재하면 남은 쿨타임 계산
+                    if user_id in ai_cooldowns:
+                        elapsed = (now - ai_cooldowns[user_id]).total_seconds()
+                        if elapsed < COOLDOWN_DURATION:
+                            remaining = int(COOLDOWN_DURATION - elapsed)
+                            minutes = remaining // 60
+                            seconds = remaining % 60
+                            embed = discord.Embed(
+                                title="오류",
+                                description=f"이 모델을 사용할 수 없는 환경입니다.\n\n이 모델 사용에 대해 쿨타임 중입니다. 다음 시간 후에 다시 사용 가능합니다: {minutes * 60 + seconds}초",
+                                color=discord.Color.red()
+                            )
+                            await message.reply(embed=embed, mention_author=False)
+                            return
+                    
+                    ai_cooldowns[user_id] = now
+                
+                if message.attachments is None or len(message.attachments) == 0 : 
+                    response = client.responses.create(
+                        model="gpt-5-nano",
+                        input=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "input_text", "text": message.content[4:]},
+                            ],
+                        }],
+                    )
+                else : 
+                    image_list = []
+                    for attachment in message.attachments:
+                        image_list.append({"type": "input_image", "image_url": attachment.url})
+                    response = client.responses.create(
+                        model="gpt-5-nano",
+                        input=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "input_text", "text": message.content[4:]},
+                                *image_list,
+                            ],
+                        }],
+                    )
                 embed = discord.Embed(
                     title = f"답변",
-                    description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{response.text}",
+                    description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{response.output_text}",
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
-                print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.text}\n----------")
+                print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.output_text}\n----------")
                 add_likeability(str(message.author.id), 1)
             '''
             elif match2 is not None :
