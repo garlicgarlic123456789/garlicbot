@@ -2617,45 +2617,53 @@ async def on_message(message):
                     ai_cooldowns[user_id] = now
                 
                 user_id = message.author.id
-
-                if user_id not in gpt_chat_threads : 
-                    thread_id = get_gpt_chat_thread(user_id)
-                    if thread_id is None : 
-                        thread = client.beta.threads.create()
-                        thread_id = thread.id
-                        update_gpt_chat_thread(user_id, thread_id)
-                    gpt_chat_threads[user_id] = thread_id
-                
-                thread_id = gpt_chat_threads[user_id]
                 
                 if message.attachments is None or len(message.attachments) == 0 : 
-                    response = client.responses.create(
-                        model="gpt-5-nano",
-                        input=[{
-                            "thread_id": thread_id,
-                            "role": "user",
-                            "content": [
-                                {"type": "input_text", "text": message.content[4:]},
-                            ],
-                        }],
-                    )
+                    message_content = [
+                        {"type": "input_text", "text": message.content[4:]},
+                    ]
                 else : 
                     image_list = []
                     for attachment in message.attachments:
                         image_list.append({"type": "input_image", "image_url": attachment.url})
+                    message_content = [
+                        {"type": "input_text", "text": message.content[4:]},
+                        *image_list,
+                    ]
+                
+                if user_id not in gpt_chat_threads : 
+                    gpt_chat_threads[user_id] = get_gpt_chat_thread(user_id)
+                    if gpt_chat_threads[user_id] is None : 
+                        response = client.responses.create(
+                            model="gpt-5-nano",
+                            input=[{
+                                "role": "user",
+                                "content": message_content,
+                            }],
+                        )
+                    else : 
+                        response = client.responses.create(
+                            model="gpt-5-nano",
+                            previous_response_id=gpt_chat_threads[user_id],
+                            input=[{
+                                "role": "user",
+                                "content": message_content,
+                            }],
+                        )
+                else : 
                     response = client.responses.create(
                         model="gpt-5-nano",
+                        previous_response_id=gpt_chat_threads[user_id],
                         input=[{
-                            "thread_id": thread_id,
                             "role": "user",
-                            "content": [
-                                {"type": "input_text", "text": message.content[4:]},
-                                *image_list,
-                            ],
+                            "content": message_content,
                         }],
                     )
                 
                 result = response.output_text
+                gpt_chat_threads[user_id] = response.id
+                update_gpt_chat_thread(user_id, response.id)
+
                 if len(result) > 4000 : 
                     result = result[:4000]
                     result = result + "\n\n(AI 답변이 4000자를 초과하여 이하 생략)"
