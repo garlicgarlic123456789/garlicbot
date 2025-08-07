@@ -123,3 +123,4 @@ def setup(bot):
                 color=discord.Color.gold()
             )
             await interaction.followup.send(embed=embed)
+            return
