@@ -9902,6 +9902,25 @@ async def check_auto_verify(interaction: discord.Interaction):
     content = read_file()
     await interaction.response.send_message(f"📄 auto_verify.txt의 현재 내용: `{content}`", ephemeral=True)
 
+@bot.tree.command(name="제재내역수동삭제", description = "개발 명령")
+async def remove_blockhistory(interaction: discord.Interaction, id: int):
+    if interaction.user.id != developer :
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `개발자`",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(embed=embed)
+        return
+    remove_blockhistory(id)
+    embed = discord.Embed(
+        title="완료",
+        description=f"제재 내역 #{id} 삭제되었습니다.",
+        color=int("a5f0ff", 16)
+    )
+    await interaction.response.send_message(embed=embed)
+    return
+
 # add_blockhistory(user_id, admin_id, reason, blocktype, addinfo)
 @bot.tree.command(name="제재내역수동추가", description="개발 명령")
 @app_commands.describe(추가정보="경고의 경우, 경고 개수. 타임아웃의 경우 타임아웃 기간 (초)")

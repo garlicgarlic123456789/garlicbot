@@ -899,6 +899,13 @@ def delete_blacklist(user_id) :
     
     c.execute("DELETE FROM blacklist WHERE user_id = ?", (user_id,))
 
+def remove_blockhistory(id) :
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("DELETE FROM blockhistory WHERE id = ?", (id,))
+    c.close()
+
 def add_blockhistory(user_id: int, admin_id, reason: str, blocktype: str, addinfo: int, server_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
