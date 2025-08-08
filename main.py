@@ -3200,6 +3200,9 @@ async def on_member_update(before, after):
                     if entry.user.id == 1316579106749681664 :
                         return
                     reason = entry.reason or "*(사유 입력되지 않음)*"
+                    if after.guild.id == using_server and entry.user.id == 218010938807287808 and reason == "by Russian" : 
+                        await after.edit(timed_out_until = None, reason = "러시안 룰렛에 의한 타임아웃 무효화")
+                        return
                     timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
                     
                     embed = discord.Embed(
