@@ -36,6 +36,45 @@ quotes = [
 ]
 
 def setup(bot):
+    @bot.tree.command(name = "골라", description = "목록에서 랜덤으로 1개(또는 일부 항목)를 선택합니다.")
+    @app_commands.describe(목록 = "전체 리스트 (쉼표와 띄어쓰기로 구분)", 개수 = "선택할 개수")
+    async def choose(interaction: discord.Interaction, 목록: str, 개수: int = 1) :
+        await interaction.response.defer()
+        status, until, reason = is_blocked(interaction.user)
+        if status:
+            msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+            await interaction.followup.send(msg)
+            return
+        
+        목록 = 목록.split(", ")
+        if 개수 >= len(목록) : 
+            embed = discord.Embed(
+                title = "오류",
+                description = f"목록에 포함된 항목의 개수는 선택할 개수보다 적어야 합니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
+        if 개수 == 1 : 
+            temp = random.choice(목록)
+            embed = discord.Embed(
+                title = "추천된 항목",
+                description = f"추천된 항목: {temp}",
+                color = int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        else : 
+            temp = random.sample(목록, 개수)
+            embed = discord.Embed(
+                title = "추천된 항목",
+                description = f"추천된 항목: {', '.join(map(str, temp))}",
+                color = int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed = embed)
+            return
+
     @bot.tree.command(name = "추천받기", description = "점심 메뉴, 철도 여행지 등을 추천 받습니다.")
     @app_commands.describe(종류 = "추천받을 것")
     @app_commands.choices(종류 = [
