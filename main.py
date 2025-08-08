@@ -6133,7 +6133,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             return
         response = await asyncio.to_thread(cute_model3.generate_content, 프롬프트)
         result = response.text
-    elif 모델 == "GPT-5" or 모델 == "GPT-5-mini" or 모델 == "GPT-5-nano" :
+    elif 모델 == "GPT-5" or 모델 == "GPT-5 mini" or 모델 == "GPT-5 nano" :
         if get_premium(interaction.user.id) == False :
             user_id = interaction.user.id
             now = datetime.utcnow()
