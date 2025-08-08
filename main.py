@@ -9903,7 +9903,7 @@ async def check_auto_verify(interaction: discord.Interaction):
     await interaction.response.send_message(f"📄 auto_verify.txt의 현재 내용: `{content}`", ephemeral=True)
 
 @bot.tree.command(name="제재내역수동삭제", description = "개발 명령")
-async def remove_blockhistory(interaction: discord.Interaction, id: int):
+async def 제재내역수동삭제(interaction: discord.Interaction, id: int):
     if interaction.user.id != developer :
         embed = discord.Embed(
             title="오류",
