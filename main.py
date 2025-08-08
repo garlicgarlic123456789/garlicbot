@@ -9912,13 +9912,9 @@ async def remove_blockhistory(interaction: discord.Interaction, id: int):
         )
         await interaction.response.send_message(embed=embed)
         return
+    await interaction.response.defer()
     remove_blockhistory(id)
-    embed = discord.Embed(
-        title="완료",
-        description=f"제재 내역 #{id} 삭제되었습니다.",
-        color=int("a5f0ff", 16)
-    )
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(f"제재 내역 #{id} 삭제되었습니다.")
     return
 
 # add_blockhistory(user_id, admin_id, reason, blocktype, addinfo)
