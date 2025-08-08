@@ -53,13 +53,13 @@ import io
 import matplotlib.dates as mdates
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from openai import OpenAI
+from openai import AsyncOpenAI
 from discord.ui import View, Button
 import pytz
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from commands import encode
 from commands import manage_timeout
@@ -88,13 +88,13 @@ from zoneinfo import ZoneInfo
 
 ticket_channel_id = 1325041620084850708
 
-client = OpenAI()
+client = AsyncOpenAI()
 
 maneul_mention_no_warn = [1367416348048621568, 1389857898745823334, 1355698620606709902, 1238750780459188225, 1139867278486274110, 1076065874596864041, 1306030639677444197, 1305492487137267722, 1359149837081116863, 1204425981033451613, 717241733011996682,351743982474362910, 823346807350231060, 1072311823212228748, 644432352457523200, 920629772684505108, 1063676895000018944, 873128084193296406, 1326817332592513045, 1137207376869609513, 1312760049105506376, 1181084142969032848, 1266655535696969758]
 
 weather_api_key = os.getenv("WEATHER_API_KEY")  # 기상청 API 키
 
-gpt_client = OpenAI()
+gpt_client = AsyncOpenAI()
 
 ban_nuke_cnt = 3 # 이 횟수를 초과해야 테러로 감지
 '''
@@ -2632,9 +2632,9 @@ async def on_message(message):
                     ]
                 
                 if user_id not in gpt_chat_threads : 
-                    gpt_chat_threads[user_id] = get_gpt_chat_thread(user_id)
+                    gpt_chat_threads[user_id] = await asyncio.to_thread(get_gpt_chat_thread, user_id)
                     if gpt_chat_threads[user_id] is None : 
-                        response = client.responses.create(
+                        response = await client.responses.create(
                             model="gpt-5-nano",
                             input=[{
                                 "role": "user",
@@ -2642,7 +2642,7 @@ async def on_message(message):
                             }],
                         )
                     else : 
-                        response = client.responses.create(
+                        response = await client.responses.create(
                             model="gpt-5-nano",
                             previous_response_id=gpt_chat_threads[user_id],
                             input=[{
@@ -2651,7 +2651,7 @@ async def on_message(message):
                             }],
                         )
                 else : 
-                    response = client.responses.create(
+                    response = await client.responses.create(
                         model="gpt-5-nano",
                         previous_response_id=gpt_chat_threads[user_id],
                         input=[{
@@ -2662,7 +2662,7 @@ async def on_message(message):
                 
                 result = response.output_text
                 gpt_chat_threads[user_id] = response.id
-                update_gpt_chat_thread(user_id, response.id)
+                await asyncio.to_thread(update_gpt_chat_thread, user_id, response.id)
 
                 if len(result) > 4000 : 
                     result = result[:4000]
@@ -6157,7 +6157,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         model_name = 모델.lower().replace(" ", "-")
 
         if 파일 is None : 
-            response = client.responses.create(
+            response = await client.responses.create(
                 model=model_name,
                 input=[{
                     "role": "user",
@@ -6167,7 +6167,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
                 }],
             )
         else : 
-            response = client.responses.create(
+            response = await client.responses.create(
                 model=model_name,
                 input=[{
                     "role": "user",
@@ -6316,7 +6316,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             result = llm.invoke(question)
             result = result.content
         else : 
-            response = client.responses.create(
+            response = await client.responses.create(
                 model="gpt-4.1-nano",
                 input=[{
                     "role": "user",
@@ -6437,7 +6437,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             result = llm.invoke(question)
             result = result.content
         else : 
-            response = client.responses.create(
+            response = await client.responses.create(
                 model="gpt-4.1",
                 input=[{
                     "role": "user",
@@ -6495,7 +6495,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             result = llm.invoke(question)
             result = result.content
         else : 
-            response = client.responses.create(
+            response = await client.responses.create(
                 model="gpt-4.1-mini",
                 input=[{
                     "role": "user",
@@ -6550,7 +6550,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             o3_cooldowns[user_id] = now
         
         if 파일 is None : 
-            response = gpt_client.responses.create(
+            response = await gpt_client.responses.create(
                 model="o4-mini",
                 reasoning={"effort": "low"},
                 input=[
@@ -6561,7 +6561,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
                 ]
             )
         else : 
-            response = gpt_client.responses.create(
+            response = await gpt_client.responses.create(
                 model="o4-mini",
                 reasoning={"effort": "low"},
                 input=[
@@ -6626,7 +6626,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             # 쿨타임 없음 → 명령어 실행
             o3_cooldowns[user_id] = now
         if 파일 is None : 
-            response = gpt_client.responses.create(
+            response = await gpt_client.responses.create(
                 model="o3-mini",
                 reasoning={"effort": "low"},
                 input=[
@@ -6637,7 +6637,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
                 ]
             )
         else : 
-            response = gpt_client.responses.create(
+            response = await gpt_client.responses.create(
                 model="o3-mini",
                 reasoning={"effort": "low"},
                 input=[
