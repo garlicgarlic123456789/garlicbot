@@ -37,6 +37,7 @@ quotes = [
 
 def setup(bot):
     @bot.tree.command(name = "추천받기", description = "점심 메뉴, 철도 여행지 등을 추천 받습니다.")
+    @app_commands.describe(종류 = "추천받을 것")
     @app_commands.choices(종류 = [
         app_commands.Choice(name = "아침 메뉴", value = "아침 메뉴"),
         app_commands.Choice(name = "점심 메뉴", value = "점심 메뉴"),
