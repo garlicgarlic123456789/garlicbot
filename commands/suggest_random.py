@@ -161,7 +161,7 @@ def setup(bot):
             global quotes
             quote = random.choice(quotes)
             embed = discord.Embed(
-                title="✨ 오늘의 명언",
+                title="오늘의 명언",
                 description=f"\"{quote}\"",
                 color=discord.Color.gold()
             )
