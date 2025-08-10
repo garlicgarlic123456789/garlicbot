@@ -5999,8 +5999,8 @@ gpt_4_1_cooldowns_d = 60 * 15
 @app_commands.choices(
     모델 = [
         app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델이자 가장 뛰어난 모델)", value = "GPT-5"),
-        app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 최신 모델의 더 빠른 버전)", value = "GPT-5-mini"),
-        app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 최신 모델의 가장 빠른 버전)", value = "GPT-5-nano"),
+        app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 최신 모델의 더 빠른 버전)", value = "GPT-5 mini"),
+        app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 최신 모델의 가장 빠른 버전)", value = "GPT-5 nano"),
         app_commands.Choice(name = "Gemini 1.5 Flash (Google에서 개발한 빠르게 답변하는 이전 모델의 경량화 버전)", value = "Gemini 1.5 Flash"),
         app_commands.Choice(name = "Gemini 2.0 Flash (Google에서 개발한 빠르게 답변하는 최신 모델의 경량화 버전)", value = "Gemini 2.0 Flash"),
         app_commands.Choice(name = "Gemini 2.0 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.0 Flash Lite"),
@@ -9927,13 +9927,14 @@ async def 제재내역수동추가(interaction: discord.Interaction, 유저: dis
         )
         await interaction.response.send_message(embed=embed)
         return
+    await interaction.response.defer(ephemeral=True)
     add_blockhistory(유저.id, 관리자.id, 사유, 종류, 추가정보, interaction.guild.id)
     embed = discord.Embed(
         title="완료",
         description="처리되었습니다.",
         color=discord.Color.blue()
     )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.followup.send(embed=embed, ephemeral=True)
     return
 
 '''
