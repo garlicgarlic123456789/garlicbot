@@ -9927,13 +9927,14 @@ async def 제재내역수동추가(interaction: discord.Interaction, 유저: dis
         )
         await interaction.response.send_message(embed=embed)
         return
+    await interaction.response.defer(ephemeral=True)
     add_blockhistory(유저.id, 관리자.id, 사유, 종류, 추가정보, interaction.guild.id)
     embed = discord.Embed(
         title="완료",
         description="처리되었습니다.",
         color=discord.Color.blue()
     )
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+    await interaction.followup.send(embed=embed, ephemeral=True)
     return
 
 '''
