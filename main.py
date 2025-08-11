@@ -6670,6 +6670,8 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
     else : 
         파일 = "*(파일 첨부되지 않음)*"
     print(f"생성형 인공지능 사용:\n유저: {interaction.user.display_name} ({interaction.user.id})\n모델: {모델}\n입력: {프롬프트}\n출력: {result}\n----------")
+    if len(result) > 3000 : 
+        result = result[:3000] + "\n\n(AI 답변이 3000자를 초과하여 이하 생략)"
     embed = discord.Embed(
         title = f"성공",
         # description = f"Gemini 1.5 Flash의 답변은 다음과 같습니다: \n\n{to_markdown(response.text)}",
