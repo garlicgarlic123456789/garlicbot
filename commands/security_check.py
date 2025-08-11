@@ -171,7 +171,7 @@ def setup(bot) :
                     if len(unexpected_access_member) == 0 : 
                         admin_channel_access_text = f"관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: {', '.join([admin_channel_access_member_text, admin_channel_access_role_text])}"
                     else : 
-                        warning = True
+                        dangerous = True
                         admin_channel_access_text = f"다음 사용자가 관리자 카테고리에 접근이 가능해도 되는지 다시 한 번 확인해 주세요: {', '.join(unexpected_access_member)}. 현재 관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: {', '.join([admin_channel_access_member_text, admin_channel_access_role_text])}"
         else : 
             warning = True
