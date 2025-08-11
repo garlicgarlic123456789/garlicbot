@@ -1,15 +1,18 @@
 import discord
 from commands.define import *
 
+from discord import Member
+from discord import Role
+
 import asyncio
 import re
 from discord import *
 from commands.database import *
 
 def setup(bot) : 
-    @bot.tree.command(name="보안점검", description="서버의 권한 설정을 검토합니다.")
+    @bot.tree.command(name="보안점검", description="서버의 보안을 점검합니다.")
     @app_commands.default_permissions(administrator=True)
-    async def security_check(interaction: discord.Interaction, 인증역할: discord.Role = None):
+    async def security_check(interaction: discord.Interaction, 인증역할: discord.Role = None, 관리자역할: discord.Role = None, 관리자카테고리: discord.CategoryChannel = None):
         await interaction.response.defer()
 
         status, until, reason = is_blocked(interaction.user)
@@ -88,7 +91,92 @@ def setup(bot) :
         else:
             status_msg = "일반 사용자에게 위험한 채널 권한이 부여되어 있지 않습니다."
         
-        embed.add_field(name = "채널 권한 보안", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}", inline = False)
+        if 관리자카테고리 is not None : 
+            admin_channel_access_member = []
+            admin_channel_access_role = []
+            category_perm = 관리자카테고리.overwrites
+            for i, j in category_perm.items() : 
+                if j.view_channel == True : 
+                    if isinstance(i, Member) : 
+                        admin_channel_access_member.append(i)
+                    elif isinstance(i, Role) : 
+                        admin_channel_access_role.append(i)
+            
+            everyone_role = interaction.guild.default_role
+
+            if everyone_role not in category_perm or category_perm[everyone_role].view_channel == True or (category_perm[everyone_role].view_channel is None and everyone_role.permissions.view_channel == True) :
+                admin_channel_access_role.append(everyone_role)
+            
+            if 관리자역할 is None : 
+                admin_channel_access_member_text = []
+                for i in admin_channel_access_member : 
+                    admin_channel_access_member_text.append(f"<@{i.id}>")
+                admin_channel_access_member_text = ", ".join(admin_channel_access_member_text)
+                admin_channel_access_role_text = []
+                for i in admin_channel_access_role : 
+                    admin_channel_access_role_text.append(f"<@&{i.id}>")
+                for i in interaction.guild.roles : 
+                    if i.permissions.administrator == True : 
+                        admin_channel_access_role_text.append(f"<@&{i.id}>")
+                admin_channel_access_role_text = ", ".join(admin_channel_access_role_text)
+                if len(admin_channel_access_member_text) == 0 and len(admin_channel_access_role_text) == 0 : 
+                    admin_channel_access_text = "관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: *(비어 있음)*"
+                else : 
+                    admin_channel_access_text = f"관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: {', '.join([admin_channel_access_member_text, admin_channel_access_role_text])}"
+            else : 
+                admin_channel_safe = True
+                unexpected_access_member = []
+
+                admin_role_member = 관리자역할.members
+
+                for i in range(len(admin_role_member)) : 
+                    admin_role_member[i] = admin_role_member[i].id
+
+                for i in admin_channel_access_role : 
+                    role_bot = True
+                    for j in i.members : 
+                        if j.bot == False : 
+                            role_bot = False
+                            break
+                    if role_bot == True : 
+                        continue
+                    else : 
+                        for j in i.members : 
+                            if j.id not in admin_role_member and (not j.guild_permissions.administrator) : 
+                                admin_channel_safe = False
+                                unexpected_access_member.append(j.mention)
+                
+                for i in admin_channel_access_member : 
+                    if i.bot : 
+                        continue
+                    else : 
+                        if i.id not in admin_role_member and (not i.guild_permissions.administrator) : 
+                            admin_channel_safe = False
+                            unexpected_access_member.append(i.mention)
+                
+                admin_channel_access_member_text = []
+                for i in admin_channel_access_member : 
+                    admin_channel_access_member_text.append(f"<@{i.id}>")
+                admin_channel_access_member_text = ", ".join(admin_channel_access_member_text)
+                admin_channel_access_role_text = []
+                for i in admin_channel_access_role : 
+                    admin_channel_access_role_text.append(f"<@&{i.id}>")
+                for i in interaction.guild.roles : 
+                    if i.permissions.administrator == True : 
+                        admin_channel_access_role_text.append(f"<@&{i.id}>")
+                admin_channel_access_role_text = ", ".join(admin_channel_access_role_text)
+                if len(admin_channel_access_member_text) == 0 and len(admin_channel_access_role_text) == 0 : 
+                    admin_channel_access_text = "관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: *(비어 있음)*"
+                else : 
+                    if len(unexpected_access_member) == 0 : 
+                        admin_channel_access_text = f"관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: {', '.join([admin_channel_access_member_text, admin_channel_access_role_text])}"
+                    else : 
+                        warning = True
+                        admin_channel_access_text = f"다음 사용자가 관리자 카테고리에 접근이 가능해도 되는지 다시 한 번 확인해 주세요: {', '.join(unexpected_access_member)}. 현재 관리자 카테고리에 접근 가능한 역할 및 사용자는 다음과 같습니다: {', '.join([admin_channel_access_member_text, admin_channel_access_role_text])}"
+        else : 
+            warning = True
+            admin_channel_access_text = "관리자 카테고리가 지정되지 않아 관리자 채널 권한을 점검할 수 없었습니다."
+        embed.add_field(name = "채널 권한 보안", value = f"- 일반 사용자 위험한 권한 부여 여부: {status_msg}\n- 관리자 채널 권한 설정(베타): {admin_channel_access_text}", inline = False)
 
         automod_rules = await interaction.guild.fetch_automod_rules()
 
