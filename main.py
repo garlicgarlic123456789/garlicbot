@@ -2634,7 +2634,7 @@ async def on_message(message):
                     gpt_chat_threads[user_id] = await asyncio.to_thread(get_gpt_chat_thread, user_id)
                     if gpt_chat_threads[user_id] is None : 
                         response = await client.responses.create(
-                            model="gpt-5-nano",
+                            model="gpt-5-mini",
                             input=[{
                                 "role": "user",
                                 "content": message_content,
@@ -2642,7 +2642,7 @@ async def on_message(message):
                         )
                     else : 
                         response = await client.responses.create(
-                            model="gpt-5-nano",
+                            model="gpt-5-mini",
                             previous_response_id=gpt_chat_threads[user_id],
                             input=[{
                                 "role": "user",
@@ -2651,7 +2651,7 @@ async def on_message(message):
                         )
                 else : 
                     response = await client.responses.create(
-                        model="gpt-5-nano",
+                        model="gpt-5-mini",
                         previous_response_id=gpt_chat_threads[user_id],
                         input=[{
                             "role": "user",
