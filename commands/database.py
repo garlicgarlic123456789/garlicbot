@@ -91,7 +91,8 @@ def reset_gpt_chat_thread(user_id: int):
     c = conn.cursor()
     
     c.execute("DELETE FROM gpt_chat_threads WHERE user_id = ?", (user_id,))
-    del gpt_chat_threads[user_id]
+    if user_id in gpt_chat_threads : 
+        del gpt_chat_threads[user_id]
     conn.close()
 
 def update_gpt_chat_thread(user_id: int, thread_id: int):
