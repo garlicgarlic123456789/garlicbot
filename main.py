@@ -2639,6 +2639,7 @@ async def on_message(message):
                                 "role": "user",
                                 "content": message_content,
                             }],
+                            reasoning={"effort": "minimal"},
                         )
                     else : 
                         response = await client.responses.create(
@@ -2648,6 +2649,7 @@ async def on_message(message):
                                 "role": "user",
                                 "content": message_content,
                             }],
+                            reasoning={"effort": "minimal"},
                         )
                 else : 
                     response = await client.responses.create(
@@ -2657,6 +2659,7 @@ async def on_message(message):
                             "role": "user",
                             "content": message_content,
                         }],
+                        reasoning={"effort": "minimal"},
                     )
                 
                 result = response.output_text
