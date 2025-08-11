@@ -2668,7 +2668,7 @@ async def on_message(message):
                     result = result + "\n\n(AI 답변이 4000자를 초과하여 이하 생략)"
                 embed = discord.Embed(
                     title = f"답변",
-                    description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\nGPT-5 nano의 답변은 다음과 같습니다: \n\n{result}",
+                    description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\nGPT-5 mini의 답변은 다음과 같습니다: \n\n{result}",
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
