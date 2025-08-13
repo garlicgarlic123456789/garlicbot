@@ -157,7 +157,7 @@ def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, t
         else : 
             return False
     else : 
-        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ?", (mention_id, trigger_server))
+        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
         row = c.fetchone()
         if row : 
             c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
@@ -174,7 +174,7 @@ def get_mention_delay_user(user_id: int, type: str = "all", server_id: int = Non
     if type == "all" : 
         c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND done = 0", (user_id,))
     elif type == "server" : 
-        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND server_id = ? AND done = 0", (user_id, server_id))
+        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND server_id = ? AND done = 0 AND send_type = 'reply'", (user_id, server_id))
     rows = c.fetchall()
     conn.close()
     mentions = []
