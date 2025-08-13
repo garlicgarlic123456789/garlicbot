@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime
 from datetime import timedelta
 import discord
+import asyncio
 from discord import app_commands
 
 from commands.define import xp_setting
@@ -97,7 +98,7 @@ def init_db() :
     '''
     conn.close()
 
-def migrate_mention_delay_user():
+async def migrate_mention_delay_user():
     import json
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -111,7 +112,21 @@ def migrate_mention_delay_user():
             mention["server_id"] = 1320303102703702037
         elif mention["server_id"] == 0 : 
             mention["server_id"] = None
-        c.execute("INSERT INTO mention_delay_user (id, user_id, sender_id, content, done, server_id, send_type) VALUES (?, ?, ?, ?, ?, ?, ?)", (mention["id"], mention["user_id"], mention["sender_id"], mention["content"], mention["done"], mention["server_id"], mention["send_type"]))
+        c.execute(
+            """
+            INSERT INTO mention_delay_user (id, user_id, sender_id, content, done, server_id, send_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                user_id = excluded.user_id,
+                sender_id = excluded.sender_id,
+                content = excluded.content,
+                done = excluded.done,
+                server_id = excluded.server_id,
+                send_type = excluded.send_type
+            """,
+            (mention["id"], mention["user_id"], mention["sender_id"], mention["content"], mention["done"], mention["server_id"], mention["send_type"])
+        )
+        await asyncio.sleep(0.03)
     conn.close()
 
 def add_mention_delay_user(user_id: int, sender_id: int, content: str, done: int, server_id: int, send_type: str):

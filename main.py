@@ -7950,7 +7950,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.followup.send(f"cmd 확인바람")
     elif 아이디 == 23 : 
         await interaction.response.defer(ephemeral=True)
-        migrate_mention_delay_user()
+        await migrate_mention_delay_user()
         await interaction.followup.send("처리되었습니다.")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
