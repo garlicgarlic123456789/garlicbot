@@ -107,6 +107,10 @@ def migrate_mention_delay_user():
     for mention in mentions : 
         if "send_type" not in mention : 
             mention["send_type"] = "reply"
+        if "server_id" not in mention : 
+            mention["server_id"] = 1320303102703702037
+        elif mention["server_id"] == 0 : 
+            mention["server_id"] = None
         c.execute("INSERT INTO mention_delay_user (id, user_id, sender_id, content, done, server_id, send_type) VALUES (?, ?, ?, ?, ?, ?, ?)", (mention["id"], mention["user_id"], mention["sender_id"], mention["content"], mention["done"], mention["server_id"], mention["send_type"]))
     conn.close()
 
