@@ -9553,7 +9553,7 @@ async def mention_list(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="멘션지연취소", description = "/멘션지연으로 예약된 메시지 중 한 건을 취소합니다.")
 async def cancel_mention(interaction: discord.Interaction, mention_id: int):
-    await interaction.response.defer(ephemeral=True)
+    await interaction.response.defer()
 
     status, until, reason = is_blocked(interaction.user)
     if status:
