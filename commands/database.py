@@ -139,22 +139,42 @@ def add_mention_delay_user(user_id: int, sender_id: int, content: str, done: int
 def done_mention_delay_user(mention_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
+    
+    c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+    conn.close()
 
-    c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (mention_id,))
-    row = c.fetchone()
-    if row : 
-        c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
-        conn.close()
-        return True
+def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, trigger_server: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+
+    if not admin : 
+        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND sender_id = ?", (mention_id, trigger_user))
+        row = c.fetchone()
+        if row : 
+            c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+            conn.close()
+            return True
+        else : 
+            return False
     else : 
-        conn.close()
-        return False
+        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ?", (mention_id, trigger_server))
+        row = c.fetchone()
+        if row : 
+            c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+            conn.close()
+            return True
+        else : 
+            conn.close()
+            return False
 
-def get_mention_delay_user(user_id: int):
+def get_mention_delay_user(user_id: int, type: str = "all", server_id: int = None):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     
-    c.execute("SELECT * FROM mention_delay_user WHERE user_id = ?", (user_id,))
+    if type == "all" : 
+        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ?", (user_id,))
+    elif type == "server" : 
+        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND server_id = ?", (user_id, server_id))
     rows = c.fetchall()
     conn.close()
     mentions = []

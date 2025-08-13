@@ -1174,27 +1174,19 @@ async def exp_event():
                 await channel.send(embed=embed, view=ExpButton())
 
 async def handle_user_mentions(message):
-    global mentions
-    user_mentions = [m for m in mentions if m["user_id"] == message.author.id and m["done"] == 0 and (m["server_id"] == message.guild.id or m["server_id"] == 0)]
+    user_mentions = get_mention_delay_user(message.author.id, "all", message.guild.id)
     
     if user_mentions:
         mention_text = ""
         dm_text = ""
         for m in user_mentions:
-            sender = message.guild.get_member(m["sender_id"])
-            sender_name = sender.display_name if sender else "알 수 없음"
-
-            if "send_type" not in m : 
-                m["send_type"] = "reply"
-            
             if m["send_type"] == "reply" : 
                 mention_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
             elif m["send_type"] == "dm" : 
                 dm_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
-            m["done"] = 1
+            done_mention_delay_user(m["id"])
         embed = discord.Embed(title="멘션 알림", description = mention_text, color=int("a5f0ff", 16))
         
-        save_mentions(mentions)
         if dm_text != "" : 
             embed = discord.Embed(title="멘션 알림", description = f"{message.author.display_name}님에게 예약된 멘션입니다.\n-# 특정 사용자로부터 오는 멘션 알림을 차단하시려면 </멘션지연차단:1398856385772523540>을 사용해 주세요.\n\n{dm_text}", color=int("a5f0ff", 16))
             await message.author.send(embed=embed)
@@ -9442,7 +9434,7 @@ async def mention_delay(interaction: discord.Interaction, 사용자: discord.Mem
     if 전달범위 == "server_reply" or 전달범위 == "server_dm" : 
         mention_server = interaction.guild.id
     elif 전달범위 == "all" : 
-        mention_server = 0
+        mention_server = None
     else : 
         embed = discord.Embed(
             title=f"오류",
@@ -9518,21 +9510,10 @@ async def mention_delay(interaction: discord.Interaction, 사용자: discord.Mem
         send_type = "dm"
     elif 전달범위 == "all" : 
         send_type = "dm"
-
-    global mentions
-    mention_id = len(mentions) + 1
-    mentions.append({
-        "user_id": user.id,
-        "sender_id": interaction.user.id,
-        "content": content,
-        "done": 0,
-        "id": mention_id,
-        "server_id": mention_server,
-        "send_type": send_type,
-    })
-    save_mentions(mentions)
     
-    embed = discord.Embed(title="멘션 예약 완료", description=f"멘션 ID: {mention_id}\n{user.mention}님이 서버에 메시지를 보낼 시 알림이 전송됩니다.", color=int("a5f0ff", 16))
+    add_mention_delay_user(user.id, interaction.user.id, content, 0, mention_server, send_type)
+    
+    embed = discord.Embed(title="멘션 예약 완료", description=f"{user.mention}님이 서버에 메시지를 보낼 시 알림이 전송됩니다.", color=int("a5f0ff", 16))
     await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="멘션지연목록", description = "/멘션지연 명령어로 예약된 메시지들을 확인합니다.")
@@ -9551,7 +9532,7 @@ async def mention_list(interaction: discord.Interaction, user: discord.Member):
         await interaction.followup.send("다른 사용자에게 예약된 멘션의 목록을 확인하려면 특수 권한이 필요합니다.")
         return
     
-    pending_mentions = [m for m in mentions if m["user_id"] == user.id and m["done"] == 0 and m["server_id"] == interaction.guild.id and m["send_type"] == "reply"]
+    pending_mentions = get_mention_delay_user(user.id, "server", interaction.guild.id)
     
     if not pending_mentions:
         await interaction.followup.send(f"{user.display_name}님에게 대기 중인 공개 멘션이 없습니다.", ephemeral=False)
@@ -9560,32 +9541,50 @@ async def mention_list(interaction: discord.Interaction, user: discord.Member):
     
     embed = discord.Embed(title="대기 중인 멘션 목록", color=int("a5f0ff", 16))
     for m in pending_mentions:
-        sender = interaction.guild.get_member(m["sender_id"])
-        sender_name = sender.display_name if sender else "알 수 없음"
         embed.add_field(name=f"멘션 ID: {m['id']}", value=f"보낸 사람: <@{m['sender_id']}>\n내용: {m['content']}", inline=False)
-        mention_ids.append(m['id'])
     
     await interaction.followup.send(embed=embed, ephemeral=False)
     if interaction.user.id == user.id : 
-        for mention in mentions:
-            if mention["id"] in mention_ids and mention["done"] == 0:
-                mention["done"] = 1
-        save_mentions(mentions)
+        for mention in pending_mentions:
+            done_mention_delay_user(mention["id"])
 
 @bot.tree.command(name="멘션지연취소", description = "/멘션지연으로 예약된 메시지 중 한 건을 취소합니다.")
 async def cancel_mention(interaction: discord.Interaction, mention_id: int):
-    if not interaction.user.guild_permissions.mention_everyone:
-        await interaction.response.send_message("권한이 부족합니다. 다음 권한이 필요합니다: `@everyone, @here, 모든 역할 멘션하기`")
+    await interaction.response.defer(ephemeral=True)
+
+    status, until, reason = is_blocked(interaction.user)
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
         return
-    global mentions
-    for mention in mentions:
-        if mention["id"] == mention_id and mention["done"] == 0 and mention["server_id"] == interaction.guild.id and mention["send_type"] == "reply":
-            mention["done"] = 1
-            save_mentions(mentions)
-            await interaction.response.send_message(f"멘션 ID {mention_id}가 취소되었습니다.", ephemeral=False)
+
+    if interaction.user.guild_permissions.mention_everyone:
+        result = cancel_mention_delay_user(mention_id, True, interaction.user.id, interaction.guild.id)
+        if result == True : 
+            embed = discord.Embed(
+                title=f"완료",
+                description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed = embed)
             return
     
-    await interaction.response.send_message(f"해당 ID의 대기 중인 멘션을 찾을 수 없습니다.", ephemeral=False)
+    result = cancel_mention_delay_user(mention_id, False, interaction.user.id, interaction.guild.id)
+    if result == True : 
+        embed = discord.Embed(
+            title=f"완료",
+            description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
+            color=int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
+    else : 
+        embed = discord.Embed(
+            title=f"오류",
+            description=f"해당 멘션을 취소할 수 없습니다. 아래 중 하나 이상에 해당되는 사용자여야 합니다.\n\n- 전달 범위가 \'이 서버\'인 멘션지연에 한해, 해당 서버에서 `@everyone, @here, 모든 역할 멘션하기` 권한을 보유하고 있음\n- 멘션지연을 예약한 본인",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed = embed)
+
 
 @bot.tree.command(name = "링크검사", description = "특정 링크가 악성 링크인지 여부를 검사합니다.")
 @app_commands.describe(링크 = "검사할 링크", 세부정보 = "검사 결과 출력 방식")
