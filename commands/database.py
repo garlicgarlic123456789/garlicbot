@@ -77,6 +77,17 @@ def init_db() :
             selection TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS mention_delay_user (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            sender_id INTEGER,
+            content TEXT,
+            done INTEGER,
+            server_id INTEGER,
+            send_type TEXT
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -85,6 +96,60 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+def migrate_mention_delay_user():
+    import json
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    with open("mentions.json", "r", encoding = "utf-8") as f : 
+        mentions = json.load(f)
+    
+    for mention in mentions : 
+        if "send_type" not in mention : 
+            mention["send_type"] = "reply"
+        c.execute("INSERT INTO mention_delay_user (id, user_id, sender_id, content, done, server_id, send_type) VALUES (?, ?, ?, ?, ?, ?, ?)", (mention["id"], mention["user_id"], mention["sender_id"], mention["content"], mention["done"], mention["server_id"], mention["send_type"]))
+    conn.close()
+
+def add_mention_delay_user(user_id: int, sender_id: int, content: str, done: int, server_id: int, send_type: str):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("INSERT INTO mention_delay_user (user_id, sender_id, content, done, server_id, send_type) VALUES (?, ?, ?, ?, ?, ?)", (user_id, sender_id, content, done, server_id, send_type))
+    conn.close()
+
+def done_mention_delay_user(mention_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+
+    c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (mention_id,))
+    row = c.fetchone()
+    if row : 
+        c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+        conn.close()
+        return True
+    else : 
+        conn.close()
+        return False
+
+def get_mention_delay_user(user_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT * FROM mention_delay_user WHERE user_id = ?", (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    mentions = []
+    for i in rows : 
+        mentions.append({
+            "id": i[0],
+            "user_id": i[1],
+            "sender_id": i[2],
+            "content": i[3],
+            "done": i[4],
+            "server_id": i[5],
+            "send_type": i[6],
+        })
+    return mentions
 
 def reset_gpt_chat_thread(user_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
