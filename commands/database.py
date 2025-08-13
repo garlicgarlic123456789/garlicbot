@@ -172,9 +172,9 @@ def get_mention_delay_user(user_id: int, type: str = "all", server_id: int = Non
     c = conn.cursor()
     
     if type == "all" : 
-        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ?", (user_id,))
+        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND done = 0", (user_id,))
     elif type == "server" : 
-        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND server_id = ?", (user_id, server_id))
+        c.execute("SELECT * FROM mention_delay_user WHERE user_id = ? AND server_id = ? AND done = 0", (user_id, server_id))
     rows = c.fetchall()
     conn.close()
     mentions = []
