@@ -7941,6 +7941,9 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
             update_xp(1320303102703702037, i, j)
         await interaction.followup.send(f"cmd 확인바람")
     elif 아이디 == 23 : 
+        if True : 
+            await interaction.response.send_message("폐지된 개발 명령.")
+            return
         await interaction.response.defer(ephemeral=True)
         await migrate_mention_delay_user()
         await interaction.followup.send("처리되었습니다.")
