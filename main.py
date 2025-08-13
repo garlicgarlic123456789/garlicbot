@@ -9583,7 +9583,7 @@ async def cancel_mention(interaction: discord.Interaction, mention_id: int):
     else : 
         embed = discord.Embed(
             title=f"오류",
-            description=f"해당 멘션을 취소할 수 없습니다. 아래 중 하나 이상에 해당되는 사용자여야 합니다.\n\n- 전달 범위가 \'이 서버\'인 멘션지연에 한해, 해당 서버에서 `@everyone, @here, 모든 역할 멘션하기` 권한을 보유하고 있음\n- 멘션지연을 예약한 본인",
+            description=f"해당 멘션을 취소할 수 없습니다. 멘션 ID가 유효한지 확인해 주세요.\n\n멘션 ID가 유효한 것이 확실한 경우, 취소 권한이 있는지 확인해 주세요. 아래 중 하나 이상에 해당되는 사용자여야 합니다.\n\n- 전달 범위가 \'이 서버\'인 멘션지연에 한해, 해당 서버에서 `@everyone, @here, 모든 역할 멘션하기` 권한을 보유하고 있음\n- 멘션지연을 예약한 본인",
             color=discord.Color.red()
         )
         await interaction.followup.send(embed = embed)
