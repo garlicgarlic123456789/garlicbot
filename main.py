@@ -1210,7 +1210,7 @@ def save_personal_warn(data):
 chat_dict = {}
 
 call_limit = {}
-MAX_CALLS_PER_DAY = 150
+MAX_CALLS_PER_DAY = 30
 
 normal_chat_dict = {}
 
@@ -1239,45 +1239,6 @@ def check_call_limit(user_id):
         call_limit[user_id] = [today, 1]  # 처음 호출
         return [True, MAX_CALLS_PER_DAY]
 
-async def maneul_chat(message) : 
-    global cute_model9_prompt
-    global maneul_chat_id
-    if message.attachments is None or len(message.attachments) == 0 : 
-        message_content = [
-            {"type": "input_text", "text": message.content[4:]},
-        ]
-    else : 
-        image_list = []
-        for attachment in message.attachments:
-            image_list.append({"type": "input_image", "image_url": attachment.url})
-        message_content = [
-            {"type": "input_text", "text": message.content[4:]},
-            *image_list,
-        ]
-                
-    if maneul_chat_id is None : 
-        response = await client.responses.create(
-            model="gpt-4.1-nano",
-            input=[{
-                "role": "user",
-                "content": message_content,
-            }],
-            instructions=cute_model9_prompt,
-        )
-    else : 
-        response = await client.responses.create(
-        model="gpt-4.1-nano",
-        previous_response_id=maneul_chat_id,
-            input=[{
-                "role": "user",
-                "content": message_content,
-            }],
-            instructions=cute_model9_prompt,
-        )
-                
-    result = response.output_text
-    maneul_chat_id = response.id
-    return result
 
 @bot.event
 async def on_message(message):
@@ -2174,13 +2135,55 @@ async def on_message(message):
             return
         
         if True : 
-            response_before_edit = await maneul_chat(message)
-            print(response_before_edit)
-            import json
-            response_dict = json.loads(response_before_edit)
-            response = response_dict["output"]
-            likeability = response_dict["likeability"]
-            add_likeability(str(message.author.id), int(likeability))
+            '''
+            temp = await prompt_detect(message.content[4:])
+            if temp is None :
+                embed = discord.Embed(
+                    title = f"오류",
+                    description = f"시스템 프롬프트를 출력하려 하는지 여부를 판단하지 못했습니다.",
+                    color = discord.Color.red()
+                )
+                await message.reply(embed = embed, mention_author=False)
+                return
+            if temp < 60 :
+                '''
+            if True : 
+                if True : 
+                    if chat_dict.get(1) is not None :
+                        response = await asyncio.to_thread(
+                            chat_dict[1].send_message,
+                            f"사용자명: {message.author.display_name} ({message.author.id})\n사용자의 입력: {message.content[4:]}",
+                            generation_config=genai.types.GenerationConfig(
+                                temperature=2.0,
+                            ),
+                        )
+                    else :
+                        chat_dict[1] = await asyncio.to_thread(
+                            cute_model8.start_chat,
+                        )
+                        response = await asyncio.to_thread(
+                            chat_dict[1].send_message,
+                            f"사용자명: {message.author.display_name} ({message.author.id})\n사용자의 입력: {message.content[4:]}",
+                            generation_config=genai.types.GenerationConfig(
+                                temperature=2.0,
+                            ),
+                        )
+            else :
+                embed = discord.Embed(
+                    title = f"오류",
+                    description = f"시스템 프롬프트를 출력하려 합니다.",
+                    color = discord.Color.red()
+                )
+                await message.reply(embed = embed, mention_author=False)
+                return
+            response_before_edit = response.text
+            match = re.search(r"응답:\s*(.*?)\s*\n호감도:\s*([+-]?\d+)", response_before_edit, re.MULTILINE)
+            if match:
+                response = match.group(1)  # {1} 문자열
+                favorability = int(match.group(2))  # {2} 정수
+                add_likeability(str(message.author.id), favorability)
+            else : 
+                return
             response = response.replace("@everyone", "`@ everyone`")
             response = response.replace("@here", "`@ here`")
             response = response.replace("{user}", message.author.display_name)
@@ -2188,7 +2191,12 @@ async def on_message(message):
 
             # re.sub로 해당 패턴 앞뒤에 ` 붙이기
             response = re.sub(pattern, r'`<@ \1>`', response)
-            print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n서버: {message.guild.name} ({message.guild.id})\n프롬프트: {message.content}\n수정 전 출력: {response_before_edit}\n출력: {response}\n----------")
+            embed = discord.Embed(
+                title = f"답변",
+                description = f"{response}",
+                color = int("a5f0ff", 16)
+            )
+            print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n수정 전 출력: {response_before_edit}\n출력: {response}\n----------")
             # await message.reply(embed = embed, mention_author=False)
             await message.reply(response, mention_author=False)
     # 정규표현식으로 메시지 분석
@@ -2654,7 +2662,7 @@ async def on_message(message):
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
-                print(f"마늘이 (GPT-5 mini) 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.output_text}\n----------")
+                print(f"마늘이 (GPT-5 nano) 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.output_text}\n----------")
                 add_likeability(str(message.author.id), 1)
             '''
             elif match2 is not None :
