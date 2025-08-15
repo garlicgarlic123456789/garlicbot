@@ -2159,7 +2159,7 @@ async def on_message(message):
                         )
                     else :
                         chat_dict[1] = await asyncio.to_thread(
-                            cute_model8.start_chat,
+                            cute_model9.start_chat,
                         )
                         response = await asyncio.to_thread(
                             chat_dict[1].send_message,
