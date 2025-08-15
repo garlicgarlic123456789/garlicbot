@@ -1210,7 +1210,7 @@ def save_personal_warn(data):
 chat_dict = {}
 
 call_limit = {}
-MAX_CALLS_PER_DAY = 30
+MAX_CALLS_PER_DAY = 50
 
 normal_chat_dict = {}
 
