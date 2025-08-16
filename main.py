@@ -83,6 +83,7 @@ from commands import security_check
 from commands.database import *
 from commands import weather
 from commands import slowmode
+from commands import server_info
 
 from zoneinfo import ZoneInfo
 
@@ -9661,6 +9662,7 @@ security_check.setup(bot)
 weather.setup(bot)
 xp_setup.setup(bot)
 slowmode.setup(bot)
+server_info.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
