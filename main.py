@@ -9517,9 +9517,9 @@ async def mention_delay(interaction: discord.Interaction, 사용자: discord.Mem
     elif 전달범위 == "all" : 
         send_type = "dm"
     
-    add_mention_delay_user(user.id, interaction.user.id, content, 0, mention_server, send_type)
+    mention_id = add_mention_delay_user(user.id, interaction.user.id, content, 0, mention_server, send_type)
     
-    embed = discord.Embed(title="멘션 예약 완료", description=f"{user.mention}님이 서버에 메시지를 보낼 시 알림이 전송됩니다.", color=int("a5f0ff", 16))
+    embed = discord.Embed(title="멘션 예약 완료", description=f"멘션 #{mention_id}\n\n{user.mention}님이 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.", color=int("a5f0ff", 16))
     await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="멘션지연목록", description = "/멘션지연 명령어로 예약된 메시지들을 확인합니다.")
