@@ -134,7 +134,9 @@ def add_mention_delay_user(user_id: int, sender_id: int, content: str, done: int
     c = conn.cursor()
     
     c.execute("INSERT INTO mention_delay_user (user_id, sender_id, content, done, server_id, send_type) VALUES (?, ?, ?, ?, ?, ?)", (user_id, sender_id, content, done, server_id, send_type))
+    last_id = c.lastrowid
     conn.close()
+    return last_id
 
 def done_mention_delay_user(mention_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
