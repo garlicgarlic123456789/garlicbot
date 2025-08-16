@@ -1181,10 +1181,13 @@ async def handle_user_mentions(message):
         dm_text = ""
         for m in user_mentions:
             if m["send_type"] == "reply" : 
-                mention_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
+                if m["server_id"] == message.guild.id : 
+                    mention_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
+                    done_mention_delay_user(m["id"])
             elif m["send_type"] == "dm" : 
-                dm_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
-            done_mention_delay_user(m["id"])
+                if m["server_id"] is None or m["server_id"] == message.guild.id : 
+                    dm_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
+                    done_mention_delay_user(m["id"])
         embed = discord.Embed(title="멘션 알림", description = mention_text, color=int("a5f0ff", 16))
         
         if dm_text != "" : 
