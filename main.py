@@ -9415,7 +9415,6 @@ async def mention_delay_block(interaction: discord.Interaction, 사용자: disco
     await interaction.followup.send(embed = embed)
     return
 
-
 @bot.tree.command(name="멘션지연", description="특정 사용자가 메시지를 보냈을 때 멘션하도록 예약합니다.")
 @app_commands.choices(전달범위 = [
     app_commands.Choice(name = "이 서버 (답장으로 전달)", value = "server_reply"),
