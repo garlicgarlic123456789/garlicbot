@@ -3181,12 +3181,6 @@ async def on_member_update(before, after):
                     embed.add_field(name="역할", value=f"{role.mention}", inline=False)
                     await channel.send(embed=embed)
 
-def format_duration(duration):
-    seconds = duration.total_seconds()
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{int(hours)}시간 {int(minutes)}분 {int(seconds)}초"
-
 @bot.tree.command(name = "대화초기화", description = "마늘아 <할 말>로 대화한 이력을 초기화합니다.")
 async def reset_chat(interaction: discord.Interaction):
     await interaction.response.defer()
