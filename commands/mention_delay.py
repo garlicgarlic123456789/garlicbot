@@ -129,6 +129,11 @@ class mention_delay(app_commands.Group) :
             for i in range(role_users_count) : 
                 mention_id = add_mention_delay_user(role_users[i].id, interaction.user.id, 내용, 0, mention_server, send_type)
                 mention_ids.append(mention_id)
+            
+            temp = len(mention_ids)
+            for i in range(temp) : 
+                mention_ids[i] = str(mention_ids[i])
+
             process_mention_relation(mention_ids)
         
         if role_users_count != role_users_count_before : 
