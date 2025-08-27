@@ -1186,7 +1186,7 @@ async def handle_user_mentions(message):
                     if m["related_id"] is not None : 
                         related_id = m["related_id"].split(",")
                         for i in related_id : 
-                            done_mention_delay_user(i)
+                            done_mention_delay_user(int(i))
             elif m["send_type"] == "dm" : 
                 if m["server_id"] is None or m["server_id"] == message.guild.id : 
                     dm_text += f"- <@{m['sender_id']}>님이 예약한 멘션: {m['content']}\n"
@@ -1194,7 +1194,7 @@ async def handle_user_mentions(message):
                     if m["related_id"] is not None : 
                         related_id = m["related_id"].split(",")
                         for i in related_id : 
-                            done_mention_delay_user(i)
+                            done_mention_delay_user(int(i))
         embed = discord.Embed(title="멘션 알림", description = mention_text, color=int("a5f0ff", 16))
         
         if dm_text != "" : 

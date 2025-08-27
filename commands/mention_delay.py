@@ -120,14 +120,24 @@ class mention_delay(app_commands.Group) :
             return
         
         if 전달방법 == "all" : 
+            mention_ids = []
             for i in range(role_users_count) : 
                 mention_id = add_mention_delay_user(role_users[i].id, interaction.user.id, 내용, 0, mention_server, send_type)
+                mention_ids.append(mention_id)
         elif 전달방법 == "one" : 
             mention_ids = []
             for i in range(role_users_count) : 
                 mention_id = add_mention_delay_user(role_users[i].id, interaction.user.id, 내용, 0, mention_server, send_type)
                 mention_ids.append(mention_id)
             process_mention_relation(mention_ids)
+        
+        if 전달범위 == "server_reply" : 
+            embed = discord.Embed(
+                title=f"완료",
+                description=f"멘션 #{', '.join(mention_ids)}\n\n{역할.mention} 역할에 속한 사용자가 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.",
+                color=int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed = embed)
         
 
     @app_commands.command(name="유저", description="특정 사용자가 메시지를 보냈을 때 멘션하도록 예약합니다.")

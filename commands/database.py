@@ -142,7 +142,7 @@ def add_mention_delay_user(user_id: int, sender_id: int, content: str, done: int
 def process_mention_relation(related_id: list) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
-    related = related_id.join(",")
+    related = ",".join(related_id)
     for i in related_id : 
         c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (i,))
         row = c.fetchone()
