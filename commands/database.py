@@ -86,7 +86,8 @@ def init_db() :
             content TEXT,
             done INTEGER,
             server_id INTEGER,
-            send_type TEXT
+            send_type TEXT,
+            related_id TEXT
         )
     """)
     '''
@@ -137,6 +138,17 @@ def add_mention_delay_user(user_id: int, sender_id: int, content: str, done: int
     last_id = c.lastrowid
     conn.close()
     return last_id
+
+def process_mention_relation(related_id: list) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    related = ",".join(related_id)
+    for i in related_id : 
+        c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (i,))
+        row = c.fetchone()
+        if row : 
+            c.execute("UPDATE mention_delay_user SET related_id = ? WHERE id = ?", (related, i))
+    conn.close()
 
 def done_mention_delay_user(mention_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -189,6 +201,7 @@ def get_mention_delay_user(user_id: int, type: str = "all", server_id: int = Non
             "done": i[4],
             "server_id": i[5],
             "send_type": i[6],
+            "related_id": i[7],
         })
     return mentions
 
