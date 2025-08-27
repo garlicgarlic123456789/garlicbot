@@ -310,10 +310,10 @@ automod_keyword3 = ["50$ for steam", "$ for steam", "nude", "steamcommunity.com/
 automod_keyword4 = ["!번역 @모든사람", "!번역 @모든 사람", "!번역 @여기", "@모든사람", "@여기", "@이곳", "!번역 @모두"] # 번역을 통한 하루봇 취약점 이용 방지
 automod_keyword5 = ["따먹", "쇼타", "로리", "촉수", "창녀", "오고곳", "통구이", "전라디언", "쟈지", "보지구멍", "씹구녕", "찌찌", "으럇으럇", "자지푸딩", "쟈지푸딩", "섹스", "부랄", "헤으응", "해으응", "헤응", "헤으읏", "하응", "하으응", "색스", "SEX", "sex", "Sex", "SEx", "sEX", "seX", "sEx", "불알", "강간", "응기잇", "오고곡", "응긱", "응깃", "야스", "YAS", "응긋", "가버렷", "빠구리"] # 부적절한 단어 (성적인 거)
 automod_keyword6 = ["@everyone", "@here", "<@&"] # 멘션
-automod_keyword7 = ["정조1", "jeongjo1"] # 불필요한 언급
+automod_keyword7 = [] # 불필요한 언급
 automod_keyword8 = ["통구이", "쥐포", "홍어색"] # 지역 차별
 automod_keyword9 = ["니애미", "니기미", "니애비", "ㄴㄱㅁ", "느금마", "ㄴㅇㅁ"] # 패드립
-automod_keyword10 = ["aclgroup", "ACLGroup", "AclGroup", "alphawikiorg", "alphawiki", "theseedio", "namuwikiw사용자", "알파위키", "좆파위키", "군갤", "군소갤", "군소위키마이너갤러리", "남갤", "나무위키마이너갤러리", "남간갤", "읶갤", "위키갤", "위키갤러리"] # 위키 관련 언급
+automod_keyword10 = [] # 위키 관련 언급
 automod_keyword11 = ["https://temu.com/s/L5KUJI0PgTBAw", "temu.com/s/", "lite.tiktok.com"] # 스팸 방지
 personal_info_keyword = ["생년월일", "생일", "나이", "실명", "본명", "이름", "학교", "거주지"]
 raid_keyword1 = []
@@ -349,11 +349,6 @@ model = AutoModelForCausalLM.from_pretrained(model_name)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = model.to(device)
 '''
-
-# 이메일 설정
-sender_email = 'mintjeongjowiki@gmail.com'
-sender_password = 'qrol wsow ibvu smde'
-receiver_email = 'hongsungmin2222@gmail.com'
 
 # 역할 제한 설정
 email_role_limit = True
@@ -670,6 +665,7 @@ class ModerationLogView(discord.ui.View):
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
 
 
+'''
 # 이메일 전송 함수
 def send_email(sender_name, sender_display_name, sender_id, content):
     msg = MIMEMultipart()
@@ -687,6 +683,7 @@ def send_email(sender_name, sender_display_name, sender_id, content):
     except Exception as e:
         print(f"이메일 전송 실패: {e}")
         return False
+'''
 
 
 async def spam_detect_ai(message) :
@@ -8546,7 +8543,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
     )
     await interaction.followup.send(embed=embed)
 
-
+'''
 # 이메일 전송 명령어 (슬래시 명령어)
 @bot.tree.command(name="이메일전송", description="봇 개발자에게 이메일을 전송합니다. (양 측 모두의 이메일은 공개되지 않습니다.)")
 async def 이메일전송(interaction: discord.Interaction, 내용: str):
@@ -8579,7 +8576,7 @@ async def 이메일전송(interaction: discord.Interaction, 내용: str):
         await interaction.followup.send("**[알림]** 마늘봇 개발자(마늘 서버 주인)에게 이메일이 성공적으로 전송되었습니다.")
     else:
         await interaction.followup.send("**[오류!]** 이메일 전송에 실패했습니다.")
-
+'''
 
 # 명령어를 처리하여 메시지를 전송하는 함수
 async def parse_command(command):
