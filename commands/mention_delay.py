@@ -131,14 +131,19 @@ class mention_delay(app_commands.Group) :
                 mention_ids.append(mention_id)
             process_mention_relation(mention_ids)
         
-        if 전달범위 == "server_reply" : 
+        if role_users_count != role_users_count_before : 
             embed = discord.Embed(
                 title=f"완료",
-                description=f"멘션 #{', '.join(mention_ids)}\n\n{역할.mention} 역할에 속한 사용자가 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.",
-                color=int("a5f0ff", 16)
+                description=f"멘션 #{', '.join(mention_ids)}\n\n{역할.mention} 역할에 속한 사용자가 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.\n\n**[주의!]** 해당 역할에 속한 사용자 중 {role_users_count_before - role_users_count}명에게 멘션을 예약할 수 없습니다. \n\n- 해당 사용자에 의해 차단된 작업일 수 있습니다.\n- 해당 사용자 계정이 봇 계정일 수 있습니다.",
+                color=discord.Color.yellow()
             )
             await interaction.followup.send(embed = embed)
-        
+        embed = discord.Embed(
+            title=f"완료",
+            description=f"멘션 #{', '.join(mention_ids)}\n\n{역할.mention} 역할에 속한 사용자가 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.",
+            color=int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
 
     @app_commands.command(name="유저", description="특정 사용자가 메시지를 보냈을 때 멘션하도록 예약합니다.")
     @app_commands.describe(사용자 = "대상 사용자", 내용 = "내용", 전달범위 = "명령어를 사용한 서버에서만 또는 마늘봇이 도입된 모든 서버 중 하나에서 대상 사용자가 메시지를 보낼 시 전달")
