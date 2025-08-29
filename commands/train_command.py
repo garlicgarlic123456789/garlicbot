@@ -6,6 +6,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import requests
 import asyncio
+import datetime
+import holidays
+from discord.ui import View, Button
 
 class train_command(app_commands.Group) : 
     def __init__(self):
@@ -258,8 +261,9 @@ class train_command(app_commands.Group) :
         await interaction.followup.send(embed=embed)
     
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
-    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
-    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str, 개인응답: bool = False) : 
+    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 상하행 = "열차의 방향", 개인응답 = "개인응답 사용 여부")
+    @app_commands.choices(상하행 = [app_commands.Choice(name="상행", value="상행"), app_commands.Choice(name="하행", value="하행"), app_commands.Choice(name="외선순환 (2호선)", value="외선"), app_commands.Choice(name="내선순환 (2호선)", value="내선")])
+    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 상하행: str, 날짜: str = None, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
@@ -268,14 +272,44 @@ class train_command(app_commands.Group) :
             msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
             await interaction.followup.send(msg)
             return
+        
+        if 날짜 is None : 
+            날짜 = await today_to_text()
+
         try : 
+            기준시각 = await today_to_text2()
             위치, 지연 = await get_train_info_railblue(열차번호, 날짜)
-            embed = discord.Embed(
-                title = f"열차 #{열차번호} 정보",
-                description = f"- 위치: {위치}\n- 지연: {지연}",
+            timetable = await get_train_timetable(열차번호, 날짜, 상하행)
+            embed2 = discord.Embed(
+                title = f"열차 #{열차번호} 실시간 정보",
+                description = f"**[주의!]** 이 정보는 참고용으로만 사용하시기 바랍니다.\n\n- 위치: {위치}\n- 지연: {지연}",
                 color = int("a5f0ff", 16),
             )
-            await interaction.followup.send(embed = embed)
+            embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
+            if timetable[0] == False : 
+                embed2 = discord.Embed(
+                    title = f"열차 #{열차번호} 실시간 정보",
+                    description = f"**[주의!]** 이 정보는 참고용으로만 사용하시기 바랍니다.\n\n- 위치: {위치}\n- 지연: {지연}",
+                    color = int("a5f0ff", 16),
+                )
+                embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
+                embed = discord.Embed(
+                    title=f"열차 #{열차번호} 시각표 정보",
+                    description=f"**[주의!]** 이 정보는 시각표를 기준으로 한 정보입니다. 실제 도착 시각과 차이가 있을 수 있으며 가급적 아래의 지연 시간 정보를 함께 참고하시기 바랍니다.\n\n시각표 정보를 조회할 수 없었습니다. 지원되지 않는 노선이거나 열차 번호가 올바르지 않을 수 있습니다.",
+                    color = int("a5f0ff", 16)
+                )
+                await interaction.followup.send(embeds=[embed, embed2])
+                return
+            else : 
+                embed2 = discord.Embed(
+                    title = f"열차 #{열차번호} 실시간 정보",
+                    description = f"**[주의!]** 이 정보는 참고용으로만 사용하시기 바랍니다.\n\n- 위치: {위치}\n- 지연: {지연}",
+                    color = int("a5f0ff", 16),
+                )
+                embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
+            pages = generate_pages(열차번호, timetable[2])
+            view = Paginator(pages, embed2)
+            await interaction.followup.send(embeds=[pages[0], embed2], view=view)
         except Exception as e : 
             global error
             print(f"오류 #{error}: {e}")
@@ -287,6 +321,71 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(embed=embed)
             error += 1
             return
+
+ITEMS_PER_PAGE = 5
+
+def generate_pages(train, data):
+    items = list(data.items())
+    pages = []
+
+    # 데이터 쪼개기
+    for i in range(0, len(items), ITEMS_PER_PAGE):
+        chunk = items[i:i+ITEMS_PER_PAGE]
+
+        embed = discord.Embed(
+            title=f"열차 #{train} 시각표 정보",
+            description=f"**[주의!]** 이 정보는 시각표를 기준으로 한 정보입니다. 실제 도착 시각과 차이가 있을 수 있으며 가급적 아래의 지연 시간 정보를 함께 참고하시기 바랍니다.",
+            color=int("a5f0ff", 16)
+        )
+        for k, v in chunk:
+            역명 = k
+            통과여부 = v['stop']
+            도착시간 = v['arrivetime']
+            출발시간 = v['departtime']
+
+            title = f"{역명}역 ({통과여부})"
+            if 통과여부 == "정차" : 
+                des = f"- 도착 시각: {도착시간}\n- 출발 시각: {출발시간}"
+            elif 통과여부 == "출발" : 
+                des = f"- 출발 시각: {출발시간}"
+            elif 통과여부 == "종착" : 
+                des = f"- 도착 시각: {도착시간}"
+            else : 
+                des = f"- 통과 시각: {출발시간}"
+            embed.add_field(name=title, value=des, inline=False)
+        
+        page_count = len(items)//ITEMS_PER_PAGE
+        if len(items) % ITEMS_PER_PAGE != 0 : 
+            page_count += 1
+
+        embed.set_footer(text=f"페이지 {i//ITEMS_PER_PAGE + 1} / {page_count}")
+
+        pages.append(embed)
+
+    return pages
+
+class Paginator(View):
+    def __init__(self, pages, embed):
+        super().__init__(timeout=300)
+        self.pages = pages
+        self.embed = embed
+        self.current_page = 0
+
+    @discord.ui.button(label="이전", style=discord.ButtonStyle.secondary)
+    async def previous(self, interaction: discord.Interaction, button: Button):
+        if self.current_page > 0:
+            self.current_page -= 1
+            await interaction.response.edit_message(embeds=[self.pages[self.current_page], self.embed], view=self)
+        else:
+            await interaction.response.defer()  # 변화 없을 시 무시
+
+    @discord.ui.button(label="다음", style=discord.ButtonStyle.secondary)
+    async def next(self, interaction: discord.Interaction, button: Button):
+        if self.current_page < len(self.pages) - 1:
+            self.current_page += 1
+            await interaction.response.edit_message(embeds=[self.pages[self.current_page], self.embed], view=self)
+        else:
+            await interaction.response.defer()
 
 async def parse_train_info(text):
     # 3. '운행중' 포함 & 분 초 단위 지연
@@ -444,8 +543,121 @@ async def get_train_info_railblue(train, date):
     
     return loc_msg, delay_msg
 
+async def today_to_text() : 
+    return datetime.date.today().strftime("%Y%m%d")
+
+async def today_to_text2() : 
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+async def date_to_datetime(date) : 
+    return datetime.datetime.strptime(date, "%Y%m%d")
+
+async def date_to_datetime2(date) : 
+    return date.strftime("%Y-%m-%d 05:00:00")
+
+async def date_to_datetime3(date) : 
+    return date.strftime("%Y년 %m월 %d일")
+
+async def date_weekend_or_bot(date) : 
+    weekday = date.weekday()
+    if weekday == 5 or weekday == 6 : 
+        return True
+    else : 
+        return False
+
+async def return_time_now() : 
+    now = datetime.datetime.now()
+    now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+    return now_str
+
+async def today_is_hoilday(date) : 
+    # 한국 공휴일 목록
+    kr_holidays = holidays.KR()
+
+    # 오늘이 공휴일인지 확인
+    if date in kr_holidays:
+        return True
+    else:
+        return False
+
+def _time_sort_key(depart_time):
+    if not depart_time:
+        return float('inf')  # 없음 -> 맨 뒤
+    try:
+        h, m, s = map(int, depart_time.split(':'))
+    except Exception:
+        return float('inf')
+    if 0 <= h <= 2:
+        h += 24
+    return h * 60 * 60 + m * 60 + s
+
+# 키 이름이 'departtime' 또는 'departttime' 중 어떤 것이든 처리
+def get_depart_key(item):
+    return item.get('departtime') or item.get('departttime')
+
+async def get_train_timetable(trainnum, date, updown) : 
+    date = await date_to_datetime(date)
+    if await date_weekend_or_bot(date) : 
+        weekend = "주말"
+    elif await today_is_hoilday(date) : 
+        weekend = "공휴일"
+    else : 
+        weekend = "평일"
+    
+    line = "선"
+    time = await date_to_datetime2(date)
+    
+    url = f"http://apis.data.go.kr/B553766/schedule/getTrainSch?dataType=JSON&serviceKey={train_timetable_api_key}&numOfRows=100&tmprTmtblYn=N&upbdnbSe={updown}&wkndSe={weekend}&lineNm={line}&searchDt={time}&trainno={trainnum}"
+
+    try : 
+        response = requests.get(url)
+        if response.status_code != 200 : 
+            response.raise_for_status()
+        data = response.json()
+        data = data["response"]["body"]["items"]["item"]
+
+        result = {}
+
+        for i in data : 
+            if i["trainno"] != trainnum : 
+                continue
+            if i["stnNm"] == "서울역" : 
+                station_name = "서울"
+            else : 
+                station_name = i["stnNm"]
+            result[station_name] = {
+                "arrivetime": i["trainArvlTm"],
+                "departtime": i["trainDptreTm"]
+            }
+            if i["trainArvlTm"] is None and i["stnNm"] == i["dptreStnNm"] : 
+                result[station_name]["stop"] = "출발"
+            elif i["trainDptreTm"] is None and i["stnNm"] == i["arvlStnNm"] : 
+                result[station_name]["stop"] = "종착"
+            elif i["trainArvlTm"] is None : 
+                result[station_name]["stop"] = "통과"
+            else : 
+                result[station_name]["stop"] = "정차"
+        
+        result = sorted(result.items(), key=lambda kv: _time_sort_key(get_depart_key(kv[1])))
+        # 필요하면 dict로 다시 만듭니다 (Python 3.7+에서 순서 보존)
+        result = dict(result)
+        
+        print(result)
+        if result == {} : 
+            return [False, date, None]
+        return [True, date, result]
+    
+    except requests.exceptions.RequestException as e:
+        print("Request failed:", e)
+        # response code 출력
+        print(response.status_code)
+        return [False, date, None, e]
+    except Exception as e : 
+        print(e)
+        return [False, date, None, e]
+
 def get_subway_info(station_name):
-    url = f"http://swopenapi.seoul.go.kr/api/subway/4d72747a7267617233336e7553574f/json/realtimeStationArrival/1/25/{station_name}"
+    url = f"http://swopenapi.seoul.go.kr/api/subway/{train_arrivals_api_key}/json/realtimeStationArrival/1/25/{station_name}"
     
     try:
         response = requests.get(url)
