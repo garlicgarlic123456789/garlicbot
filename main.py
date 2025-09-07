@@ -7237,7 +7237,7 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
         )
         await channel.send(embed = embed)
 
-class TicketButtonLink(Button) : 
+class TicketButtonLink(discord.ui.Button) : 
     def __init__(self):
         super().__init__(label="티켓 생성", style=discord.ButtonStyle.primary, custom_id="create_ticket_link")
     
@@ -7245,7 +7245,7 @@ class TicketButtonLink(Button) :
         modal = TicketModal(interaction)
         await interaction.response.send_modal(modal)
 
-class TicketButton(Button):
+class TicketButton(discord.ui.Button):
     def __init__(self):
         super().__init__(label="간편 티켓 생성", style=discord.ButtonStyle.success, custom_id="create_ticket")
 
@@ -7278,7 +7278,7 @@ class TicketButton(Button):
         )
         await channel.send(embed = embed)
 
-class TicketButtonEmergency(Button):
+class TicketButtonEmergency(discord.ui.Button):
     def __init__(self):
         super().__init__(label="긴급 티켓 생성", style=discord.ButtonStyle.danger, custom_id="create_ticket_emergency")
 
@@ -7311,7 +7311,7 @@ class TicketButtonEmergency(Button):
         )
         await channel.send(embed = embed)
 
-class TicketButtonOwner(Button):
+class TicketButtonOwner(discord.ui.Button):
     def __init__(self):
         super().__init__(label="소유자 티켓 생성", style=discord.ButtonStyle.primary, custom_id="create_ticket_owner")
 
