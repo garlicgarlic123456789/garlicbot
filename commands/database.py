@@ -90,6 +90,14 @@ def init_db() :
             related_id TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS autorole (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            role_id INTEGER,
+            bot_user TEXT
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -98,6 +106,48 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def add_autorole(server_id: int, role_id: id, bot_user: str):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    # 기존에 이미 있는 행인지 확인.
+    c.execute("SELECT id FROM autorole WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+    row = c.fetchone()
+    if row:
+        return [False, "autorole_already_exists", None]
+    # 추가
+    c.execute("INSERT INTO autorole (server_id, role_id, bot_user) VALUES (?, ?, ?)", (server_id, role_id, bot_user))
+    autorole_id = c.lastrowid
+    conn.close()
+    return [True, "success", autorole_id]
+
+async def remove_autorole(server_id: int, role_id: id):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    # 있는지 확인
+    c.execute("SELECT id FROM autorole WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+    row = c.fetchone()
+    if not row:
+        return [False, "autorole_not_found", None]
+    # 제거
+    c.execute("DELETE FROM autorole WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+    conn.close()
+    return [True, "success", None]
+
+async def get_autorole(server_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM autorole WHERE server_id = ?", (server_id,))
+    rows = c.fetchall()
+    conn.close()
+    autoroles = []
+    for row in rows:
+        autoroles.append({
+            "server_id": row[1],
+            "role_id": row[2],
+            "bot_user": row[3]
+        })
+    return autoroles
 
 async def migrate_mention_delay_user():
     import json
