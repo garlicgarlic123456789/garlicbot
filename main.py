@@ -2993,13 +2993,13 @@ async def on_member_join(member):
     autoroles = await get_autorole(member.guild.id)
     for autorole in autoroles:
         if autorole["bot_user"] == "all":
-            await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 부여")
+            await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
         elif autorole["bot_user"] == "user" :
             if not member.bot :
-                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 부여")
+                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
         elif autorole["bot_user"] == "bot":
             if member.bot :
-                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 부여")
+                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
 
     if member.guild.id != using_server :
         return

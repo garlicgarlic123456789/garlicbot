@@ -122,3 +122,4 @@ class autorole(app_commands.Group) :
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
+    
