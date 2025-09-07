@@ -2989,38 +2989,19 @@ async def on_member_join(member):
         await check_account(member.id)
     '''
 
+    autoroles = await get_autorole(member.guild.id)
+    for autorole in autoroles:
+        if autorole["bot_user"] == "all":
+            await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 부여")
+        elif autorole["bot_user"] == "user" :
+            if not member.bot :
+                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 부여")
+        elif autorole["bot_user"] == "bot":
+            if member.bot :
+                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 부여")
+
     if member.guild.id != using_server :
         return
-    else :
-        content = read_file()
-        if content == "True" or content == True :
-            if member.id in no_auto_verify :
-                print(f"{member.name} 인증 제외됨")
-            else : 
-                role = member.guild.get_role(1320303229954953247) # 이용자 역할
-                if role:
-                    try:
-                        # 역할 부여
-                        await member.add_roles(role, reason = "사용자 자동 인증")
-                        print(f"역할 '{role.name}'이(가) 사용자 {member.name}에게 부여되었습니다.")
-                    except discord.Forbidden:
-                        print("역할을 부여할 권한이 없습니다.")
-                    except discord.HTTPException as e:
-                        print(f"역할 부여 중 오류 발생: {e}")
-                else:
-                    print("역할을 찾을 수 없습니다.")
-                role = member.guild.get_role(1321042959096877066) # 본계정 역할
-                if role:
-                    try:
-                        # 역할 부여
-                        await member.add_roles(role, reason = "사용자 자동 인증")
-                        print(f"역할 '{role.name}'이(가) 사용자 {member.name}에게 부여되었습니다.")
-                    except discord.Forbidden:
-                        print("역할을 부여할 권한이 없습니다.")
-                    except discord.HTTPException as e:
-                        print(f"역할 부여 중 오류 발생: {e}")
-                else:
-                    print("역할을 찾을 수 없습니다.")
     
     global recent_joins
     now = datetime.now(timezone.utc)
@@ -9104,71 +9085,6 @@ async def link_check(interaction: discord.Interaction, 링크: str, 세부정보
         
         embed.set_footer(text = "검사 결과는 100% 정확하지 않을 수 있습니다. 이 검사 결과를 신뢰하여 생기는 모든 피해에 대한 책임은 사용자에게 있습니다.")
         await interaction.followup.send(embed = embed)
-
-@bot.tree.command(name="자동인증비활성화", description="자동 인증을 비활성화합니다.")
-async def disable_auto_verify(interaction: discord.Interaction, 사유: str = "*(사유 입력되지 않음)*"):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    if interaction.user.id != 1305492487137267722 :
-        return
-    update_file("False")
-    await interaction.response.send_message("✅ auto_verify.txt의 내용을 False로 변경했습니다.", ephemeral=True)
-    embed = discord.Embed(
-        title="자동 인증 비활성화",
-        color=discord.Color.red(),
-        timestamp=discord.utils.utcnow()
-    )
-    embed.add_field(name="관리자", value=f"<@{interaction.user.id}>", inline=False)
-    embed.add_field(name="기간", value=f"무기한", inline=False)
-    embed.add_field(name="사유", value=사유, inline=False)
-    log_channel = bot.get_channel(message_log)
-    await log_channel.send(embed=embed)
-
-@bot.tree.command(name="자동인증활성화", description="자동 인증을 활성화합니다.")
-async def enable_auto_verify(interaction: discord.Interaction, 사유: str = "*(사유 입력되지 않음)*"):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    if interaction.user.id != 1305492487137267722 :
-        return
-    update_file("True")
-    await interaction.response.send_message("✅ auto_verify.txt의 내용을 True로 변경했습니다.", ephemeral=True)
-    embed = discord.Embed(
-        title="자동 인증 활성화",
-        color=int("a5f0ff", 16),
-        timestamp=discord.utils.utcnow()
-    )
-    embed.add_field(name="관리자", value=f"<@{interaction.user.id}>", inline=False)
-    embed.add_field(name="기간", value=f"무기한", inline=False)
-    embed.add_field(name="사유", value=사유, inline=False)
-    log_channel = bot.get_channel(message_log)
-    await log_channel.send(embed=embed)
-
-@bot.tree.command(name="자동인증확인", description="자동 인증 설정을 확인합니다.")
-async def check_auto_verify(interaction: discord.Interaction):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    if interaction.user.id != 1305492487137267722 :
-        return
-    content = read_file()
-    await interaction.response.send_message(f"📄 auto_verify.txt의 현재 내용: `{content}`", ephemeral=True)
 
 @bot.tree.command(name="제재내역수동삭제", description = "개발 명령")
 async def 제재내역수동삭제(interaction: discord.Interaction, id: int):
