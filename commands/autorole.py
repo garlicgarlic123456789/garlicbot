@@ -19,7 +19,7 @@ class autorole(app_commands.Group) :
             await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
             return
         
-        if interaction.user.guild_permissions.manage_roles:
+        if not interaction.user.guild_permissions.manage_roles:
             embed = discord.Embed(
                 title="오류",
                 description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
@@ -81,7 +81,7 @@ class autorole(app_commands.Group) :
             await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
             return
         
-        if interaction.user.guild_permissions.manage_roles:
+        if not interaction.user.guild_permissions.manage_roles:
             embed = discord.Embed(
                 title="오류",
                 description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
