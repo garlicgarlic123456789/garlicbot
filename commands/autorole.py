@@ -123,3 +123,41 @@ class autorole(app_commands.Group) :
             )
             await interaction.followup.send(embed=embed)
     
+    @app_commands.command(name="목록", description="자동역할 설정 목록을 확인합니다.")
+    @app_commands.default_permissions(administrator=True)
+    async def list_autorole(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        status, until, reason = is_blocked(interaction.user)
+        if status:
+            await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
+            return
+        
+        if not interaction.user.guild_permissions.manage_roles:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+        
+        autoroles = await get_autorole(interaction.guild.id)
+
+        embed = discord.Embed(
+            title="자동 역할 설정 목록",
+            color=int("a5f0ff", 16)
+        )
+        if len(autoroles) == 0:
+            embed.description = "자동 역할 설정이 없습니다."
+            embed.color = discord.Color.red()
+        else:
+            embed.description = f"자동 역할 설정이 {len(autoroles)}건 있습니다.\n\n"
+            for autorole in autoroles:
+                if autorole['bot_user'] == "all":
+                    bot_user = "모든 계정"
+                elif autorole['bot_user'] == "user":
+                    bot_user = "유저 계정"
+                elif autorole['bot_user'] == "bot":
+                    bot_user = "봇 계정"
+                embed.description += f"- <@&{autorole['role_id']}> 역할 (부여 대상: 서버에 참가하는 {bot_user})\n"
+        await interaction.followup.send(embed=embed)
