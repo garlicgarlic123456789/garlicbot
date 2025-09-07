@@ -95,7 +95,7 @@ def init_db() :
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             server_id INTEGER,
             role_id INTEGER,
-            bot_user TEXT,
+            bot_user TEXT
         )
     """)
     '''
