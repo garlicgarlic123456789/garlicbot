@@ -34,7 +34,7 @@ class ServerRuleModal(discord.ui.Modal, title="서버 규정 설정"):
             await interaction.followup.send(embed=embed)
             return
         # 여기서 DB 저장 함수 호출 가능
-        update_server_rules(self.guild_id, str(self.규정), str(self.규정가이드))
+        await update_server_rules(self.guild_id, str(self.규정), str(self.규정가이드))
 
         embed = discord.Embed(
             title="완료",
