@@ -939,8 +939,8 @@ async def check_message(message, check_everyone_here_mention: bool = True, check
                         pattern2 = r"discord://-/invite/\S+"
                         if re.search(pattern2, new_message.fields[i].value):
                             new_message.fields[i].value = new_message.fields[i].value.replace(pattern2, "*(디스코드 서버 초대 링크)*")
-        if message.footer : 
-            if message.footer.text : 
+        if new_message.footer : 
+            if new_message.footer.text : 
                 if check_everyone_here_mention:
                     new_message.footer.text = new_message.footer.text.replace("@everyone", "@​everyone")
                     new_message.footer.text = new_message.footer.text.replace("@here", "@​here")
@@ -955,3 +955,14 @@ async def check_message(message, check_everyone_here_mention: bool = True, check
                     pattern2 = r"discord://-/invite/\S+"
                     if re.search(pattern2, new_message.footer.text):
                         new_message.footer.text = new_message.footer.text.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+        
+        if new_message != message : 
+            changed = True
+        else : 
+            changed = False
+        
+        return {
+            "original_message": message,
+            "modified_message": new_message,
+            "edited": changed
+        }
