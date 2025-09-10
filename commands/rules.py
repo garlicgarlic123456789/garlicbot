@@ -63,6 +63,8 @@ def setup(bot) :
             await interaction.response.send_message(msg)
             return
         
+        await interaction.response.defer()
+        
         temp = await delete_server_rules(interaction.guild.id)
         if temp[0] : 
             embed = discord.Embed(
