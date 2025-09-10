@@ -220,7 +220,7 @@ class phrase(app_commands.Group) :
             return
         
         embed = discord.Embed(
-            title=f"문구 {phrase['name']}",
+            title=f"{phrase['name']}",
             description=phrase["phrase"],
             color=int("a5f0ff", 16)
         )
