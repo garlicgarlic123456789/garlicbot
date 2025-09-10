@@ -156,16 +156,36 @@ async def get_server_all_phrase(server_id: int, is_admin: bool):
     phrases = []
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
-    c.execute("SELECT * FROM phrase WHERE server_id = ?, type = ?", (server_id, "server_admin" if is_admin else "server_all"))
-    rows = c.fetchall()
-    conn.close()
-    for row in rows:
-        phrases.append({
-            "id": row[0],
-            "name": row[1],
-            "phrase": row[5]
-        })
-    return phrases
+    if is_admin:
+        c.execute("SELECT * FROM phrase WHERE server_id = ? AND type = ?", (server_id, "server_admin",))
+        rows = c.fetchall()
+        for row in rows:
+            phrases.append({
+                "id": row[0],
+                "name": row[1],
+                "phrase": row[5]
+            })
+        c.execute("SELECT * FROM phrase WHERE server_id = ? AND type = ?", (server_id, "server_all",))
+        rows = c.fetchall()
+        conn.close()
+        for row in rows:
+            phrases.append({
+                "id": row[0],
+                "name": row[1],
+                "phrase": row[5]
+            })
+        return phrases
+    else:
+        c.execute("SELECT * FROM phrase WHERE server_id = ? AND type = ?", (server_id, "server_all",))
+        rows = c.fetchall()
+        conn.close()
+        for row in rows:
+            phrases.append({
+                "id": row[0],
+                "name": row[1],
+                "phrase": row[5]
+            })
+        return phrases
 
 async def get_phrase(phrase_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -185,6 +205,67 @@ async def get_phrase(phrase_id: int):
     else : 
         return None
 
+async def get_phrase_by_name(name: str, user_id: int, server_id: int, is_admin: bool):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM phrase WHERE name = ? AND user_id = ?", (name, user_id))
+    row = c.fetchone()
+    if row:
+        conn.close()
+        return {
+            "id": row[0],
+            "name": row[1],
+            "type": row[2],
+            "server_id": row[3],
+            "user_id": row[4],
+            "phrase": row[5]
+        }
+    else : 
+        if is_admin:
+            c.execute("SELECT * FROM phrase WHERE name = ? AND server_id = ? AND type = ?", (name, server_id, "server_admin"))
+            row = c.fetchone()
+            if row:
+                conn.close()
+                return {
+                    "id": row[0],
+                    "name": row[1],
+                    "type": row[2],
+                    "server_id": row[3],
+                    "user_id": row[4],
+                    "phrase": row[5]
+                }
+            else : 
+                c.execute("SELECT * FROM phrase WHERE name = ? AND server_id = ? AND type = ?", (name, server_id, "server_all"))
+                row = c.fetchone()
+                if row:
+                    conn.close()
+                    return {
+                        "id": row[0],
+                        "name": row[1],
+                        "type": row[2],
+                        "server_id": row[3],
+                        "user_id": row[4],
+                        "phrase": row[5]
+                    }
+                else : 
+                    conn.close()
+                    return None
+        c.execute("SELECT * FROM phrase WHERE name = ? AND server_id = ? AND type = ?", (name, server_id, "server_all"))
+        row = c.fetchone()
+        if row:
+            conn.close()
+            return {
+                "id": row[0],
+                "name": row[1],
+                "type": row[2],
+                "server_id": row[3],
+                "user_id": row[4],
+                "phrase": row[5]
+            }
+        else : 
+            conn.close()
+            return None
+
 async def phrase_autocomplete(
     interaction: discord.Interaction,
     current: str
@@ -192,7 +273,7 @@ async def phrase_autocomplete(
     phrases = await get_user_all_phrase(interaction.user.id)
     phrases += await get_server_all_phrase(interaction.guild.id, interaction.user.guild_permissions.ban_members)
     return [
-        app_commands.Choice(name=phrase["name"], value=phrase["id"])
+        app_commands.Choice(name=phrase["name"], value=str(phrase["id"]))
         for phrase in phrases if current.lower() in phrase["name"].lower()
     ][:25]  # 최대 25개만 반환 가능
 

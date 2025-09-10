@@ -83,15 +83,29 @@ class phrase(app_commands.Group) :
             await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
             return
         
-        phrase = await get_phrase(문구이름)
-        if not phrase:
+        try : 
+            문구이름 = int(문구이름)
+        except : 
             embed = discord.Embed(
                 title="오류",
-                description="해당 문구가 존재하지 않습니다.",
+                description="잘못된 문구 이름입니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
             return
+        
+        phrase = await get_phrase(문구이름)
+
+        if phrase is None:
+            phrase = await get_phrase_by_name(문구이름, interaction.user.id, interaction.guild.id, interaction.user.guild_permissions.ban_members)
+            if phrase is None:
+                embed = discord.Embed(
+                    title="오류",
+                    description="해당 문구가 존재하지 않습니다.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
         
         if phrase["type"] == "user" and phrase["user_id"] != interaction.user.id:
             embed = discord.Embed(
@@ -144,14 +158,29 @@ class phrase(app_commands.Group) :
             await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
             return
         
-        phrase = await get_phrase(문구이름)
+        # 문구 ID 또는 이름으로 조회
+        phrase = None
+        try:
+            phrase_id = int(문구이름)
+            phrase = await get_phrase(phrase_id)
+        except:
+            pass
+        if not phrase:
+            phrase = await get_phrase_by_name(
+                문구이름,
+                interaction.user.id,
+                interaction.guild.id,
+                interaction.user.guild_permissions.ban_members,
+            )
         if not phrase:
             embed = discord.Embed(
                 title="오류",
                 description="해당 문구가 존재하지 않습니다.",
                 color=discord.Color.red()
             )
-        
+            await interaction.followup.send(embed=embed)
+            return
+
         if phrase["type"] == "user" and phrase["user_id"] != interaction.user.id:
             embed = discord.Embed(
                 title="오류",
