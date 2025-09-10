@@ -2257,6 +2257,14 @@ async def on_message(message):
                     await message.reply(f"...", mention_author=False)
                     return
             elif "모해" in message.content or "머해" in message.content or "뭐해" in message.content :
+                if "<@&" in message.author.display_name or "@everyone" in message.author.display_name or "@here" in message.author.display_name :
+                    embed = discord.Embed(
+                        title=f"완료",
+                        description=f"지금은 {message.author.display_name}님과 대화하고 있어요!",
+                        color=int("a5f0ff", 16)
+                    )
+                    await message.reply(embed = embed, mention_author=False)
+                    return
                 await message.reply(f"지금은 {message.author.display_name}님과 대화하고 있어요!", mention_author=False)
                 return
             elif "너밴" in message.content or "너 밴" in message.content :
