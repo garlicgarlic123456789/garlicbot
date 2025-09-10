@@ -5499,7 +5499,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         if not rule_exists : 
             embed = discord.Embed(
                 title="완료",
-                description="AI 판사의 판단은 다음과 같습니다. \n\n**[주의!]** 규정이 설정되어 있지 않아 정확한 판단이 어렵습니다. 아래 판결은 일반적으로 디스코드 서버에 적용되는 규정을 바탕으로 합니다.\n**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{description}",
+                description="AI 판사의 판단은 다음과 같습니다. \n\n**[주의!]** `/서버규정설정`을 이용하여 설정된 규정이 없습니다. 규정이 설정되어 있지 않아 정확한 판단이 어렵습니다. 아래 판결은 일반적으로 디스코드 서버에 적용되는 규정을 바탕으로 합니다.\n**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{description}",
                 color=discord.Color.yellow()
             )
             await interaction.followup.send(embed=embed)
