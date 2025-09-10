@@ -95,6 +95,8 @@ def setup(bot) :
             await interaction.response.send_message(msg)
             return
         
+        await interaction.response.defer()
+        
         temp = await get_server_rules(interaction.guild.id)
         if temp[0] : 
             rule = temp[1]
