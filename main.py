@@ -88,6 +88,7 @@ from commands import server_info
 from commands.mention_delay import *
 from commands.autorole import *
 from commands import rules
+from commands.phrase import *
 
 from zoneinfo import ZoneInfo
 
@@ -7408,6 +7409,7 @@ async def on_ready():
     bot.tree.add_command(summarize_command())
     bot.tree.add_command(mention_delay())
     bot.tree.add_command(autorole())
+    bot.tree.add_command(phrase())
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
     status_loop.start()
