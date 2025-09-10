@@ -145,7 +145,7 @@ async def get_server_rules(server_id: int):
     row = c.fetchone()
     conn.close()
     if row:
-        return [True, row[1], row[2]]
+        return [True, row[2], row[3]]
     else : 
         return [False, None, None]
 
