@@ -1,3 +1,4 @@
+from tkinter import N
 import discord
 from datetime import datetime, timedelta
 import json
@@ -956,6 +957,8 @@ async def check_message(message, check_everyone_here_mention: bool = True, check
                     if re.search(pattern2, new_message.footer.text):
                         new_message.footer.text = new_message.footer.text.replace(pattern2, "*(디스코드 서버 초대 링크)*")
         
+        new_message = discord.Embed.from_dict(new_message.to_dict())
+
         if new_message != message : 
             changed = True
         else : 
