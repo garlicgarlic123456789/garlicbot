@@ -5034,13 +5034,18 @@ async def 오리실험(interaction: discord.Interaction, 유저명1: discord.Use
         error += 1
         return
 
-def create_chain1(message) : 
+def create_chain1(message, rule, rule_guide) : 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """입력에서 제시된 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요.
+        ("system", """입력에서 제시된 디스코드 서버의 메시지들에서 유저별로 규정 위반 행위를 한 메시지를 찾고, 아래 양식에 맞게 정리하세요.
 
-1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 (상대방이 불쾌하다 했는데 계속 할 시 제재 대상. 그렇지 않다면 제재 대상 아님) 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화, 음지적인 대화(성적인 거 등. 서버 음지화 요구 포함) 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
-2. 분위기를 흐리는 행위도 금지입니다.
-3. 노체를 사용하는 것은 금지이며, 정치랑 연관 있는 대화도 전면 금지입니다.
+해당 디스코드 서버의 규정(규칙): 없는 경우 None으로 표시되며, 이 경우 일반적인 디스코드 서버의 규정을 따르면 됨.
+```
+{rule}
+```
+해당 디스코드 서버의 규정 가이드(규칙 가이드): 없는 경우 None으로 표시됨.
+```
+{rule_guide}
+```
 
 참고로 성적인 대화는 정확히 성적인 단어를 말하지 않더라도 성적인 맥락에서 대화하는 것 또한 제재 대상입니다.
 
@@ -5085,13 +5090,18 @@ def create_chain1(message) :
     chain = prompt | llm | output_parser
     return chain
 
-def create_chain2(message) : 
+def create_chain2(message, rule, rule_guide) : 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """제시된 메시지들(그리고 메시지를 작성한 유저의 숫자 id)과 유저들의 이전 제재 내역들을 보고, 해당 유저를 해당 디스코드 서버에서 얼마나 제재해야 할지 알려주세요. 답변 양식은 아래 json을 지켜야 합니다.
+        ("system", """제시된 디스코드 서버의 메시지들(그리고 메시지를 작성한 유저의 숫자 id)과 유저들의 이전 제재 내역들을 보고, 해당 유저를 해당 디스코드 서버에서 얼마나 제재해야 할지 알려주세요. 답변 양식은 아래 json을 지켜야 합니다.
 
-1. 저희 디스코드 서버는 욕설/비속어/반말은 상대방이 불쾌하지만 않다면 (상대방이 불쾌하다 했는데 계속 할 시 제재 대상. 그렇지 않다면 제재 대상 아님) 허용입니다. 단, 성적인 대화, 정치 드립, 민감한 주제에 대한 대화, 음지적인 대화(성적인 거 등. 서버 음지화 요구 포함) 등은 금지됩니다. 또한 위키 관련 대화도 금지입니다.
-2. 분위기를 흐리는 행위도 금지입니다.
-3. 노체를 사용하는 것은 금지이며, 정치랑 연관 있는 대화도 전면 금지입니다.
+해당 디스코드 서버의 규정(규칙): 없는 경우 None으로 표시되며, 이 경우 일반적인 디스코드 서버의 규정을 따르면 됨.
+```
+{rule}
+```
+해당 디스코드 서버의 규정 가이드(규칙 가이드): 없는 경우 None으로 표시됨.
+```
+{rule_guide}
+```
 
 중요: **이전 제재 내역은 __메시지가 제재 대상인 경우에만 제재 수위 결정에 참고합니다.__ 제재 대상 메시지가 없음에도 이전 제재 내역만 보고 제재하는 일은 없어야 합니다.**
 중요: **이전 제재 내역을 참고하여 제재 수위를 결정할 때에는 이전 제재에서 제재 사유가 현재의 행위와 관련된 경우에만 참고해야 합니다. 예: 정치 관련 대화로 이전에 제재되었으나 또 정치 대화하는 경우 => 가중 제재 가능. but 성적인 대화를 해서 이전에 제재되었으나 이번에는 정치 대화하는 경우 => 가중 제재 불가
@@ -5199,6 +5209,14 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             )
             await interaction.followup.send(embed = embed)
             return
+        
+        temp = await get_server_rules(interaction.guild.id)
+        if temp[0] : 
+            rule = temp[1]
+            rule_guide = temp[2]
+        else : 
+            rule = None
+            rule_guide = None
 
         user_id = interaction.user.id
         current_time = time.time()
@@ -5300,7 +5318,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed=embed)
             error += 1
             return
-        chain = create_chain1(messages_list)
+        chain = create_chain1(messages_list, rule, rule_guide)
         output = await asyncio.to_thread(chain.invoke, {"messages": messages_list})
         print(output)
         
@@ -5414,7 +5432,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         
         print(blockhistory)
 
-        chain = create_chain2(messages_list)
+        chain = create_chain2(messages_list, rule, rule_guide)
         output = await asyncio.to_thread(chain.invoke, {"messages": output_dict, "before_blockhistory": blockhistory})
         print(output)
 

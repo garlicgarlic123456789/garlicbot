@@ -98,6 +98,14 @@ def init_db() :
             bot_user TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS server_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            rule TEXT,
+            rule_guide TEXT
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -106,6 +114,40 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def delete_server_rules(server_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT id FROM server_rules WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("DELETE FROM server_rules WHERE server_id = ?", (server_id,))
+    else : 
+        return [False, "server_rules_not_found"]
+    conn.close()
+    return [True, "success"]
+
+async def update_server_rules(server_id: int, rule: str, rule_guide):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT id FROM server_rules WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE server_rules SET rule = ?, rule_guide = ? WHERE server_id = ?", (rule, rule_guide, server_id))
+    else:
+        c.execute("INSERT INTO server_rules (server_id, rule, rule_guide) VALUES (?, ?, ?)", (server_id, rule, rule_guide))
+    conn.close()
+
+async def get_server_rules(server_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM server_rules WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return [True, row[1], row[2]]
+    else : 
+        return [False, None, None]
 
 async def add_autorole(server_id: int, role_id: id, bot_user: str):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
