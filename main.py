@@ -87,6 +87,7 @@ from commands import slowmode
 from commands import server_info
 from commands.mention_delay import *
 from commands.autorole import *
+from commands import rules
 
 from zoneinfo import ZoneInfo
 
@@ -9411,6 +9412,7 @@ weather.setup(bot)
 xp_setup.setup(bot)
 slowmode.setup(bot)
 server_info.setup(bot)
+rules.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
