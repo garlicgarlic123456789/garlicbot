@@ -847,35 +847,7 @@ async def check_message(message, check_everyone_here_mention: bool = True, check
     }
     '''
 
-    if isinstance(message, str):
-        new_message = message
-        if check_everyone_here_mention:
-            new_message = new_message.replace("@everyone", "@​everyone")
-            new_message = new_message.replace("@here", "@​here")
-        if check_role_mention:
-            new_message = new_message.replace("<@&", "<@&​")
-        if check_user_mention:
-            new_message = new_message.replace("<@", "<@​")
-        if check_invite_link:
-            pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-            if re.search(pattern1, new_message):
-                new_message = new_message.replace(pattern1, "*(디스코드 서버 초대 링크)*")
-            pattern2 = r"discord://-/invite/\S+"
-            if re.search(pattern2, new_message):
-                new_message = new_message.replace(pattern2, "*(디스코드 서버 초대 링크)*")
-        
-        if message != new_message:
-            changed = True
-        else : 
-            changed = False
-        
-        return {
-            "original_message": message,
-            "modified_message": new_message,
-            "edited": changed
-        }
-
-    elif isinstance(message, discord.Embed):
+    if isinstance(message, discord.Embed):
         new_message = copy.deepcopy(message)
         if new_message.title : 
             if check_everyone_here_mention:
@@ -960,6 +932,33 @@ async def check_message(message, check_everyone_here_mention: bool = True, check
         new_message = discord.Embed.from_dict(new_message.to_dict())
 
         if new_message != message : 
+            changed = True
+        else : 
+            changed = False
+        
+        return {
+            "original_message": message,
+            "modified_message": new_message,
+            "edited": changed
+        }
+    elif isinstance(message, str):
+        new_message = message
+        if check_everyone_here_mention:
+            new_message = new_message.replace("@everyone", "@​everyone")
+            new_message = new_message.replace("@here", "@​here")
+        if check_role_mention:
+            new_message = new_message.replace("<@&", "<@&​")
+        if check_user_mention:
+            new_message = new_message.replace("<@", "<@​")
+        if check_invite_link:
+            pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+            if re.search(pattern1, new_message):
+                new_message = new_message.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+            pattern2 = r"discord://-/invite/\S+"
+            if re.search(pattern2, new_message):
+                new_message = new_message.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+        
+        if message != new_message:
             changed = True
         else : 
             changed = False
