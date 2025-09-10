@@ -2,6 +2,8 @@ import discord
 from datetime import datetime, timedelta
 import json
 import os
+import re
+import copy
 
 from discord.ext import commands
 from discord import app_commands
@@ -18,6 +20,8 @@ from discord import Colour
 
 import google.generativeai as genai
 from dotenv import load_dotenv
+
+import asyncio
 
 # API KEY 정보로드
 load_dotenv()
@@ -825,3 +829,129 @@ def is_valid_time(time_str):
         return True
     except ValueError:
         return False
+
+async def check_message(message, check_everyone_here_mention: bool = True, check_role_mention: bool = True, check_user_mention: bool = True, check_invite_link: bool = True): # 봇이 특정 str을 출력(send_message 등)하기 전에 이 함수를 통해 취약점을 확인하게 됨.
+    '''
+    message는 보내려는 메시지의 str 또는 임베드 객체.
+    check_everyone_here_mention은 @everyone, @here 멘션을 하는지 아닌지 확인할지 결정.
+    check_role_mention은 역할 멘션을 하는지 아닌지 확인할지 결정.
+    check_user_mention은 유저 멘션을 하는지 아닌지 확인할지 결정.
+    check_invite_link은 디스코드 서버 초대 링크를 하는지 아닌지 확인할지 결정.
+
+    반환값은
+    {
+        "original_message": 원본 메시지,
+        "modified_message": 수정된 메시지,
+        "edited": 수정 여부(bool)
+    }
+    '''
+
+    if isinstance(message, str):
+        new_message = message
+        if check_everyone_here_mention:
+            new_message = new_message.replace("@everyone", "@​everyone")
+            new_message = new_message.replace("@here", "@​here")
+        if check_role_mention:
+            new_message = new_message.replace("<@&", "<@&​")
+        if check_user_mention:
+            new_message = new_message.replace("<@", "<@​")
+        if check_invite_link:
+            pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+            if re.search(pattern1, new_message):
+                new_message = new_message.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+            pattern2 = r"discord://-/invite/\S+"
+            if re.search(pattern2, new_message):
+                new_message = new_message.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+        
+        if message != new_message:
+            changed = True
+        else : 
+            changed = False
+        
+        return {
+            "original_message": message,
+            "modified_message": new_message,
+            "edited": changed
+        }
+
+    elif isinstance(message, discord.Embed):
+        new_message = copy.deepcopy(message)
+        if new_message.title : 
+            if check_everyone_here_mention:
+                new_message.title = new_message.title.replace("@everyone", "@​everyone")
+                new_message.title = new_message.title.replace("@here", "@​here")
+            if check_role_mention:
+                new_message.title = new_message.title.replace("<@&", "<@&​")
+            if check_user_mention:
+                new_message.title = new_message.title.replace("<@", "<@​")
+            if check_invite_link:
+                pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+                if re.search(pattern1, new_message.title):
+                    new_message.title = new_message.title.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+                pattern2 = r"discord://-/invite/\S+"
+                if re.search(pattern2, new_message.title):
+                    new_message.title = new_message.title.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+        if new_message.description : 
+            if check_everyone_here_mention:
+                new_message.description = new_message.description.replace("@everyone", "@​everyone")
+                new_message.description = new_message.description.replace("@here", "@​here")
+            if check_role_mention:
+                new_message.description = new_message.description.replace("<@&", "<@&​")
+            if check_user_mention:
+                new_message.description = new_message.description.replace("<@", "<@​")
+            if check_invite_link:
+                pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+                if re.search(pattern1, new_message.description):
+                    new_message.description = new_message.description.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+                pattern2 = r"discord://-/invite/\S+"
+                if re.search(pattern2, new_message.description):
+                    new_message.description = new_message.description.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+        if new_message.fields : 
+            new_message_field_count = len(new_message.fields)
+            for i in range(new_message_field_count) : 
+                if new_message.fields[i].name : 
+                    if check_everyone_here_mention:
+                        new_message.fields[i].name = new_message.fields[i].name.replace("@everyone", "@​everyone")
+                        new_message.fields[i].name = new_message.fields[i].name.replace("@here", "@​here")
+                    if check_role_mention:
+                        new_message.fields[i].name = new_message.fields[i].name.replace("<@&", "<@&​")
+                    if check_user_mention:
+                        new_message.fields[i].name = new_message.fields[i].name.replace("<@", "<@​")
+                    if check_invite_link:
+                        pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+                        if re.search(pattern1, new_message.fields[i].name):
+                            new_message.fields[i].name = new_message.fields[i].name.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+                        pattern2 = r"discord://-/invite/\S+"
+                        if re.search(pattern2, new_message.fields[i].name):
+                            new_message.fields[i].name = new_message.fields[i].name.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+                if new_message.fields[i].value : 
+                    if check_everyone_here_mention:
+                        new_message.fields[i].value = new_message.fields[i].value.replace("@everyone", "@​everyone")
+                        new_message.fields[i].value = new_message.fields[i].value.replace("@here", "@​here")
+                    if check_role_mention:
+                        new_message.fields[i].value = new_message.fields[i].value.replace("<@&", "<@&​")
+                    if check_user_mention:
+                        new_message.fields[i].value = new_message.fields[i].value.replace("<@", "<@​")
+                    if check_invite_link:
+                        pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+                        if re.search(pattern1, new_message.fields[i].value):
+                            new_message.fields[i].value = new_message.fields[i].value.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+                        pattern2 = r"discord://-/invite/\S+"
+                        if re.search(pattern2, new_message.fields[i].value):
+                            new_message.fields[i].value = new_message.fields[i].value.replace(pattern2, "*(디스코드 서버 초대 링크)*")
+        if message.footer : 
+            if message.footer.text : 
+                if check_everyone_here_mention:
+                    new_message.footer.text = new_message.footer.text.replace("@everyone", "@​everyone")
+                    new_message.footer.text = new_message.footer.text.replace("@here", "@​here")
+                if check_role_mention:
+                    new_message.footer.text = new_message.footer.text.replace("<@&", "<@&​")
+                if check_user_mention:
+                    new_message.footer.text = new_message.footer.text.replace("<@", "<@​")
+                if check_invite_link:
+                    pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
+                    if re.search(pattern1, new_message.footer.text):
+                        new_message.footer.text = new_message.footer.text.replace(pattern1, "*(디스코드 서버 초대 링크)*")
+                    pattern2 = r"discord://-/invite/\S+"
+                    if re.search(pattern2, new_message.footer.text):
+                        new_message.footer.text = new_message.footer.text.replace(pattern2, "*(디스코드 서버 초대 링크)*")
