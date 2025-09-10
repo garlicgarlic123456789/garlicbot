@@ -50,6 +50,8 @@ class phrase(app_commands.Group) :
             await interaction.followup.send(embed=embed)
             return
         
+        문구내용.replace("\\n", "\n")
+        
         if 사용권한 == "user" : 
             await add_phrase(문구이름, 사용권한, None, interaction.user.id, 문구내용)
         elif 사용권한 == "server_all" : 
