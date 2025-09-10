@@ -9057,6 +9057,8 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
                 description=f"{내용}",
                 color=int(색상, 16)
             )
+            temp = await check_message(내용, True, True, True, True)
+            embed = temp["modified_message"]
             await interaction.followup.send(embed = embed, ephemeral=False)
             return
         for i in automod_keyword + automod_keyword2 + automod_keyword3 + automod_keyword4 + automod_keyword5 + automod_keyword6 + automod_keyword7 + automod_keyword8 + automod_keyword9 + automod_keyword10 :
@@ -9082,6 +9084,8 @@ async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색�
         description=f"{내용}",
         color=int(색상, 16)
     )
+    temp = await check_message(내용, True, True, True, True)
+    embed = temp["modified_message"]
     await interaction.followup.send(embed = embed, ephemeral=False)
 
 @bot.tree.command(name = "링크검사", description = "특정 링크가 악성 링크인지 여부를 검사합니다.")
