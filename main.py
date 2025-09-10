@@ -5199,6 +5199,8 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             await interaction.followup.send(embed = embed)
             return
         
+        rule_exists = True
+        
         temp = await get_server_rules(interaction.guild.id)
         if temp[0] : 
             rule = temp[1]
@@ -5206,6 +5208,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         else : 
             rule = None
             rule_guide = None
+            rule_exists = False
 
         user_id = interaction.user.id
         current_time = time.time()
@@ -5308,9 +5311,11 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
             error += 1
             return
         if rule is None : 
+            rule_exists = False
             rule = "None"
         if rule_guide is None : 
             rule_guide = "None"
+            rule_exists = False
         chain = create_chain1(messages_list, rule, rule_guide)
         output = await asyncio.to_thread(chain.invoke, {"messages": messages_list, "rule": rule, "rule_guide": rule_guide})
         print(output)
@@ -5491,9 +5496,18 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         
         print(description)
 
+        if not rule_exists : 
+            embed = discord.Embed(
+                title="완료",
+                description="AI 판사의 판단은 다음과 같습니다. \n\n**[주의!]** 규정이 설정되어 있지 않아 정확한 판단이 어렵습니다. 아래 판결은 일반적으로 디스코드 서버에 적용되는 규정을 바탕으로 합니다.\n**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{description}",
+                color=discord.Color.yellow()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
         embed = discord.Embed(
             title="성공",
-            description=f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{description}",
+            description=f"AI 판사의 판단은 다음과 같습니다. \n\n**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n{description}",
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
