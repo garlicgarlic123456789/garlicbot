@@ -219,9 +219,11 @@ class phrase(app_commands.Group) :
             await interaction.followup.send(embed=embed)
             return
         
+        phrase["phrase"] = phrase["phrase"].replace("\\n", "\n")
+        
         embed = discord.Embed(
             title=f"{phrase['name']}",
-            description=phrase["phrase"],
+            description=f"{phrase['phrase']}",
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
