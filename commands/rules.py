@@ -44,26 +44,26 @@ class ServerRuleModal(discord.ui.Modal, title="서버 규정 설정"):
 def setup(bot) : 
     @bot.tree.command(name="서버규정설정", description="서버 규정을 설정합니다.")
     @app_commands.default_permissions(administrator=True)
-    async def server_rules_setting(interaction: discord.Interaction, 규정: str, 규정가이드: str):
+    async def server_rules_setting(interaction: discord.Interaction):
+        await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
         if status : 
             msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-            await interaction.response.send_message(msg)
+            await interaction.followup.send(msg)
             return
         
         modal = ServerRuleModal(interaction.guild.id)
-        await interaction.response.send_modal(modal)
+        await interaction.followup.send_modal(modal)
     
     @bot.tree.command(name="서버규정삭제", description="서버 규정을 삭제합니다.")
     @app_commands.default_permissions(administrator=True)
     async def server_rules_delete(interaction: discord.Interaction):
+        await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
         if status : 
             msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-            await interaction.response.send_message(msg)
+            await interaction.followup.send(msg)
             return
-        
-        await interaction.response.defer()
         
         temp = await delete_server_rules(interaction.guild.id)
         if temp[0] : 
