@@ -7886,6 +7886,10 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.response.defer(ephemeral=True)
         await migrate_mention_delay_user()
         await interaction.followup.send("처리되었습니다.")
+    elif 아이디 == 24 : 
+        await interaction.response.defer(ephemeral=True)
+        temp = await check_message(입력1)
+        await interaction.followup.send(f"원본 메시지: {temp['original_message']}\n수정된 메시지: {temp['modified_message']}\n수정 여부: {temp['edited']}")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
 @app_commands.describe(
