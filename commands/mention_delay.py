@@ -238,7 +238,12 @@ class mention_delay(app_commands.Group) :
         pending_mentions = get_mention_delay_user(user.id, "server", interaction.guild.id)
         
         if not pending_mentions:
-            await interaction.followup.send(f"{user.display_name}님에게 대기 중인 공개 멘션이 없습니다.", ephemeral=False)
+            embed = discord.Embed(
+                title=f"오류",
+                description=f"{user.display_name}님에게 대기 중인 공개 멘션이 없습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
             return
         mention_ids = []
         
