@@ -70,7 +70,7 @@ def setup(bot) :
         if temp[0] : 
             embed = discord.Embed(
                 title="완료",
-                description="서버 규정이 정상적으로 삭제되었습니다!",
+                description="서버 규정이 정상적으로 삭제되었습니다.",
                 color=int("a5f0ff", 16)
             )
             await interaction.followup.send(embed=embed)
