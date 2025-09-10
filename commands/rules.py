@@ -23,6 +23,8 @@ class ServerRuleModal(discord.ui.Modal, title="서버 규정 설정"):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
+        self.규정 = self.규정.value
+        self.규정가이드 = self.규정가이드.value
         if len(self.규정) > 1500 or len(self.규정가이드) > 1500 : 
             embed = discord.Embed(
                 title="오류",
