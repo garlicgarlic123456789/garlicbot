@@ -106,6 +106,16 @@ def init_db() :
             rule_guide TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS phrase (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            type TEXT,
+            server_id INTEGER,
+            user_id INTEGER,
+            phrase TEXT
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -114,6 +124,77 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def remove_phrase(phrase_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("DELETE FROM phrase WHERE id = ?", (phrase_id,))
+    conn.close()
+
+async def add_phrase(name: str, type: str, server_id, user_id, phrase: str):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO phrase (name, type, server_id, user_id, phrase) VALUES (?, ?, ?, ?, ?)", (name, type, server_id, user_id, phrase))
+    conn.close()
+
+async def get_user_all_phrase(user_id: int):
+    phrases = []
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM phrase WHERE user_id = ?", (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    for row in rows:
+        phrases.append({
+            "id": row[0],
+            "name": row[1],
+            "phrase": row[5]
+        })
+    return phrases
+
+async def get_server_all_phrase(server_id: int, is_admin: bool):
+    phrases = []
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM phrase WHERE server_id = ?, type = ?", (server_id, "server_admin" if is_admin else "server_all"))
+    rows = c.fetchall()
+    conn.close()
+    for row in rows:
+        phrases.append({
+            "id": row[0],
+            "name": row[1],
+            "phrase": row[5]
+        })
+    return phrases
+
+async def get_phrase(phrase_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM phrase WHERE id = ?", (phrase_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return {
+            "id": row[0],
+            "name": row[1],
+            "type": row[2],
+            "server_id": row[3],
+            "user_id": row[4],
+            "phrase": row[5]
+        }
+    else : 
+        return None
+
+async def phrase_autocomplete(
+    interaction: discord.Interaction,
+    current: str
+) -> list[app_commands.Choice[str]]:
+    phrases = await get_user_all_phrase(interaction.user.id)
+    phrases += await get_server_all_phrase(interaction.guild.id, interaction.user.guild_permissions.ban_members)
+    return [
+        app_commands.Choice(name=phrase["name"], value=phrase["id"])
+        for phrase in phrases if current.lower() in phrase["name"].lower()
+    ][:25]  # 최대 25개만 반환 가능
 
 async def delete_server_rules(server_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
