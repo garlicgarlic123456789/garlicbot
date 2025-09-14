@@ -6144,14 +6144,6 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             )
             await interaction.followup.send(embed=embed, ephemeral=False)
             return
-        if interaction.guild.id != using_server and get_premium(interaction.user.id) == False :
-            embed = discord.Embed(
-                title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 서버로 설정되어 있지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
         if interaction.user.id != developer and get_premium(interaction.user.id) == False :
             if len(프롬프트) > 1000:
                 embed = discord.Embed(
@@ -6219,15 +6211,6 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         result = await llm.invoke(question)
         result = result.content
     elif 모델 == "GPT-4.1 nano":
-        if False : 
-        # if interaction.guild.id != using_server :
-            embed = discord.Embed(
-                title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 서버로 설정되어 있지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
         if interaction.user.id != developer and get_premium(interaction.user.id) == False :
             if len(프롬프트) > 1000:
                 embed = discord.Embed(
@@ -6293,14 +6276,6 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             )
             await interaction.followup.send(embed=embed, ephemeral=False)
             return
-        if interaction.guild.id != using_server and get_premium(interaction.user.id) == False :
-            embed = discord.Embed(
-                title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 서버로 설정되어 있지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
         if interaction.user.id != developer and get_premium(interaction.user.id) == False :
             if len(프롬프트) > 1000:
                 embed = discord.Embed(
@@ -6341,14 +6316,6 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         result = llm.invoke(question)
         result = result.content
     elif 모델 == "GPT-4.1":
-        if interaction.guild.id != using_server and get_premium(interaction.user.id) == False :
-            embed = discord.Embed(
-                title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 서버로 설정되어 있지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
         if interaction.user.id != developer and get_premium(interaction.user.id) == False :
             if len(프롬프트) > 1000:
                 embed = discord.Embed(
@@ -6464,14 +6431,6 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
 
             result = response.output_text
     elif 모델 == "o4-mini" :
-        if interaction.guild.id != using_server and get_premium(interaction.user.id) == False :
-            embed = discord.Embed(
-                title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 서버로 설정되어 있지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
         if interaction.user.id != developer :
             if len(프롬프트) > 1000:
                 embed = discord.Embed(
@@ -6549,14 +6508,6 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed, ephemeral=False)
-            return
-        if interaction.guild.id != using_server and get_premium(interaction.user.id) == False :
-            embed = discord.Embed(
-                title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델을 사용할 수 있는 서버로 설정되어 있지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
             return
         if interaction.user.id != developer :
             if len(프롬프트) > 1000:
