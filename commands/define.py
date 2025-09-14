@@ -550,11 +550,14 @@ developer = 1305492487137267722 # 개발자
 intents = discord.Intents.all()
 intents.presences = False  # Presence Intent 비활성화
 
+mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=True)
+
 bot = commands.Bot(
     command_prefix="마늘아마늘아마늘아 ",
     intents=intents,
     heartbeat_timeout=180,
-    shard_count=5
+    shard_count=5,
+    allowed_mentions=mention_setting
 )
 bot.cooldowns = {}
 
