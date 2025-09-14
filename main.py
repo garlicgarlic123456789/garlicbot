@@ -3179,7 +3179,7 @@ async def on_member_update(before, after):
                     embed.add_field(name="역할", value=f"{role.mention}", inline=False)
                     await channel.send(embed=embed)
 
-@bot.tree.command(name = "대화초기화", description = "마늘아 <할 말>로 대화한 이력을 초기화합니다.")
+@bot.tree.command(name = "대화초기화", description = "마늘아 <할 말> 및 /생성형인공지능으로 대화한 이력을 초기화합니다.")
 async def reset_chat(interaction: discord.Interaction):
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -3195,7 +3195,7 @@ async def reset_chat(interaction: discord.Interaction):
     reset_gpt_chat_thread(interaction.user.id)
     embed = discord.Embed(
         title="완료",
-        description="`마늘아 <할 말>`로 대화한 이력이 초기화되었습니다.",
+        description="`마늘아 <할 말>` 및 `/생성형인공지능`으로 대화한 이력이 초기화되었습니다.",
         color=int("a5f0ff", 16)
     )
     await interaction.followup.send(embed=embed)
