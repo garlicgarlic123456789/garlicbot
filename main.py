@@ -5940,14 +5940,21 @@ gpt_4_1_cooldowns_d = 60 * 15
         app_commands.Choice(name = "o4-mini (OpenAI에서 개발한 더 빠른 추론 모델)", value = "o4-mini"),
         app_commands.Choice(name = "o3-mini (OpenAI에서 개발한 빠른 추론 모델)", value = "o3-mini"),
         app_commands.Choice(name = "판사 (Gemini 2.0 Flash 기반의 디스코드 사건 판결에 적합한 모델)", value = "판사"),
+    ],
+    effort = [
+        app_commands.Choice(name = "minimal", value = "minimal"),
+        app_commands.Choice(name = "low", value = "low"),
+        app_commands.Choice(name = "medium", value = "medium"),
+        app_commands.Choice(name = "high", value = "high"),
     ]
 )
 @app_commands.describe(
     프롬프트 = "텍스트 입력", 
     모델 = "사용할 모델",
-    파일 = "파일 입력 (선택)"
+    파일 = "파일 입력 (선택)",
+    effort = "api에서의 effort 값. 이 값은 모델이 얼마나 추론하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
 )
-async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5 nano", 파일: discord.Attachment = None):
+async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5 nano", 파일: discord.Attachment = None, effort: str = "medium"):
     # API 요청 보내기
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -6083,31 +6090,50 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         
         model_name = 모델.lower().replace(" ", "-")
 
-        if 파일 is None : 
-            response = await client.responses.create(
-                model=model_name,
-                input=[{
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": 프롬프트},
-                    ],
-                }],
-            )
+        user_id = interaction.user.id
+        message_content = [
+            {"type": "input_text", "text": 프롬프트},
+        ]
+        if 파일 is not None : 
+            message_content.append({
+                "type": "input_image",
+                "image_url": 파일,
+            })
+        if user_id not in gpt_chat_threads : 
+            gpt_chat_threads[user_id] = await asyncio.to_thread(get_gpt_chat_thread, user_id)
+            if gpt_chat_threads[user_id] is None : 
+                response = await client.responses.create(
+                    model=model_name,
+                    input=[{
+                        "role": "user",
+                        "content": message_content,
+                    }],
+                     reasoning={"effort": effort},
+                )
+            else : 
+                response = await client.responses.create(
+                    model=model_name,
+                    previous_response_id=gpt_chat_threads[user_id],
+                    input=[{
+                        "role": "user",
+                        "content": message_content,
+                    }],
+                    reasoning={"effort": effort},
+                )
         else : 
             response = await client.responses.create(
                 model=model_name,
+                previous_response_id=gpt_chat_threads[user_id],
                 input=[{
                     "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": 프롬프트},
-                        {
-                            "type": "input_image",
-                            "image_url": 파일,
-                        },
-                    ],
+                    "content": message_content,
                 }],
+                reasoning={"effort": effort},
             )
+                
         result = response.output_text
+        gpt_chat_threads[user_id] = response.id
+        await asyncio.to_thread(update_gpt_chat_thread, user_id, response.id)
 
     elif 모델 == "GPT-4o mini" :
         if 파일 is not None : 
@@ -6476,10 +6502,19 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             # 쿨타임 없음 → 명령어 실행
             o3_cooldowns[user_id] = now
         
+        if effort == "minimal" : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 effort 값 \'minimal\'을 지원하지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+        
         if 파일 is None : 
             response = await gpt_client.responses.create(
                 model="o4-mini",
-                reasoning={"effort": "low"},
+                reasoning={"effort": effort},
                 input=[
                     {
                         "role": "user", 
@@ -6490,7 +6525,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         else : 
             response = await gpt_client.responses.create(
                 model="o4-mini",
-                reasoning={"effort": "low"},
+                reasoning={"effort": effort},
                 input=[
                     {
                         "role": "user",
@@ -6552,10 +6587,21 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
 
             # 쿨타임 없음 → 명령어 실행
             o3_cooldowns[user_id] = now
+        
+
+        if effort == "minimal" : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 effort 값 \'minimal\'을 지원하지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+
         if 파일 is None : 
             response = await gpt_client.responses.create(
                 model="o3-mini",
-                reasoning={"effort": "low"},
+                reasoning={"effort": effort},
                 input=[
                     {
                         "role": "user", 
@@ -6566,7 +6612,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         else : 
             response = await gpt_client.responses.create(
                 model="o3-mini",
-                reasoning={"effort": "low"},
+                reasoning={"effort": effort},
                 input=[
                     {
                         "role": "user",
@@ -6600,7 +6646,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
     embed = discord.Embed(
         title = f"성공",
         # description = f"Gemini 1.5 Flash의 답변은 다음과 같습니다: \n\n{to_markdown(response.text)}",
-        description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n모델: {모델}\n텍스트 입력: {프롬프트}\n파일 입력: {파일}\n출력: {result}",
+        description = f"**[경고!]** 인공지능은 실수를 할 수 있습니다. 중요한 정보는 확인하세요.\n\n모델: {모델}\n텍스트 입력: {프롬프트}\n파일 입력: {파일}\neffort 값(추론 모델에만 적용됨): {effort}\n출력: {result}",
         color = int("a5f0ff", 16)
     )
     await interaction.followup.send(embed = embed)
