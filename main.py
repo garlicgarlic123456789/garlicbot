@@ -6464,7 +6464,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         if effort == "minimal" : 
             embed = discord.Embed(
                 title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 effort 값 \'minimal\'을 지원하지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 effort 값 \'minimal\'을 지원하지 않습니다.\n\n대신 다른 모델(GPT-5 mini)을 사용해 볼 수 있습니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed, ephemeral=False)
@@ -6543,7 +6543,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         if effort == "minimal" : 
             embed = discord.Embed(
                 title="오류",
-                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 effort 값 \'minimal\'을 지원하지 않습니다.\n\n대신 다른 모델(Gemini 2.0 Flash)을 사용해 볼 수 있습니다.",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 effort 값 \'minimal\'을 지원하지 않습니다.\n\n대신 다른 모델(GPT-5 mini)을 사용해 볼 수 있습니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed, ephemeral=False)
