@@ -224,7 +224,7 @@ get_all_xp_setting()
 # 서버별 초대코드 캐시
 invite_cache = {}
 
-do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764]
+do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
 
 mention_timestamps = defaultdict(list)
 
@@ -1850,7 +1850,7 @@ async def on_message(message):
         if automod_setting['mention'][0] :
             if message.channel.id != 1320304882393153586: 
                 if message.guild.id == using_server : 
-                    if "<@&1400872501378158764>" in message.content or "<@&1375687128708677682>" in message.content or "<@&1378253467940028498>" in message.content or "<@&1378256091070074900>" in message.content : 
+                    if "<@&1416704481382502470>" in message.content or "<@&1400872501378158764>" in message.content or "<@&1375687128708677682>" in message.content or "<@&1378253467940028498>" in message.content or "<@&1378256091070074900>" in message.content : 
                         return
                 for i in automod_keyword6 :
                     if i in message.content :
