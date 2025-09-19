@@ -225,6 +225,11 @@ get_all_xp_setting()
 invite_cache = {}
 
 do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
+do_mention_role += [1418480822255616053, 1418481318806683678, 1418480277155614781, 1418481446380765289, 1418481595945586709, 1418481673909043210, 1418481752015503360, 1418481816276439163] # 새로운 대화하자 역할
+
+do_mention_role2 = []
+for i in do_mention_role : 
+    do_mention_role2.append(f"<@&{i}>")
 
 mention_timestamps = defaultdict(list)
 
@@ -1044,14 +1049,6 @@ async def on_raw_message_edit(payload) :
                     await handle_spamming(after, f"{automod_reason5} (메시지 수정)", 10 * 60, True, i, True)
                     return
 
-        if after.channel.id != 1320304882393153586: 
-            if "<@&1375687128708677682>" in after.content or "<@&1378253467940028498>" in after.content : 
-                return
-            for i in automod_keyword6 :
-                if i in after.content :
-                    await handle_spamming(after, f"{automod_reason6} (메시지 수정)", 15 * 60 * 60, True, i)
-                    return
-
         for i in automod_keyword7 :
             if i in after.content :
                 await handle_spamming(after, f"{automod_reason7} (메시지 수정)", 48 * 60 * 60, True, i)
@@ -1850,8 +1847,9 @@ async def on_message(message):
         if automod_setting['mention'][0] :
             if message.channel.id != 1320304882393153586: 
                 if message.guild.id == using_server : 
-                    if "<@&1416704481382502470>" in message.content or "<@&1400872501378158764>" in message.content or "<@&1375687128708677682>" in message.content or "<@&1378253467940028498>" in message.content or "<@&1378256091070074900>" in message.content : 
-                        return
+                    for i in do_mention_role2 :
+                        if i in message.content :
+                            return
                 for i in automod_keyword6 :
                     if i in message.content :
                         await handle_spamming(message, automod_reason6, automod_setting['mention'][1], True, i)
