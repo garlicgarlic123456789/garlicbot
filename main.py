@@ -1768,6 +1768,15 @@ async def on_message(message):
 
             if len(mention_timestamps[user_id]) >= 4:
                 await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 15 * 60 * 60, False, None, False)
+
+        if "<@&1375687128708677682>" in message.content or "<@&1400872501378158764>" in message.content : 
+            embed = discord.Embed(
+                title = "안내", 
+                description = "해당 대화하자! 역할은 더 이상 사용되지 않습니다. 관련 공지사항을 https://discord.com/channels/1320303102703702037/1320304882393153586/1418484921432932402에서 확인하세요.",
+                color = discord.Color.orange()
+            )
+            await message.channel.send(embed = embed)
+    
     if True : 
         temp = get_automod_exception_channel(message.guild.id, message.channel.id)
         if temp == True : 
