@@ -119,6 +119,10 @@ class mention_delay(app_commands.Group) :
             await interaction.followup.send(embed = embed)
             return
         
+        for i in range(len(role_users)) : 
+            if role_users[i].id == interaction.user.id : 
+                del role_users[i]
+        
         if 전달방법 == "all" : 
             mention_ids = []
             for i in range(role_users_count) : 
