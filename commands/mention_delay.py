@@ -125,7 +125,7 @@ class mention_delay(app_commands.Group) :
         
         if 전달방법 == "all" : 
             mention_ids = []
-            for i in range(role_users_count) : 
+            for i in range(len(role_users)) : 
                 mention_id = add_mention_delay_user(role_users[i].id, interaction.user.id, 내용, 0, mention_server, send_type)
                 mention_ids.append(mention_id)
             
@@ -134,7 +134,7 @@ class mention_delay(app_commands.Group) :
                 mention_ids[i] = str(mention_ids[i])
         elif 전달방법 == "one" : 
             mention_ids = []
-            for i in range(role_users_count) : 
+            for i in range(len(role_users)) : 
                 mention_id = add_mention_delay_user(role_users[i].id, interaction.user.id, 내용, 0, mention_server, send_type)
                 mention_ids.append(mention_id)
             
