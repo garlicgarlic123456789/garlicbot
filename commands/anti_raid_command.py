@@ -93,7 +93,7 @@ def setup(bot: commands.Bot):
                 await interaction.followup.send(embed = embed)
                 return
             
-            if 참가횟수 > 50 or 시간범위 < 3 : 
+            if 참가횟수 > 50 or 참가횟수 < 3 : 
                 embed = discord.Embed(
                     title = "오류",
                     description = "참가횟수의 값은 3~50회의 범위에서만 설정 가능합니다.",
