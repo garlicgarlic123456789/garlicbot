@@ -2999,7 +2999,7 @@ async def on_member_join(member):
             action = servers_anti_raid_settings["action"]
             if action == "pause_invite" or action == "timeout" or action == "ban" or action == "isolate" : 
                 try : 
-                    await guild.edit(invites_disabled = True, invites_disabled_until = discord.utils.utcnow() + timedelta(seconds = 86397), reason = "레이드 감지")
+                    await guild.edit(invites_disabled_until = discord.utils.utcnow() + timedelta(seconds = 86397), reason = "레이드 감지")
                     pause_invite_success = True
                 except Exception as e : 
                     pause_invite_success = False
@@ -3061,9 +3061,9 @@ async def on_member_join(member):
                         color = discord.Color.red()
                     )
                     if punish_failed > 0 :
-                        embed.description += f"\n레이드 조치 결과: 계정 {punish_failed}개에 대해 차단 실패"
+                        embed.description += f"\n- 레이드 조치 결과: 계정 {punish_failed}개에 대해 차단 실패"
                     else : 
-                        embed.description += f"\n레이드 조치 결과: 모든 계정 차단 성공"
+                        embed.description += f"\n- 레이드 조치 결과: 모든 계정 차단 성공"
                     
                     if pause_invite_success : 
                         embed.description += " 및 초대 일시정지 성공"
@@ -3076,9 +3076,9 @@ async def on_member_join(member):
                         color = discord.Color.red()
                     )
                     if punish_failed > 0 :
-                        embed.description += f"\n레이드 조치 결과: 계정 {punish_failed}개에 대해 타임아웃 실패"
+                        embed.description += f"\n- 레이드 조치 결과: 계정 {punish_failed}개에 대해 타임아웃 실패"
                     else : 
-                        embed.description += f"\n레이드 조치 결과: 모든 계정 타임아웃 성공"
+                        embed.description += f"\n- 레이드 조치 결과: 모든 계정 타임아웃 성공"
                     
                     if pause_invite_success : 
                         embed.description += " 및 초대 일시정지 성공"
@@ -3091,9 +3091,9 @@ async def on_member_join(member):
                         color = discord.Color.red()
                     )
                     if punish_failed > 0 :
-                        embed.description += f"\n레이드 조치 결과: 계정 {punish_failed}개에 대해 격리 실패"
+                        embed.description += f"\n- 레이드 조치 결과: 계정 {punish_failed}개에 대해 격리 실패"
                     else : 
-                        embed.description += f"\n레이드 조치 결과: 모든 계정 격리 성공"
+                        embed.description += f"\n- 레이드 조치 결과: 모든 계정 격리 성공"
                     
                     if pause_invite_success : 
                         embed.description += " 및 초대 일시정지 성공"
@@ -3106,9 +3106,9 @@ async def on_member_join(member):
                         color = discord.Color.red()
                     )
                     if pause_invite_success :
-                        embed.description += f"\n레이드 조치 결과: 초대 일시정지 성공"
+                        embed.description += f"\n- 레이드 조치 결과: 초대 일시정지 성공"
                     else : 
-                        embed.description += f"\n레이드 조치 결과: 초대 일시정지 실패"
+                        embed.description += f"\n- 레이드 조치 결과: 초대 일시정지 실패"
                 elif action == "alert" : 
                     embed = discord.Embed(
                         title = "레이드 감지",
