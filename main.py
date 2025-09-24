@@ -3121,9 +3121,15 @@ async def on_member_join(member):
                 try : 
                     await alert_channel.send(f"<@{guild.owner.id}>", embed = embed)
                 except : 
-                    await guild.owner.send(embed = embed)
+                    try : 
+                        await guild.owner.send(embed = embed)
+                    except : 
+                        add_mention_delay_user(user.id, 1316579106749681664, embed.description, 0, guild_id, "reply")
             else : 
-                await guild.owner.send(embed = embed)
+                try : 
+                    await guild.owner.send(embed = embed)
+                except : 
+                    add_mention_delay_user(user.id, 1316579106749681664, embed.description, 0, guild_id, "reply")
 
     try:
         # 새로운 초대 리스트 받아오기
