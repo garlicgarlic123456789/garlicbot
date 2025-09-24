@@ -2986,6 +2986,9 @@ async def on_member_join(member):
 
         global recent_joins
         now = datetime.now(timezone.utc)
+
+        if guild_id not in recent_joins : 
+            recent_joins[guild_id] = []
         
         recent_joins[guild_id].append(member)
 
