@@ -89,6 +89,7 @@ from commands.mention_delay import *
 from commands.autorole import *
 from commands import rules
 from commands.phrase import *
+from commands import anti_raid_command
 
 from zoneinfo import ZoneInfo
 
@@ -9571,6 +9572,7 @@ xp_setup.setup(bot)
 slowmode.setup(bot)
 server_info.setup(bot)
 rules.setup(bot)
+anti_raid_command.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
