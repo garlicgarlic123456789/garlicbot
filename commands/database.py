@@ -5,7 +5,7 @@ import discord
 import asyncio
 from discord import app_commands
 
-from commands.define import xp_setting
+from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import gpt_chat_threads
 
 def init_db() : 
@@ -116,6 +116,17 @@ def init_db() :
             phrase TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS anti_raid_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            on_off INTEGER,
+            action TEXT,
+            alert_channel_id INTEGER,
+            duration INTEGER,
+            join_time INTEGER
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -124,6 +135,83 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def get_anti_raid_settings(server_id: int) : 
+    global anti_raid_settings_cache
+    
+    if server_id in anti_raid_settings_cache : 
+        return anti_raid_settings_cache[server_id]
+    else : 
+        conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+        c = conn.cursor()
+        c.execute("SELECT * FROM anti_raid_settings WHERE server_id = ?", (server_id,))
+        row = c.fetchone()
+
+        if row : 
+            if row[2] == 1 : 
+                temp = True
+            else : 
+                temp = False
+            anti_raid_settings_cache[server_id] = {
+                "on_off": temp,
+                "action": row[3],
+                "alert_channel_id": row[4],
+                "duration": row[5],
+                "join_time": row[6],
+            }
+        else : 
+            anti_raid_settings_cache[server_id] = {
+                "on_off": False,
+                "action": "alert",
+                "alert_channel_id": None,
+                "duration": 180,
+                "join_time": 5,
+            }
+        
+        conn.close()
+        return anti_raid_settings_cache[server_id]
+
+async def update_anti_raid_settings(server_id: int, on_off: bool, action: str, alert_channel_id: int, duration: int, join_time: int) : 
+    if duration > 900 or duration < 30 :
+        raise ValueError("update_anti_raid_settings() 함수에서 유효하지 않은 값. duration의 값은 900보다 크거나 30보다 작을 수 없습니다.")
+    
+    if join_time > 50 or join_time < 3 : 
+        raise ValueError("update_anti_raid_settings() 함수에서 유효하지 않은 값. join_time의 값은 50보다 크거나 3보다 작을 수 없습니다.")
+
+    global anti_raid_settings_cache
+    
+    anti_raid_settings_cache[server_id] = {
+        "on_off": on_off,
+        "action": action,
+        "alert_channel_id": alert_channel_id,
+        "duration": duration,
+        "join_time": join_time
+    }
+    
+    if on_off : 
+        on_off2 = 1
+    else : 
+        on_off2 = 0
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT id FROM anti_raid_settings WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    
+    if row:
+        c.execute("UPDATE anti_raid_settings SET on_off = ?, action = ?, alert_channel_id = ?, duration = ?, join_time = ? WHERE server_id = ?", (on_off2, action, alert_channel_id, duration, join_time, server_id))
+    else:
+        c.execute("INSERT INTO anti_raid_settings (server_id, on_off, action, alert_channel_id, duration, join_time) VALUES (?, ?, ?, ?, ?, ?)", (server_id, on_off2, action, alert_channel_id, duration, join_time))
+
+    conn.close()
+
+    anti_raid_settings_cache[server_id] = {
+        "on_off": on_off,
+        "action": action,
+        "alert_channel_id": alert_channel_id,
+        "duration": duration,
+        "join_time": join_time
+    }
 
 async def remove_phrase(phrase_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
