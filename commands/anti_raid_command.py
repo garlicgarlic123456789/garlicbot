@@ -75,6 +75,15 @@ def setup(bot: commands.Bot):
                 await interaction.followup.send(embed = embed)
                 return
             
+            if 조치방법 == "isolate" and get_quarantine_role(interaction.guild.id) is None : 
+                embed = discord.Embed(
+                    title = "오류",
+                    description = "격리 역할이 설정되어 있지 않습니다. </격리역할설정:1398212209271771188>으로 설정하세요.",
+                    color = discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
+            
             if 시간범위 > 900 or 시간범위 < 30 : 
                 embed = discord.Embed(
                     title = "오류",
