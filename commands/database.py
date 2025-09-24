@@ -201,7 +201,7 @@ async def update_anti_raid_settings(server_id: int, on_off: bool, action: str, a
     if row:
         c.execute("UPDATE anti_raid_settings SET on_off = ?, action = ?, alert_channel_id = ?, duration = ?, join_time = ? WHERE server_id = ?", (on_off2, action, alert_channel_id, duration, join_time, server_id))
     else:
-        c.execute("INSERT INTO anti_raid_settings (server_id, on_off, action, alert_channel_id, duration, join_time) VALUES (?, ?, ?, ?, ?, ?, ?)", (server_id, on_off2, action, alert_channel_id, duration, join_time))
+        c.execute("INSERT INTO anti_raid_settings (server_id, on_off, action, alert_channel_id, duration, join_time) VALUES (?, ?, ?, ?, ?, ?)", (server_id, on_off2, action, alert_channel_id, duration, join_time))
 
     conn.close()
 
