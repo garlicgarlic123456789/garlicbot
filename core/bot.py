@@ -52,6 +52,11 @@ class GarlicBot(commands.Bot):
         self.openai_client = None
         self.weather_client = None
         
+        # 서비스 인스턴스들
+        self.ai_service = None
+        self.moderation_service = None
+        self.experience_service = None
+        
         self.logger.info("GarlicBot instance created")
     
     def setup_logging(self):
@@ -77,6 +82,9 @@ class GarlicBot(commands.Bot):
         
         # 외부 클라이언트 초기화
         await self.setup_external_clients()
+        
+        # 서비스 초기화
+        await self.setup_services()
         
         # 명령어 로드
         await self.load_commands()
@@ -105,6 +113,22 @@ class GarlicBot(commands.Bot):
             
         except Exception as e:
             self.logger.error(f"Failed to initialize external clients: {e}")
+    
+    async def setup_services(self):
+        """서비스 인스턴스 초기화"""
+        try:
+            from services.ai_service import AIService
+            from services.moderation_service import ModerationService
+            from services.experience_service import ExperienceService
+            
+            self.ai_service = AIService(self)
+            self.moderation_service = ModerationService(self)
+            self.experience_service = ExperienceService(self)
+            
+            self.logger.info("Services initialized successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize services: {e}")
     
     async def load_commands(self):
         """명령어 모듈 로드"""
