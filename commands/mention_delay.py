@@ -67,7 +67,7 @@ class mention_delay(app_commands.Group) :
 
         role_users_count = len(role_users)
         role_users_count_before = role_users_count
-        for i in range(role_users_count) : 
+        for i in range(len(role_users) - 1, -1, -1):
             if role_users[i].bot : 
                 role_users.remove(role_users[i])
                 role_users_count -= 1
