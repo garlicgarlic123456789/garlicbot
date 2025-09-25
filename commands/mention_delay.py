@@ -67,7 +67,7 @@ class mention_delay(app_commands.Group) :
 
         role_users_count = len(role_users)
         role_users_count_before = role_users_count
-        for i in range(role_users_count) : 
+        for i in range(len(role_users) - 1, -1, -1):
             if role_users[i].bot : 
                 role_users.remove(role_users[i])
                 role_users_count -= 1
@@ -119,9 +119,7 @@ class mention_delay(app_commands.Group) :
             await interaction.followup.send(embed = embed)
             return
         
-        for i in range(len(role_users)) : 
-            if role_users[i].id == interaction.user.id : 
-                del role_users[i]
+        role_users = [user for user in role_users if user.id != interaction.user.id]
         
         if 전달방법 == "all" : 
             mention_ids = []
@@ -151,6 +149,7 @@ class mention_delay(app_commands.Group) :
                 color=discord.Color.yellow()
             )
             await interaction.followup.send(embed = embed)
+            return
         embed = discord.Embed(
             title=f"완료",
             description=f"멘션 #{', '.join(mention_ids)}\n\n{역할.mention} 역할에 속한 사용자가 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.",
