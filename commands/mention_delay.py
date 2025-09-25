@@ -149,6 +149,7 @@ class mention_delay(app_commands.Group) :
                 color=discord.Color.yellow()
             )
             await interaction.followup.send(embed = embed)
+            return
         embed = discord.Embed(
             title=f"완료",
             description=f"멘션 #{', '.join(mention_ids)}\n\n{역할.mention} 역할에 속한 사용자가 메시지를 보낼 시 해당 내용이 전달되도록 예약했습니다.",
