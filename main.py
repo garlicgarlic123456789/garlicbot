@@ -61,7 +61,6 @@ from selenium.webdriver.common.by import By
 
 from openai import AsyncOpenAI
 
-from commands import encode
 from commands import manage_timeout
 from commands import bulk_cancel
 from commands.define import *
@@ -75,21 +74,17 @@ from commands import chat_time
 from commands import timestamp
 from commands import ping
 from commands import close_threads
-from commands import remove_all_roles
 from commands import xp_setup
 from commands.invite_log_check import *
 from commands.train_command import *
 from commands.summarize_command import *
-from commands import security_check
 from commands.database import *
 from commands import weather
 from commands import slowmode
 from commands import server_info
 from commands.mention_delay import *
-from commands.autorole import *
 from commands import rules
 from commands.phrase import *
-from commands import anti_raid_command
 
 from zoneinfo import ZoneInfo
 
@@ -7533,7 +7528,6 @@ async def on_ready():
     bot.tree.add_command(train_command())
     bot.tree.add_command(summarize_command())
     bot.tree.add_command(mention_delay())
-    bot.tree.add_command(autorole())
     bot.tree.add_command(phrase())
     await bot.tree.sync()
     
@@ -9574,7 +9568,6 @@ async def info(interaction: discord.Interaction, 사용자: discord.Member):
     except Exception as e:
         await interaction.response.send_message(f"**[오류!]** 알 수 없는 오류가 발생했습니다.")
 '''
-encode.setup(bot)
 bulk_cancel.setup(bot)
 turn_off.setup(bot)
 suggest_random.setup(bot)
@@ -9582,14 +9575,11 @@ chat_time.setup(bot)
 timestamp.setup(bot)
 ping.setup(bot)
 close_threads.setup(bot)
-remove_all_roles.setup(bot)
-security_check.setup(bot)
 weather.setup(bot)
 xp_setup.setup(bot)
 slowmode.setup(bot)
 server_info.setup(bot)
 rules.setup(bot)
-anti_raid_command.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
