@@ -7536,6 +7536,20 @@ async def on_ready():
     bot.tree.add_command(autorole())
     bot.tree.add_command(phrase())
     await bot.tree.sync()
+    
+    # Load new Cog-based commands
+    try:
+        await bot.load_extension('commands_v2.moderation')
+        print("Moderation Cog loaded successfully")
+    except Exception as e:
+        print(f"Failed to load Moderation Cog: {e}")
+    
+    try:
+        await bot.load_extension('commands_v2.xp')
+        print("XP Cog loaded successfully")
+    except Exception as e:
+        print(f"Failed to load XP Cog: {e}")
+    
     print(f"Logged in as {bot.user}")
     status_loop.start()
     exp_event.start()
