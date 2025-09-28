@@ -8,6 +8,11 @@ import discord
 from datetime import datetime, timedelta
 from typing import Optional, Union, List
 import re
+import json
+import os
+from typing import Dict, Any
+
+from .constants import BLOCKED_USERS_FILE
 
 
 def format_duration(duration: Union[timedelta, int]) -> str:
@@ -124,23 +129,6 @@ def is_spam(message: discord.Message) -> bool:
         return True
     
     return False
-
-
-def is_valid_time(time_str: str) -> bool:
-    """
-    시간 문자열이 올바른 형식인지 확인합니다.
-    
-    Args:
-        time_str: 확인할 시간 문자열
-    
-    Returns:
-        올바른 형식이면 True, 아니면 False
-    """
-    try:
-        datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
-        return True
-    except ValueError:
-        return False
 
 
 def truncate_text(text: str, max_length: int = 2000) -> str:
@@ -371,3 +359,211 @@ def get_color_from_string(text: str) -> discord.Color:
     # 문자열의 해시값을 이용해 색상 생성
     hash_value = hash(text) % 16777215  # 24비트 색상 범위
     return discord.Color(hash_value)
+
+
+# ===== define.py에서 마이그레이션된 함수들 =====
+
+
+def load_blocked_users2() -> Dict[str, Any]:
+    """JSON 파일에서 차단된 사용자 정보를 불러오는 함수"""
+    if not os.path.exists(BLOCKED_USERS_FILE):
+        return {}
+    with open(BLOCKED_USERS_FILE, "r", encoding="utf-8") as f:
+        try:
+            data = json.load(f)
+        except json.JSONDecodeError:
+            # 파일 내용이 올바르지 않을 경우 빈 딕셔너리 반환
+            data = {}
+    return data
+
+
+def save_blocked_users2(data: Dict[str, Any]) -> None:
+    """JSON 파일에 차단된 사용자 정보를 저장하는 함수"""
+    with open(BLOCKED_USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+def is_blocked(user: discord.User) -> List[Union[bool, Optional[str], Optional[str]]]:
+    """사용자가 차단되었는지 확인하는 함수
+
+    Returns:
+        [차단여부, 차단만료일, 차단사유]
+    """
+    data = load_blocked_users2()
+    user_id = str(user.id)  # JSON 키로 사용하기 위해 문자열로 변환
+    if user_id not in data:
+        # 차단 정보가 없는 경우
+        return [False, None, None]
+
+    blocked_info = data[user_id]
+    # "until" 필드의 날짜를 datetime 객체로 변환
+    try:
+        blocked_until = datetime.strptime(blocked_info.get("until", ""), "%Y-%m-%d").date()
+    except ValueError:
+        # 날짜 형식이 올바르지 않으면 차단 해제된 것으로 간주
+        return [False, None, None]
+
+    today = datetime.today().date()
+    if today > blocked_until:
+        # 차단 기간이 끝난 경우
+        return [False, None, None]
+
+    # 차단 기간이 아직 남아있는 경우
+    return [True, blocked_info.get("until"), blocked_info.get("reason")]
+
+
+def is_valid_time(time_str: str) -> bool:
+    """시간 문자열이 유효한지 확인하는 함수"""
+    try:
+        datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+        return True
+    except ValueError:
+        return False
+
+
+async def check_message(message, check_everyone_here_mention: bool = True,
+                       check_role_mention: bool = True, check_user_mention: bool = True,
+                       check_invite_link: bool = True) -> Dict[str, Any]:
+    """봇이 메시지를 보내기 전에 보안 검사를 수행하는 함수
+
+    Args:
+        message: 보내려는 메시지 (str 또는 Embed 객체)
+        check_everyone_here_mention: @everyone, @here 멘션 검사 여부
+        check_role_mention: 역할 멘션 검사 여부
+        check_user_mention: 사용자 멘션 검사 여부
+        check_invite_link: 초대 링크 검사 여부
+
+    Returns:
+        보안 검사 결과 딕셔너리
+    """
+    from discord import Embed
+
+    # 기본 반환값 구조
+    result = {
+        "original_message": message,
+        "modified_message": message,
+        "warnings": [],
+        "blocked": False,
+        "reason": None
+    }
+
+    # 메시지가 Embed인 경우 처리
+    if isinstance(message, Embed):
+        # Embed의 description, title, fields 등에서 위험 요소 검사
+        embed_text = ""
+        if message.title:
+            embed_text += message.title + " "
+        if message.description:
+            embed_text += message.description + " "
+        if message.fields:
+            for field in message.fields:
+                embed_text += field.name + " " + field.value + " "
+
+        message_content = embed_text
+    else:
+        message_content = str(message)
+
+    # 각 검사 항목 수행
+    modified_content = message_content
+
+    # @everyone, @here 멘션 검사
+    if check_everyone_here_mention:
+        if "@everyone" in message_content or "@here" in message_content:
+            result["warnings"].append("@everyone 또는 @here 멘션이 포함되어 있습니다")
+
+    # 역할 멘션 검사
+    if check_role_mention:
+        role_mentions = re.findall(r'<@&(\d+)>', message_content)
+        if role_mentions:
+            result["warnings"].append(f"역할 멘션 {len(role_mentions)}개가 포함되어 있습니다")
+
+    # 사용자 멘션 검사
+    if check_user_mention:
+        user_mentions = re.findall(r'<@!?(\d+)>', message_content)
+        if user_mentions:
+            result["warnings"].append(f"사용자 멘션 {len(user_mentions)}개가 포함되어 있습니다")
+
+    # 초대 링크 검사
+    if check_invite_link:
+        invite_links = re.findall(r'discord\.gg/[a-zA-Z0-9]+', message_content)
+        if invite_links:
+            result["warnings"].append(f"Discord 초대 링크 {len(invite_links)}개가 포함되어 있습니다")
+
+    # 위험도가 높은 경우 차단
+    if len(result["warnings"]) > 3:  # 임의의 임계값
+        result["blocked"] = True
+        result["reason"] = "너무 많은 위험 요소가 포함되어 있습니다"
+
+    return result
+
+
+def create_error_embed(title: str, description: str, color: discord.Color = discord.Color.red()) -> discord.Embed:
+    """에러 임베드를 생성하는 함수"""
+    return discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+
+
+def create_success_embed(title: str, description: str, color: discord.Color = discord.Color.green()) -> discord.Embed:
+    """성공 임베드를 생성하는 함수"""
+    return discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+
+
+def create_info_embed(title: str, description: str, color: discord.Color = discord.Color.blue()) -> discord.Embed:
+    """정보 임베드를 생성하는 함수"""
+    return discord.Embed(
+        title=title,
+        description=description,
+        color=color
+    )
+
+
+def has_permission(user: Union[discord.Member, discord.User], permission: str, guild: discord.Guild = None) -> bool:
+    """사용자가 특정 권한을 가지고 있는지 확인하는 함수"""
+    if isinstance(user, discord.User) and not isinstance(user, discord.Member):
+        # User 객체인 경우 (DM 등)
+        return False
+
+    member = user  # Member 객체
+    perm_map = {
+        'administrator': 'administrator',
+        'manage_roles': 'manage_roles',
+        'manage_channels': 'manage_channels',
+        'kick_members': 'kick_members',
+        'ban_members': 'ban_members',
+        'manage_messages': 'manage_messages',
+        'view_audit_log': 'view_audit_log'
+    }
+
+    if permission in perm_map:
+        return getattr(member.guild_permissions, perm_map[permission], False)
+
+    return False
+
+
+def get_user_display_name(user: Union[discord.Member, discord.User]) -> str:
+    """사용자의 표시 이름을 반환하는 함수"""
+    if isinstance(user, discord.Member):
+        return user.display_name
+    return user.name
+
+
+def format_user_mention(user: Union[discord.Member, discord.User]) -> str:
+    """사용자를 멘션할 수 있는 문자열을 반환하는 함수"""
+    return f"<@{user.id}>"
+
+
+def format_role_mention(role: discord.Role) -> str:
+    """역할을 멘션할 수 있는 문자열을 반환하는 함수"""
+    return f"<@&{role.id}>"
+
+
+def format_channel_mention(channel: discord.abc.GuildChannel) -> str:
+    """채널을 멘션할 수 있는 문자열을 반환하는 함수"""
+    return f"<#{channel.id}>"
