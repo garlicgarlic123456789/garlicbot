@@ -8,11 +8,14 @@ Supports moderation, XP system, role management, security features, and AI comma
 import discord
 import os
 import logging
+import asyncio
 from discord.ext import commands
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+PRESENCE_INTERVAL = 30
 
 # Configure logging
 logging.basicConfig(
@@ -38,6 +41,36 @@ bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 # Add logger to bot instance for Cog compatibility
 bot.logger = logging.getLogger('GarlicBot')
 
+async def update_presence():
+    """Update bot presence with rotating status messages."""
+    status_messages = [
+        lambda: f"{len(bot.guilds)}개의 서버에서 활동",
+        lambda: f"{sum(len(guild.members) for guild in bot.guilds)}명의 사용자와 활동"
+    ]
+
+    current_index = 0
+
+    while True:
+        try:
+            if callable(status_messages[current_index]):
+                status_text = status_messages[current_index]()
+            else:
+                status_text = status_messages[current_index]
+
+            await bot.change_presence(
+                activity=discord.Activity(
+                    type=discord.ActivityType.watching,
+                    name=status_text
+                )
+            )
+
+            current_index = (current_index + 1) % len(status_messages)
+            await asyncio.sleep(PRESENCE_INTERVAL)
+
+        except Exception as e:
+            logging.error(f'Failed to update presence: {e}')
+            await asyncio.sleep(PRESENCE_INTERVAL)
+
 # Bot event handlers
 @bot.event
 async def on_ready():
@@ -45,13 +78,8 @@ async def on_ready():
     logging.info(f'Logged in as {bot.user} (ID: {bot.user.id})')
     logging.info(f'Connected to {len(bot.guilds)} guilds')
 
-    # Set bot status
-    await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name="마늘밭을 지키는 중..."
-        )
-    )
+    # Start presence update task
+    bot.loop.create_task(update_presence())
 
 @bot.event
 async def on_command_error(ctx, error):
