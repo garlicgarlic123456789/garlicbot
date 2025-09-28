@@ -1236,10 +1236,39 @@ def check_call_limit(user_id):
         call_limit[user_id] = [today, 1]  # 처음 호출
         return [True, MAX_CALLS_PER_DAY]
 
+# 마늘 서버 스팸 차단을 위한 임시 코드 (추후 git revert)
+temp_spam_count = {}
+temp_last_message = {}
+pattern = re.compile(r"(vpn|esim|usim)", re.IGNORECASE)
 
 @bot.event
 async def on_message(message):
     global error
+
+    # 마늘 서버 스팸 차단을 위한 임시 코드 (추후 git revert)
+    if message.guild.id == using_server: 
+        joined_delta = now - message.author.joined_at
+        created_delta = now - message.author.created_at
+        user_id = message.author.id
+
+        if joined_delta < datetime.timedelta(days=1) and created_delta < datetime.timedelta(days=3):
+            if pattern.search(message.content):
+                if user_id in temp_spam_count : 
+                    temp_spam_count[user_id] += 1
+                else : 
+                    temp_spam_count[user_id] = 1
+            if user_id in temp_last_message : 
+                old_message = temp_last_message[user_id]
+                if old_message == message.content : 
+                    if user_id in temp_spam_count : 
+                        temp_spam_count[user_id] += 2
+                    else : 
+                        temp_spam_count[user_id] = 2
+            temp_last_message[user_id] = message.content
+
+            if temp_spam_count[user_id] > 7 : 
+                await handle_spamming(message, "스팸으로 의심되는 활동", 28 * 24 * 60 * 60 - 5, False, None, False)
+
     if message.author.id == developer : 
         if message.content.startswith("!부계추가 ") : 
             pattern = r"^!부계추가\s+(\d+)\s+(\d+)$"
