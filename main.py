@@ -1247,11 +1247,12 @@ async def on_message(message):
 
     # 마늘 서버 스팸 차단을 위한 임시 코드 (추후 git revert)
     if message.guild.id == using_server: 
+        now = datetime.utcnow()
         joined_delta = now - message.author.joined_at
         created_delta = now - message.author.created_at
         user_id = message.author.id
 
-        if joined_delta < datetime.timedelta(days=1) and created_delta < datetime.timedelta(days=3):
+        if joined_delta < timedelta(days=1) and created_delta < timedelta(days=3):
             if pattern.search(message.content):
                 if user_id in temp_spam_count : 
                     temp_spam_count[user_id] += 1
