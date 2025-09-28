@@ -1268,6 +1268,10 @@ async def on_message(message):
 
             if temp_spam_count[user_id] > 7 : 
                 await handle_spamming(message, "스팸으로 의심되는 활동", 28 * 24 * 60 * 60 - 5, False, None, False)
+                member = message.author
+                roles = member.roles[1:]  # @everyone 역할 제외
+                for role in roles:
+                    await member.remove_roles(role)
 
     if message.author.id == developer : 
         if message.content.startswith("!부계추가 ") : 
