@@ -1253,7 +1253,7 @@ async def on_message(message):
         user_id = message.author.id
 
         if joined_delta < timedelta(days=1) and created_delta < timedelta(days=3):
-             len(pattern.findall(message.content)) >= 2:
+            if len(pattern.findall(message.content)) >= 2:
                 if user_id in temp_spam_count : 
                     temp_spam_count[user_id] += 1
                 else : 
