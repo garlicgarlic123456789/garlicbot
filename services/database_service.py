@@ -225,6 +225,14 @@ class DatabaseService:
             role_id INTEGER
         )""")
 
+        # 자동 역할 설정
+        cursor.execute("""CREATE TABLE IF NOT EXISTS autorole (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            role_id INTEGER,
+            bot_user TEXT
+        )""")
+
     # ===== 멘션 지연 관련 메소드들 =====
 
     def add_mention_delay_user(self, user_id: int, sender_id: int, content: str,
@@ -589,6 +597,62 @@ class DatabaseService:
             self.logger.error(f"Failed to get quarantine role: {e}")
             return None
 
+    # ===== 자동 역할 관련 메소드들 =====
+
+    def add_autorole(self, server_id: int, role_id: int, bot_user: str) -> Tuple[bool, str, Optional[int]]:
+        """자동 역할을 추가합니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            # 기존에 이미 있는 행인지 확인
+            c.execute("SELECT id FROM autorole WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+            row = c.fetchone()
+            if row:
+                return False, "autorole_already_exists", None
+            # 추가
+            c.execute("INSERT INTO autorole (server_id, role_id, bot_user) VALUES (?, ?, ?)", (server_id, role_id, bot_user))
+            autorole_id = c.lastrowid
+            return True, "success", autorole_id
+        except Exception as e:
+            self.logger.error(f"Failed to add autorole: {e}")
+            return False, str(e), None
+
+    def remove_autorole(self, server_id: int, role_id: int) -> Tuple[bool, str, Optional[None]]:
+        """자동 역할을 제거합니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            # 있는지 확인
+            c.execute("SELECT id FROM autorole WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+            row = c.fetchone()
+            if not row:
+                return False, "autorole_not_found", None
+            # 제거
+            c.execute("DELETE FROM autorole WHERE server_id = ? AND role_id = ?", (server_id, role_id))
+            return True, "success", None
+        except Exception as e:
+            self.logger.error(f"Failed to remove autorole: {e}")
+            return False, str(e), None
+
+    def get_autorole(self, server_id: int) -> List[Dict[str, Any]]:
+        """서버의 자동 역할 설정들을 조회합니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            c.execute("SELECT * FROM autorole WHERE server_id = ?", (server_id,))
+            rows = c.fetchall()
+            autoroles = []
+            for row in rows:
+                autoroles.append({
+                    "server_id": row[1],
+                    "role_id": row[2],
+                    "bot_user": row[3]
+                })
+            return autoroles
+        except Exception as e:
+            self.logger.error(f"Failed to get autoroles: {e}")
+            return []
+
 
 # 전역 데이터베이스 서비스 인스턴스
 db_service = DatabaseService()
@@ -682,3 +746,15 @@ def update_quarantine_role(server_id: int, quarantine_role: int):
 
 def get_quarantine_role(server_id: int):
     return db_service.get_quarantine_role(server_id)
+
+
+def add_autorole(server_id: int, role_id: int, bot_user: str):
+    return db_service.add_autorole(server_id, role_id, bot_user)
+
+
+def remove_autorole(server_id: int, role_id: int):
+    return db_service.remove_autorole(server_id, role_id)
+
+
+def get_autorole(server_id: int):
+    return db_service.get_autorole(server_id)

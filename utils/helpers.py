@@ -11,6 +11,7 @@ import re
 import json
 import os
 from typing import Dict, Any
+import pytz
 
 from .constants import BLOCKED_USERS_FILE
 
@@ -567,3 +568,7 @@ def format_role_mention(role: discord.Role) -> str:
 def format_channel_mention(channel: discord.abc.GuildChannel) -> str:
     """채널을 멘션할 수 있는 문자열을 반환하는 함수"""
     return f"<#{channel.id}>"
+
+
+# 타임존 설정
+kst = pytz.timezone('Asia/Seoul')

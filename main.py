@@ -113,8 +113,12 @@ async def load_cogs():
     """Load all Cog-based commands."""
     cogs = [
         'commands_v2.moderation',
+        'commands_v2.mention_delay',
+        'commands_v2.bulk_cancel',
         'commands_v2.xp',
         'commands_v2.roles',
+        'commands_v2.remove_all_roles',
+        'commands_v2.autorole',
         'commands_v2.security',
         'commands_v2.ai',
         'commands_v2.ping',

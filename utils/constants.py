@@ -34,6 +34,9 @@ kst = pytz.timezone('Asia/Seoul')
 # 봇 상태
 status_id = 0
 
+# 오류 카운터
+error = 0
+
 # 환승 정보 데이터 (축약된 버전 - 전체 데이터는 별도 파일로 분리 가능)
 fast_transfer = {
     "1호선": {

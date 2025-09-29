@@ -4,7 +4,6 @@ from discord import app_commands
 from discord.ext import commands
 
 from utils.helpers import *
-from utils.constants import error
 
 
 class RemoveAllRolesCog(commands.Cog):
