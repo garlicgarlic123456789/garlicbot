@@ -1246,48 +1246,53 @@ pattern = re.compile(r"(vpn|esim|usim)", re.IGNORECASE)
 async def on_message(message):
     global error
 
-    # 마늘 서버 스팸 차단을 위한 임시 코드 (추후 git revert)
-    if message.guild.id == using_server: 
-        now = datetime.now(timezone.utc)  # UTC 기준 aware datetime 객체
-        message_author = await message.guild.fetch_member(message.author.id)
-        joined_delta = now - message_author.joined_at.replace(tzinfo=timezone.utc)
-        created_delta = now - message_author.created_at.replace(tzinfo=timezone.utc)
-        user_id = message.author.id
+    try : 
+        # 마늘 서버 스팸 차단을 위한 임시 코드 (추후 git revert)
+        if message.guild.id == using_server: 
+            now = datetime.now(timezone.utc)  # UTC 기준 aware datetime 객체
+            message_author = await message.guild.fetch_member(message.author.id)
+            joined_delta = now - message_author.joined_at.replace(tzinfo=timezone.utc)
+            created_delta = now - message_author.created_at.replace(tzinfo=timezone.utc)
+            user_id = message.author.id
 
-        if joined_delta < timedelta(days=1) and created_delta < timedelta(days=3):
-            if len(pattern.findall(message.content)) >= 2:
-                if user_id in temp_spam_message : 
-                    temp_spam_message[user_id].append(message)
-                else : 
-                    temp_spam_message[user_id] = [message]
-                if user_id in temp_spam_count : 
-                    temp_spam_count[user_id] += 1
-                else : 
-                    temp_spam_count[user_id] = 1
-            if user_id in temp_last_message : 
-                old_message = temp_last_message[user_id]
-                if old_message == message.content : 
+            if joined_delta < timedelta(days=1) and created_delta < timedelta(days=3):
+                if len(pattern.findall(message.content)) >= 2:
                     if user_id in temp_spam_message : 
                         temp_spam_message[user_id].append(message)
                     else : 
                         temp_spam_message[user_id] = [message]
                     if user_id in temp_spam_count : 
-                        temp_spam_count[user_id] += 2
+                        temp_spam_count[user_id] += 1
                     else : 
-                        temp_spam_count[user_id] = 2
-            temp_last_message[user_id] = message.content
+                        temp_spam_count[user_id] = 1
+                if user_id in temp_last_message : 
+                    old_message = temp_last_message[user_id]
+                    if old_message == message.content : 
+                        if user_id in temp_spam_message : 
+                            temp_spam_message[user_id].append(message)
+                        else : 
+                            temp_spam_message[user_id] = [message]
+                        if user_id in temp_spam_count : 
+                            temp_spam_count[user_id] += 2
+                        else : 
+                            temp_spam_count[user_id] = 2
+                temp_last_message[user_id] = message.content
 
-            if temp_spam_count[user_id] > 5 : 
-                await handle_spamming(message, "스팸으로 의심되는 활동", 28 * 24 * 60 * 60 - 5, False, None, False)
-                member = message.author
-                roles = member.roles[1:]  # @everyone 역할 제외
-                for role in roles:
-                    await member.remove_roles(role)
-                
-                temp_spam_message[user_id].remove(message)
-                
-                for i in temp_spam_message[user_id] : 
-                    await i.delete()
+                if temp_spam_count[user_id] > 5 : 
+                    await handle_spamming(message, "스팸으로 의심되는 활동", 28 * 24 * 60 * 60 - 5, False, None, False)
+                    member = message.author
+                    roles = member.roles[1:]  # @everyone 역할 제외
+                    for role in roles:
+                        await member.remove_roles(role)
+                    
+                    temp_spam_message[user_id].remove(message)
+                    
+                    for i in temp_spam_message[user_id] : 
+                        await i.delete()
+    except Exception as e : 
+        print(f"오류 #{error}: {e}")
+        error += 1
+        return
 
     if message.author.id == developer : 
         if message.content.startswith("!부계추가 ") : 
@@ -2678,6 +2683,7 @@ async def on_message(message):
         asyncio.create_task(handle_user_mentions(message))  # 비동기 처리
         await bot.process_commands(message)
         
+        '''
         if message.guild.id == using_server and ("<@1305492487137267722>" in message.content or "<@!1305492487137267722>" in message.content) : 
             if message.author.id not in maneul_mention_no_warn : 
                 embed = discord.Embed(
@@ -2686,6 +2692,7 @@ async def on_message(message):
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
+                '''
         
         status, until, reason = is_blocked(message.author)
     
