@@ -1960,6 +1960,37 @@ async def on_message(message):
             if mention_cnt > 7: 
                 await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 7 * 60 * 60, True, None)
                 return
+    
+    if message.guild.id == using_server :
+        if message.channel.id == 1320303102703702042 or message.channel.id == 1417447633949163530 : 
+            # 활동 멤버 부여 기준 안내
+            if "활멤" in message.content or "활동 멤버" in message.content or "활동멤버" in message.content : 
+                if "부여" in message.content or "회수" in message.content or "지급" in message.content : 
+                    if "기준" in message.content : 
+                        now = datetime.utcnow()
+                        if ("active_role" in last_auto_respond_time and (not (now - last_auto_respond_time["active_role"] < timedelta(minutes=10)))) or "active_role" not in last_auto_respond_time : 
+                            last_auto_respond_time["active_role"] = now
+                            embed = discord.Embed(
+                                title = "활동 멤버 부여 기준 안내",
+                                description = "- <@&1327145486192214119>: 1~2일에 한번씩 잠깐잠깐 활동하기라도 하면 부여됩니다. 단, 활동이 없을 시 금방 회수됩니다.\n- <@&1402457175598567485>: 서버 채팅에 며칠 정도 자주 보이면 부여됩니다. 단, 활동이 적거나 없을 시 금방 회수됩니다.\n- <@&1362763359488835674>: 서버에 **장기간** 활동 자주 하시면 부여됩니다. 이 역할은 회수될 때도 **장기간** 활동이 적거나 없어야 회수됩니다.",
+                                color = int("a5f0ff", 16)
+                            )
+                            await message.channel.send(embed = embed)
+            
+            if "이건" in message.content or "이거는" in message.content : 
+                if "왜" in message.content : 
+                    if "검열" in message.content : 
+                        if "안" in message.content : 
+                            now = datetime.utcnow()
+                            if ("automod_reason" in last_auto_respond_time and (not (now - last_auto_respond_time["automod_reason"] < timedelta(minutes=10)))) or "automod_reason" not in last_auto_respond_time : 
+                                last_auto_respond_time["automod_reason"] = now
+                                embed = discord.Embed(
+                                    title = "검열 안내",
+                                    description = "<@1316579106749681664> 검열 중 일부는 키워드만으로 판단하고 검열하지 않습니다. 일부 검열 필터는, 키워드에 걸렸을 때 AI가 한 번 더 판단하고 검열합니다.\n\n따라서 AI 판단에 따라 동일하게 특정 검열 키워드가 포함된 메시지더라도 일부 메시지는 검열되고 일부는 검열되지 않을 수 있는 점 양해 부탁드립니다.",
+                                    color = int("a5f0ff", 16)
+                                )
+                                await message.channel.send(embed = embed)
+
 
     if message.author.bot :
         return
@@ -1981,91 +2012,6 @@ async def on_message(message):
         else:
             # 사용자 초기 메시지 처리
             last_message_times[user_id] = message.created_at
-
-        if message.content.startswith("마늘아 권한대행") :
-            if message.author.id in owner :
-                if "마늘요리" in message.content :
-                    member = guild.get_member(1305492487137267722)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "세유" in message.content :
-                    member = guild.get_member(1063676895000018944)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "여의대로" in message.content :
-                    member = guild.get_member(1181084142969032848)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "챠무" in message.content :
-                    member = guild.get_member(1238750780459188225)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "마늘요리" not in message.content and "세유" not in message.content and "여의대로" not in message.content and "챠무" not in message.content :
-                    match = re.match(r"마늘아 권한대행 <@!?(\d+)>", message.content)
-                    if match:
-                        user_id = int(match.group(1))
-                        member = message.guild.get_member(user_id)
-                        if member:
-                            role1 = message.guild.get_role(1335494095514374144)
-                            role2 = message.guild.get_role(1325846757636047030)
-                            await member.add_roles(role1, reason="소유자 권한대행")
-                            await member.add_roles(role2, reason="소유자 권한대행")
-                            embed = discord.Embed(
-                                title="성공",
-                                description=f"{member.mention}의 권한 대행을 시작합니다.",
-                                color=int("a5f0ff", 16)
-                            )
-                            await message.reply(embed=embed, mention_author=False)
-                            return
-                        else:
-                            await message.reply("해당 유저를 찾을 수 없습니다.", mention_author=False)
-                            return
-                    else :
-                        embed = discord.Embed(
-                            title = f"권한대행 명령어 사용 방법",
-                            description = f"입력 양식: `마늘아 권한대행 <사용자>` (필수 항목: 사용자)\n\n<사용자>에서 권한 대행할 사용자를 입력해 주세요.\n\n제대로 작동하지 않는 경우 띄어쓰기를 확인해주세요.",
-                            color = int("a5f0ff", 16)
-                        )
-                        await message.reply(embed = embed, mention_author=False)
-                        return
-            else :
-                pass
 
     if message.content == "마늘아" :
         status, until, reason = is_blocked(message.author)
