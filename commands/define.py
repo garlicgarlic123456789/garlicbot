@@ -547,6 +547,8 @@ cute_model9 = genai.GenerativeModel('gemini-2.5-flash-lite',
 
 anti_raid_settings_cache = {}
 
+last_auto_respond_time = {}
+
 developer = 1305492487137267722 # 개발자
 
 intents = discord.Intents.all()
