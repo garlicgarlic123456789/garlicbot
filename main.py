@@ -1975,7 +1975,7 @@ async def on_message(message):
                                 description = "- <@&1327145486192214119>: 1~2일에 한번씩 잠깐잠깐 활동하기라도 하면 부여됩니다. 단, 활동이 없을 시 금방 회수됩니다.\n- <@&1402457175598567485>: 서버 채팅에 며칠 정도 자주 보이면 부여됩니다. 단, 활동이 적거나 없을 시 금방 회수됩니다.\n- <@&1362763359488835674>: 서버에 **장기간** 활동 자주 하시면 부여됩니다. 이 역할은 회수될 때도 **장기간** 활동이 적거나 없어야 회수됩니다.",
                                 color = int("a5f0ff", 16)
                             )
-                            await message.channel.send(embed = embed)
+                            await message.reply(embed = embed, mention_author=False)
             
             if "이건" in message.content or "이거는" in message.content : 
                 if "왜" in message.content : 
@@ -1989,7 +1989,7 @@ async def on_message(message):
                                     description = "<@1316579106749681664> 검열 중 일부는 키워드만으로 판단하고 검열하지 않습니다. 일부 검열 필터는, 키워드에 걸렸을 때 AI가 한 번 더 판단하고 검열합니다.\n\n따라서 AI 판단에 따라 동일하게 특정 검열 키워드가 포함된 메시지더라도 일부 메시지는 검열되고 일부는 검열되지 않을 수 있는 점 양해 부탁드립니다.",
                                     color = int("a5f0ff", 16)
                                 )
-                                await message.channel.send(embed = embed)
+                                await message.reply(embed = embed, mention_author=False)
 
 
     if message.author.bot :
