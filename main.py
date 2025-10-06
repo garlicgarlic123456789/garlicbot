@@ -112,26 +112,31 @@ async def on_command_error(ctx, error):
 async def load_cogs():
     """Load all Cog-based commands."""
     cogs = [
-        'commands_v2.moderation',
-        'commands_v2.mention_delay',
-        'commands_v2.bulk_cancel',
-        'commands_v2.anti_raid',
-        'commands_v2.xp',
-        'commands_v2.roles',
-        'commands_v2.remove_all_roles',
-        'commands_v2.autorole',
-        'commands_v2.security',
+        'commands_v2.advice',
         'commands_v2.ai',
-        'commands_v2.ping',
-        'commands_v2.timestamp',
-        'commands_v2.server_info',
-        'commands_v2.weather',
+        'commands_v2.anti_raid',
+        'commands_v2.bulk_cancel',
         'commands_v2.chat_time',
+        'commands_v2.close_threads',
+        'commands_v2.encode',
+        'commands_v2.manage_timeout',
+        'commands_v2.mention_delay',
+        'commands_v2.moderation',
+        'commands_v2.phrase',
+        'commands_v2.ping',
+        'commands_v2.roles',
+        'commands_v2.security',
+        'commands_v2.server_info',
+        'commands_v2.suggest_random',
         'commands_v2.summarize',
-        'events.moderation',
+        'commands_v2.timestamp',
+        'commands_v2.train',
+        'commands_v2.weather',
+        'commands_v2.xp',
         'events.guild',
+        'events.member',
         'events.message',
-        'events.member'
+        'events.moderation'
     ]
 
     for cog in cogs:

@@ -22,15 +22,34 @@ Unauthorized copying, modification, distribution, or use of this code or any par
 
 ```
 garlicbot/
-├── main.py                 # 봇 시작점 및 Cog 로더
-├── commands_v2/           # 명령어 Cog 모듈들
+├── main.py                 # 봇 시작점 및 Cog 로더 (133라인, 9600+ → 133라인 최적화)
+├── commands_v2/           # 명령어 Cog 모듈들 (27개 파일 마이그레이션 완료)
+│   ├── advice.py         # 조언 명령어
 │   ├── ai.py             # AI 관련 명령어
-│   ├── moderation.py     # 관리 명령어
+│   ├── anti_raid.py      # 레이드 방지
+│   ├── autorole.py       # 자동 역할 부여
+│   ├── bulk_cancel.py    # 대량 취소
+│   ├── chat_time.py      # 채팅 시간
+│   ├── close_threads.py  # 스레드 닫기
+│   ├── encode.py         # 암호화/복호화
+│   ├── fuction_collect_message.py  # 메시지 수집
+│   ├── invite_log_check.py # 초대 로그 확인
+│   ├── manage_timeout.py # 타임아웃 관리
+│   ├── mention_delay.py  # 멘션 지연
+│   ├── moderation.py     # 관리 명령어 (slowmode 포함)
+│   ├── phrase.py         # 구문 명령어
 │   ├── ping.py           # 핑 명령어
-│   ├── roles.py          # 역할 관리 명령어
+│   ├── remove_all_roles.py # 모든 역할 제거
+│   ├── return_level.py   # 레벨 반환
+│   ├── roles.py          # 역할 관리
+│   ├── rules.py          # 규칙 명령어
 │   ├── security.py       # 보안 명령어
-│   ├── server_info.py    # 서버 정보 명령어
-│   ├── timestamp.py      # 시간 관련 명령어
+│   ├── server_info.py    # 서버 정보
+│   ├── suggest_random.py # 랜덤 제안
+│   ├── summarize.py      # 요약 명령어
+│   ├── timestamp.py      # 시간 관련
+│   ├── train.py          # 기차 정보
+│   ├── turn_off.py       # 종료 명령어
 │   ├── weather.py        # 날씨 명령어
 │   └── xp.py             # 경험치 시스템
 ├── events/               # 이벤트 핸들러 Cog 모듈들

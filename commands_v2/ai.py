@@ -24,7 +24,7 @@ from utils.helpers import format_timestamp
 from utils.message_utils import fetch_messages
 from utils.helpers import is_blocked
 from utils.constants import fast_transfer, developer, train_timetable_api_key, train_arrivals_api_key
-from config.models import two_five_lite_model
+from config.models import two_five_lite_model, gemini_api_key
 
 
 class AICommands(commands.Cog):
@@ -35,7 +35,7 @@ class AICommands(commands.Cog):
         self.logger = bot.logger.getChild(self.__class__.__name__)
 
         # Gemini API 초기화
-        genai.configure(api_key=self.bot.config.get('GEMINI_API_KEY', ''))
+        genai.configure(api_key=gemini_api_key)
 
     async def collect_message(self, interaction, start_message_link, end_message_link):
         """메시지 링크에서 메시지들을 수집합니다."""
@@ -99,141 +99,6 @@ class AICommands(commands.Cog):
             return [True, channels]
         else:
             return [False, "no_channel"]
-
-    @app_commands.command(name="서버조언", description="서버 관련 조언을 AI에게 구합니다.")
-    @app_commands.describe(
-        시작메시지="조언의 기반이 될 메시지 범위의 시작점 링크",
-        끝메시지="조언의 기반이 될 메시지 범위의 끝점 링크 (선택)",
-        채널정보제공="채널 목록 정보를 AI에게 제공할지 여부",
-        메시지제공="메시지 기록을 AI에게 제공할지 여부",
-        프롬프트="AI에게 할 질문이나 요청사항"
-    )
-    async def server_advice(
-        self,
-        interaction: discord.Interaction,
-        시작메시지: str,
-        프롬프트: str,
-        끝메시지: str = None,
-        채널정보제공: bool = True,
-        메시지제공: bool = True
-    ):
-        """서버 관련 조언을 AI에게 구합니다."""
-
-        await interaction.response.defer()
-
-        # 차단 사용자 확인
-        status, until, reason = is_blocked(interaction.user)
-        if status:
-            embed = discord.Embed(
-                title="사용 제한",
-                description=f"AI 조언을 사용할 수 없는 환경입니다.\n\n**사유:** {reason}\n**해제 시각:** {until}",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
-        # 서버 확인
-        if not interaction.guild:
-            embed = discord.Embed(
-                title="오류",
-                description="이 명령어는 서버에서만 사용할 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
-        # 메시지 수집
-        if 메시지제공:
-            if not 시작메시지:
-                embed = discord.Embed(
-                    title="오류",
-                    description="메시지 제공을 선택하셨다면 시작 메시지 링크를 필수로 입력해야 합니다.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-                return
-
-            messages = await self.collect_message(interaction, 시작메시지, 끝메시지)
-            if not messages[0]:
-                embed = discord.Embed(
-                    title="오류",
-                    description={
-                        "different_channel": "시작 메시지와 끝 메시지가 같은 채널에 있어야 합니다.",
-                        "invalid_channel": "유효하지 않은 채널입니다.",
-                        "no_message": "지정된 범위에 메시지가 없습니다."
-                    }.get(messages[1], messages[1]),
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-                return
-            else:
-                messages = messages[1]
-        else:
-            messages = ["*(제공되지 않음)*"]
-
-        # 채널 정보 수집
-        if 채널정보제공:
-            channels = await self.get_channel_list(interaction.guild)
-            if channels[0]:
-                channels = channels[1]
-            else:
-                embed = discord.Embed(
-                    title="오류",
-                    description="채널 정보를 가져올 수 없습니다.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-                return
-        else:
-            channels = ["*(제공되지 않음)*"]
-
-        # 사용자 역할 정보
-        user_roles = [role.name for role in interaction.user.roles if not role.is_default()]
-        role_info = ", ".join(user_roles) if user_roles else "일반 사용자"
-
-        try:
-            # Gemini API 호출
-            model = genai.GenerativeModel('gemini-2.0-flash')
-            response = await asyncio.to_thread(
-                model.generate_content,
-                f"""
-                이름이 '{interaction.guild.name}'인 디스코드 서버에서 아래와 같은 유저가 서버에 관해 조언을 구하고 있습니다.
-
-                유저 이름: {interaction.user.display_name} ({interaction.user.name})
-                유저의 역할: {role_info}
-                하려는 조언(유저의 프롬프트): {프롬프트}
-
-                서버의 메시지 기록 중 일부: {messages}
-                서버의 채널 구성: {channels}
-
-                위 정보를 참고하여 해당 유저에게 조언을 해주세요. 조언은 최대 3000자 이내여야 합니다.
-                """
-            )
-
-            response_text = response.text
-            if len(response_text) > 4000:
-                response_text = response_text[:4000] + "\n\n(AI 조언이 4000자를 초과하여 이하 생략)"
-
-            embed = discord.Embed(
-                title="🤖 AI 서버 조언",
-                description=f"**요청자:** {interaction.user.mention}\n\n{response_text}",
-                color=int("a5f0ff", 16)
-            )
-
-            embed.set_footer(text=f"{format_timestamp(interaction.created_at)}")
-
-            await interaction.followup.send(embed=embed)
-
-            self.logger.info(f"AI advice requested by {interaction.user}: {프롬프트[:50]}...")
-
-        except Exception as e:
-            self.logger.error(f"AI advice error: {e}")
-            embed = discord.Embed(
-                title="오류",
-                description="AI 조언 생성 중 오류가 발생했습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
 
     # 요약 명령어 그룹
     summarize_group = app_commands.Group(name="요약", description="요약 관련 명령어")

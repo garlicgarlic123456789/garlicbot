@@ -233,6 +233,16 @@ class DatabaseService:
             bot_user TEXT
         )""")
 
+        # 문구 관리 테이블
+        cursor.execute("""CREATE TABLE IF NOT EXISTS phrase (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            type TEXT,
+            server_id INTEGER,
+            user_id INTEGER,
+            phrase TEXT
+        )""")
+
     # ===== 멘션 지연 관련 메소드들 =====
 
     def add_mention_delay_user(self, user_id: int, sender_id: int, content: str,
@@ -538,6 +548,143 @@ class DatabaseService:
             self.logger.error(f"Failed to get user join route: {e}")
             return None
 
+    # ===== 문구 관리 관련 메소드들 =====
+
+    async def add_phrase(self, name: str, type: str, server_id: Optional[int], user_id: Optional[int], phrase: str) -> bool:
+        """문구를 추가합니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            c.execute("""
+                INSERT INTO phrase (name, type, server_id, user_id, phrase)
+                VALUES (?, ?, ?, ?, ?)
+            """, (name, type, server_id, user_id, phrase))
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to add phrase: {e}")
+            return False
+
+    async def get_user_all_phrase(self, user_id: int) -> List[Dict]:
+        """사용자의 모든 문구를 가져옵니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            c.execute("SELECT * FROM phrase WHERE user_id = ?", (user_id,))
+            rows = c.fetchall()
+            phrases = []
+            for row in rows:
+                phrases.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "phrase": row[5]
+                })
+            return phrases
+        except Exception as e:
+            self.logger.error(f"Failed to get user phrases: {e}")
+            return []
+
+    async def get_server_all_phrase(self, server_id: int, is_admin: bool) -> List[Dict]:
+        """서버의 모든 문구를 가져옵니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            phrases = []
+
+            if is_admin:
+                # 관리자는 서버 관리자 문구와 전체 문구 모두 볼 수 있음
+                c.execute("SELECT * FROM phrase WHERE server_id = ? AND type = ?", (server_id, "server_admin"))
+                rows = c.fetchall()
+                for row in rows:
+                    phrases.append({
+                        "id": row[0],
+                        "name": row[1],
+                        "phrase": row[5]
+                    })
+
+                c.execute("SELECT * FROM phrase WHERE server_id = ? AND type = ?", (server_id, "server_all"))
+                rows = c.fetchall()
+                for row in rows:
+                    phrases.append({
+                        "id": row[0],
+                        "name": row[1],
+                        "phrase": row[5]
+                    })
+            else:
+                # 일반 사용자는 전체 문구만 볼 수 있음
+                c.execute("SELECT * FROM phrase WHERE server_id = ? AND type = ?", (server_id, "server_all"))
+                rows = c.fetchall()
+                for row in rows:
+                    phrases.append({
+                        "id": row[0],
+                        "name": row[1],
+                        "phrase": row[5]
+                    })
+
+            return phrases
+        except Exception as e:
+            self.logger.error(f"Failed to get server phrases: {e}")
+            return []
+
+    async def get_phrase(self, phrase_id: int) -> Optional[Dict]:
+        """특정 문구를 가져옵니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            c.execute("SELECT * FROM phrase WHERE id = ?", (phrase_id,))
+            row = c.fetchone()
+            if row:
+                return {
+                    "id": row[0],
+                    "name": row[1],
+                    "type": row[2],
+                    "server_id": row[3],
+                    "user_id": row[4],
+                    "phrase": row[5]
+                }
+            return None
+        except Exception as e:
+            self.logger.error(f"Failed to get phrase: {e}")
+            return None
+
+    async def get_phrase_by_name(self, name: str, server_id: Optional[int] = None, user_id: Optional[int] = None) -> Optional[Dict]:
+        """이름으로 문구를 검색합니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+
+            if server_id:
+                c.execute("SELECT * FROM phrase WHERE name = ? AND server_id = ?", (name, server_id))
+            elif user_id:
+                c.execute("SELECT * FROM phrase WHERE name = ? AND user_id = ?", (name, user_id))
+            else:
+                return None
+
+            row = c.fetchone()
+            if row:
+                return {
+                    "id": row[0],
+                    "name": row[1],
+                    "type": row[2],
+                    "server_id": row[3],
+                    "user_id": row[4],
+                    "phrase": row[5]
+                }
+            return None
+        except Exception as e:
+            self.logger.error(f"Failed to get phrase by name: {e}")
+            return None
+
+    async def remove_phrase(self, phrase_id: int) -> bool:
+        """문구를 삭제합니다."""
+        try:
+            conn = self._get_connection()
+            c = conn.cursor()
+            c.execute("DELETE FROM phrase WHERE id = ?", (phrase_id,))
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to remove phrase: {e}")
+            return False
+
     # ===== 멘션 차단 관련 메소드들 =====
 
     def update_mention_delay_block(self, blocker_id: int, blocked_id: int, blocked: bool) -> bool:
@@ -694,6 +841,38 @@ def update_gpt_chat_thread(user_id: int, thread_id: int):
 
 def get_gpt_chat_thread(user_id: int):
     return db_service.get_gpt_chat_thread(user_id)
+
+
+# ===== 문구 관리 관련 함수들 =====
+
+async def add_phrase(name: str, type: str, server_id, user_id, phrase: str):
+    """문구를 추가합니다."""
+    return await db_service.add_phrase(name, type, server_id, user_id, phrase)
+
+
+async def get_user_all_phrase(user_id: int):
+    """사용자의 모든 문구를 가져옵니다."""
+    return await db_service.get_user_all_phrase(user_id)
+
+
+async def get_server_all_phrase(server_id: int, is_admin: bool):
+    """서버의 모든 문구를 가져옵니다."""
+    return await db_service.get_server_all_phrase(server_id, is_admin)
+
+
+async def get_phrase(phrase_id: int):
+    """특정 문구를 가져옵니다."""
+    return await db_service.get_phrase(phrase_id)
+
+
+async def get_phrase_by_name(name: str, server_id=None, user_id=None):
+    """이름으로 문구를 검색합니다."""
+    return await db_service.get_phrase_by_name(name, server_id, user_id)
+
+
+async def remove_phrase(phrase_id: int):
+    """문구를 삭제합니다."""
+    return await db_service.remove_phrase(phrase_id)
 
 
 def get_all_xp_setting():
