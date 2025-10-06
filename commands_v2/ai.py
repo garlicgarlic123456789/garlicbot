@@ -21,8 +21,10 @@ from youtube_transcript_api import YouTubeTranscriptApi
 
 from config import permissions
 from utils.helpers import format_timestamp
-from commands.fuction_collect_message import fetch_messages
-from commands.define import is_blocked, fast_transfer, two_five_lite_model, developer, train_timetable_api_key, train_arrivals_api_key
+from utils.message_utils import fetch_messages
+from utils.helpers import is_blocked
+from utils.constants import fast_transfer, developer, train_timetable_api_key, train_arrivals_api_key
+from config.models import two_five_lite_model
 
 
 class AICommands(commands.Cog):

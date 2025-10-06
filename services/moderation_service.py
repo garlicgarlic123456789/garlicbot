@@ -18,6 +18,12 @@ import json
 
 from config import settings, constants
 from core.exceptions import GarlicBotException
+
+# 위험한 권한 목록
+DANGEROUS_PERMISSIONS = [
+    'ban_members', 'kick_members', 'manage_channels',
+    'manage_guild', 'manage_roles', 'administrator'
+]
 from utils.helpers import format_duration, format_timestamp
 
 
@@ -440,11 +446,6 @@ class ModerationService:
         """누크 감지 시 처리"""
         try:
             # 위험한 권한들 회수
-            dangerous_permissions = [
-                'ban_members', 'kick_members', 'manage_channels',
-                'manage_guild', 'manage_roles', 'administrator'
-            ]
-            
             removed_roles = []
             
             for role in member.roles:
@@ -454,7 +455,7 @@ class ModerationService:
                 # 역할의 권한 확인
                 role_perms = role.permissions
                 has_dangerous_perm = any(
-                    getattr(role_perms, perm, False) for perm in dangerous_permissions
+                    getattr(role_perms, perm, False) for perm in DANGEROUS_PERMISSIONS
                 )
                 
                 if has_dangerous_perm:

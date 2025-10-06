@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from config import permissions
 from utils.helpers import format_timestamp
-from commands.database import add_autorole, remove_autorole, get_autorole
+from services.database_service import add_autorole, remove_autorole, get_autorole
 
 
 class RoleCommands(commands.Cog):

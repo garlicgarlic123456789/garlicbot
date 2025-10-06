@@ -12,8 +12,20 @@ from cryptography.fernet import Fernet
 
 from config import permissions
 from utils.helpers import format_timestamp
-from commands.database import update_anti_raid_settings, get_quarantine_role, get_automod
-from commands.define import is_blocked, dangerous_permissions, check_all_bot_admin_perm
+from services.database_service import update_anti_raid_settings, get_quarantine_role, get_automod
+from utils.helpers import is_blocked
+from services.moderation_service import DANGEROUS_PERMISSIONS
+from commands.security_check import check_all_bot_admin_perm
+
+# 위험 권한 딕셔너리 (권한 이름 -> 표시 이름)
+dangerous_permissions = {
+    'ban_members': '멤버 차단',
+    'kick_members': '멤버 추방', 
+    'manage_channels': '채널 관리',
+    'manage_guild': '서버 관리',
+    'manage_roles': '역할 관리',
+    'administrator': '관리자'
+}
 
 
 class SecurityCommands(commands.Cog):

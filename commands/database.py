@@ -5,8 +5,10 @@ import discord
 import asyncio
 from discord import app_commands
 
-from commands.define import anti_raid_settings_cache, xp_setting
-from commands.define import gpt_chat_threads
+# Global variables
+anti_raid_settings_cache = {}
+xp_setting = {}
+gpt_chat_threads = {}
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)

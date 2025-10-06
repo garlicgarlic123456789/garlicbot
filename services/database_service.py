@@ -758,3 +758,78 @@ def remove_autorole(server_id: int, role_id: int):
 
 def get_autorole(server_id: int):
     return db_service.get_autorole(server_id)
+
+
+async def update_anti_raid_settings(server_id: int, on_off: bool, action: str, alert_channel_id: int, duration: int, join_time: int):
+    """안티 레이드 설정을 업데이트합니다."""
+    if duration > 900 or duration < 30:
+        raise ValueError("update_anti_raid_settings() 함수에서 유효하지 않은 값. duration의 값은 900보다 크거나 30보다 작을 수 없습니다.")
+
+    if join_time > 50 or join_time < 3:
+        raise ValueError("update_anti_raid_settings() 함수에서 유효하지 않은 값. join_time의 값은 50보다 크거나 3보다 작을 수 없습니다.")
+
+    global anti_raid_settings_cache
+
+    anti_raid_settings_cache[server_id] = {
+        "on_off": on_off,
+        "action": action,
+        "alert_channel_id": alert_channel_id,
+        "duration": duration,
+        "join_time": join_time
+    }
+
+    if on_off:
+        on_off2 = 1
+    else:
+        on_off2 = 0
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level=None)
+    c = conn.cursor()
+    c.execute("SELECT id FROM anti_raid_settings WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+
+    if row:
+        c.execute("UPDATE anti_raid_settings SET on_off = ?, action = ?, alert_channel_id = ?, duration = ?, join_time = ? WHERE server_id = ?", (on_off2, action, alert_channel_id, duration, join_time, server_id))
+    else:
+        c.execute("INSERT INTO anti_raid_settings (server_id, on_off, action, alert_channel_id, duration, join_time) VALUES (?, ?, ?, ?, ?, ?)", (server_id, on_off2, action, alert_channel_id, duration, join_time))
+
+    conn.close()
+
+    anti_raid_settings_cache[server_id] = {
+        "on_off": on_off,
+        "action": action,
+        "alert_channel_id": alert_channel_id,
+        "duration": duration,
+        "join_time": join_time
+    }
+
+
+def get_quarantine_role(server_id: int):
+    """격리 역할 정보를 가져옵니다."""
+    try:
+        conn = sqlite3.connect("garlicbot.db", isolation_level=None)
+        c = conn.cursor()
+        c.execute("SELECT role_id FROM quarantine_role WHERE server_id = ?", (server_id,))
+        row = c.fetchone()
+        conn.close()
+
+        if row:
+            return row[0]
+        return None
+    except Exception as e:
+        logging.error(f"Error getting quarantine role: {e}")
+        return None
+
+
+def get_automod(server_id):
+    """자동 조치 설정을 가져옵니다."""
+    try:
+        conn = sqlite3.connect("garlicbot.db", isolation_level=None)
+        c = conn.cursor()
+        c.execute("SELECT * FROM automod WHERE server_id = ?", (server_id,))
+        row = c.fetchone()
+        conn.close()
+        return row
+    except Exception as e:
+        logging.error(f"Error getting automod settings: {e}")
+        return None
