@@ -7764,11 +7764,19 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
                 add_likeability(interaction.user.id, favorability)
     elif 아이디 == 3 : 
         await interaction.response.defer(ephemeral=True)
-        channel = bot.get_channel(normal_channel)
+        if 입력1 is not None : 
+            channel = bot.get_channel(int(입력1))
+        else : 
+            channel = bot.get_channel(normal_channel)
         if channel:
-            embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!\n-# 일정 시간이 경과하면 버튼을 클릭해도 봇이 반응하지 않을 수도 있습니다.", color=int("a5f0ff", 16))
-            await channel.send(embed=embed, view=ExpButton())
+            if add_or_remove() : 
+                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!", color=int("a5f0ff", 16))
+                await channel.send(embed=embed, view=ExpButton())
+            else : 
+                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 잃으세요!", color=int("a5f0ff", 16))
+                await channel.send(embed=embed, view=ExpRemoveButton())
             await interaction.followup.send("처리되었습니다.")
+
     elif 아이디 == 4 : 
         user1 = await bot.fetch_user(int(입력1))
         user2 = await bot.fetch_user(int(입력2))
