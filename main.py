@@ -1162,15 +1162,50 @@ class ExpButton(discord.ui.View):
         else:
             await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 받았습니다!", ephemeral=False)
 
+class ExpRemoveButton(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.claimed = False  # 버튼이 눌렸는지 여부
+        self.exp_amount = random.randrange(150, 1001, 10)  # 150~1000XP, 10 단위
+
+    @discord.ui.button(label="경험치 받기", style=discord.ButtonStyle.success)
+    async def remove_exp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.claimed:
+            await interaction.response.send_message("이미 다른 사용자가 경험치를 잃었습니다!", ephemeral=True)
+            return
+        await interaction.response.defer()  # 응답 지연
+        
+        self.claimed = True
+        button.disabled = True  # 버튼 비활성화
+        await interaction.message.edit(view=self)
+
+        server_id = interaction.guild.id
+        update_xp(server_id, interaction.user.id, self.exp_amount * -1)
+
+        await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 잃었습니다!", ephemeral=False)
+
+def add_or_remove() : 
+    temp = random.randint(0, 9)
+    if temp = 0 : 
+        return False
+    else : 
+        return True
+
 @tasks.loop(seconds=150)
 async def exp_event():
     current_hour = datetime.now(kst).hour
-    if 15 <= current_hour < 24:  # 7시 ~ 24시 사이에만 동작
+    if 15 <= current_hour < 24:  # 15시 ~ 24시 사이에만 동작
         if random.random() < 0.04:  # 4% 확률
-            channel = bot.get_channel(normal_channel)
-            if channel:
-                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!\n-# 일정 시간이 경과하면 버튼을 클릭해도 봇이 반응하지 않을 수도 있습니다.", color=int("a5f0ff", 16))
-                await channel.send(embed=embed, view=ExpButton())
+            if add_or_remove() : 
+                channel = bot.get_channel(normal_channel)
+                if channel:
+                    embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!", color=int("a5f0ff", 16))
+                    await channel.send(embed=embed, view=ExpButton())
+            else : 
+                channel = bot.get_channel(normal_channel)
+                if channel:
+                    embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 잃으세요!", color=int("a5f0ff", 16))
+                    await channel.send(embed=embed, view=ExpRemoveButton())
 
 async def handle_user_mentions(message):
     user_mentions = get_mention_delay_user(message.author.id, "all", message.guild.id)
