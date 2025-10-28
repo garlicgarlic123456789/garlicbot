@@ -1167,7 +1167,7 @@ class ExpRemoveButton(discord.ui.View):
         super().__init__(timeout=None)
         self.claimed = False  # 버튼이 눌렸는지 여부
         self.exp_amount = random.randrange(150, 1001, 10)  # 150~1000XP, 10 단위
-        self.boost_exp_amount = random.randrange(300, min(self.exp_amount, 700), 10) # 300~700XP, 10 단위
+        self.boost_exp_amount = random.randrange(300, 701, 10) # 300~700XP, 10 단위
 
     @discord.ui.button(label="경험치 받기", style=discord.ButtonStyle.success)
     async def remove_exp(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1190,8 +1190,8 @@ class ExpRemoveButton(discord.ui.View):
             await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 **잃었습니다**!", ephemeral=False)
 
 def add_or_remove() : 
-    temp = random.randint(0, 4)
-    if temp == 0 : 
+    temp = random.randint(0, 99)
+    if temp < 15 : 
         return False
     else : 
         return True
