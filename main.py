@@ -1186,7 +1186,7 @@ class ExpRemoveButton(discord.ui.View):
 
 def add_or_remove() : 
     temp = random.randint(0, 9)
-    if temp = 0 : 
+    if temp == 0 : 
         return False
     else : 
         return True
