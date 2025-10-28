@@ -1182,7 +1182,7 @@ class ExpRemoveButton(discord.ui.View):
         server_id = interaction.guild.id
         update_xp(server_id, interaction.user.id, self.exp_amount * -1)
 
-        await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 잃었습니다!", ephemeral=False)
+        await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 **잃었습니다**!", ephemeral=False)
 
 def add_or_remove() : 
     temp = random.randint(0, 9)
