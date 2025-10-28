@@ -1190,8 +1190,8 @@ class ExpRemoveButton(discord.ui.View):
             await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 **잃었습니다**!", ephemeral=False)
 
 def add_or_remove() : 
-    temp = random.randint(0, 4)
-    if temp == 0 : 
+    temp = random.randint(0, 99)
+    if temp < 15 : 
         return False
     else : 
         return True
