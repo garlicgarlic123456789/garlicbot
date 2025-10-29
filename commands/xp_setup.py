@@ -145,7 +145,7 @@ def setup(bot):
         embed = discord.Embed(
             title = "완료",
             description = "출석체크 기능이 설정되었습니다.",
-            ccolor = int("a5f0ff", 16)
+            color = int("a5f0ff", 16)
         )
         await interaction.followup.send(embed = embed)
         return
