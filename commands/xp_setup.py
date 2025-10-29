@@ -60,4 +60,84 @@ def setup(bot):
             )
             await interaction.followup.send(embed = embed)
             return
+    
+    @bot.tree.command(name = "출석체크설정", description = "출석체크 기능을 설정합니다.")
+    @app_commands.default_permissions(administrator = True)
+    @app_commands.describe(
+        기능사용여부 = "출석체크 기능을 켜거나 끕니다.",
+        최소지급경험치 = "출석체크 시 지급할 최소 경험치를 설정합니다.",
+        최대지급경험치 = "출석체크 시 지급할 최대 경험치를 설정합니다.",
+        지급단위 = "고급 옵션입니다. Random Step 값을 지정할 수 있습니다."
+    )
+    async def check_set(interaction: discord.Interaction, 기능사용여부: bool, 최소지급경험치: int = None, 최대지급경험치: int = None, 지급단위: int = None):
+        await interaction.response.defer()
+
+        if interaction.guild.id in xp_setting : 
+            if xp_setting[interaction.guild.id][0] == False : 
+                embed = discord.Embed(
+                    title = "오류",
+                    description = "경험치 기능이 사용 중지되어 있는 서버입니다. 경험치 기능을 먼저 사용 설정해 주세요.",
+                    color = discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
+        else : 
+            temp = get_xp_setting(interaction.guild.id)
+            if temp[0] == False : 
+                embed = discord.Embed(
+                    title = "오류",
+                    description = "경험치 기능이 사용 중지되어 있는 서버입니다. 경험치 기능을 먼저 사용 설정해 주세요.",
+                    color = discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
+
+        if 최소지급경험치 is None : 
+            최소지급경험치 = 0
+        if 최대지급경험치 is None : 
+            최대지급경험치 = 0
+        if 지급단위 is None : 
+            지급단위 = 1
+        
+        if 최소지급경험치 < 0 or 최대지급경험치 < 0 : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "최소 지급 경험치 또는 최대 지급 경험치 값이 0보다 작습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
+        if 최대지급경험치 < 최소지급경험치 : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "최소 지급 경험치보다 최대 지급 경험치 값이 더 작습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
+        if 지급단위 < 1 : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "고급 옵션에 입력된 값이 올바르지 않습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
+        if 기능사용여부 : 
+            onoff = 1
+        else : 
+            onoff = 0
+        
+        await update_attendance_settings(interaction.guild.id, onoff, 최소지급경험치, 최대지급경험치, 지급단위)
+
+        embed = discord.Embed(
+            title = "완료",
+            description = "출석체크 기능이 설정되었습니다.",
+            ccolor = int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
+        return
         
