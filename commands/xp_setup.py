@@ -117,6 +117,15 @@ def setup(bot):
             await interaction.followup.send(embed = embed)
             return
         
+        if 최소지급경험치 > 70000 or 최대지급경험치 > 70000 : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "최소 지급 경험치 또는 최대 지급 경험치 값이 70000보다 큽니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
         if 지급단위 < 1 : 
             embed = discord.Embed(
                 title = "오류",
