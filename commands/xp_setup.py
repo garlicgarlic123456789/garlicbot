@@ -141,12 +141,21 @@ def setup(bot):
             onoff = 0
         
         await update_attendance_settings(interaction.guild.id, onoff, 최소지급경험치, 최대지급경험치, 지급단위)
-
-        embed = discord.Embed(
-            title = "완료",
-            description = "출석체크 기능이 설정되었습니다.",
-            color = int("a5f0ff", 16)
-        )
-        await interaction.followup.send(embed = embed)
-        return
+        
+        if 기능사용여부 : 
+            embed = discord.Embed(
+                title = "완료",
+                description = "출석체크 기능이 활성화되었습니다.",
+                color = int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        else : 
+            embed = discord.Embed(
+                title = "완료",
+                description = "출석체크 기능이 비활성화되었습니다.",
+                color = int("a5f0ff", 16)
+            )
+            await interaction.followup.send(embed = embed)
+            return
         
