@@ -58,6 +58,16 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS quarantine_role (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, quarantine_role integer)") # 격리 역할
     c.execute("CREATE TABLE IF NOT EXISTS xp_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, onoff INTEGER,server_id INTEGER, chat_xp INTEGER, chat_xp_cooldown INTEGER, voice_xp INTEGER, voice_xp_cooldown INTEGER, unit TEXT)") # 서버별 경험치 기능 설정 테이블
     c.execute("CREATE TABLE IF NOT EXISTS xp (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS attendance_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            on_off INTEGER,
+            min INTEGER,
+            max INTEGER,
+            step INTEGER
+        )
+    """)
     c.execute("CREATE TABLE IF NOT EXISTS gpt_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # GPT 채팅 스레드
     c.execute("""
         CREATE TABLE IF NOT EXISTS vote (
@@ -135,6 +145,48 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def update_attendance_settings(server_id: int, on_off: int, minimum: int, maximum: int, step: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT id FROM attendance_settings WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    
+    if row:
+        c.execute("UPDATE attendance_settings SET on_off = ?, min = ?, max = ?, step = ? WHERE server_id = ?", (on_off, minimum, maximum, step, server_id))
+    else:
+        c.execute("INSERT INTO attendance_settings (server_id, on_off, min, max, step) VALUES (?, ?, ?, ?, ?)", (server_id, on_off, minimum, maximum, step))
+
+    conn.close()
+
+async def get_attendance_settings(server_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM attendance_settings WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+
+    if row : 
+        if row[2] == 1 : 
+            on_off = True
+        else : 
+            on_off = False
+        minimum = row[3]
+        maximum = row[4]
+        step = row[5]
+        return {
+            "on_off": on_off,
+            "minimum": minimum,
+            "maximum": maximum,
+            "step": step,
+        }
+    else : 
+        on_off = False
+        return {
+            "on_off": on_off,
+            "minimum": 0,
+            "maximum": 0,
+            "step": 1,
+        }
 
 async def get_anti_raid_settings(server_id: int) : 
     global anti_raid_settings_cache
