@@ -99,10 +99,10 @@ def setup(bot):
         if 지급단위 is None : 
             지급단위 = 1
         
-        if 최소지급경험치 < 0 or 최대지급경험치 < 0 : 
+        if 최소지급경험치 <= 0 or 최대지급경험치 <= 0 : 
             embed = discord.Embed(
                 title = "오류",
-                description = "최소 지급 경험치 또는 최대 지급 경험치 값이 0보다 작습니다.",
+                description = "최소 지급 경험치 또는 최대 지급 경험치 값이 0보다 작거나 같습니다.",
                 color = discord.Color.red()
             )
             await interaction.followup.send(embed = embed)
