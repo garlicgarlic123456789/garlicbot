@@ -3365,8 +3365,10 @@ async def attendance(interaction: discord.Interaction):
         if streak >= 30 :
             streak_bonus += random.randrange(300, 501, 10)
     
-    check_xp = random.randrange(settings["minimum"], settings["maximum"], settings["step"])
+    settings["maximum"] += 1
     
+    check_xp = random.randrange(settings["minimum"], settings["maximum"], settings["step"])
+
     if interaction.guild.id == using_server and any(role.id == server_booster_role_id for role in interaction.user.roles):
         boost_check_xp = random.randrange(300, 1001, 10)
     else : 
