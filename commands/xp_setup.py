@@ -102,7 +102,7 @@ def setup(bot):
         if 최소지급경험치 <= 0 or 최대지급경험치 <= 0 : 
             embed = discord.Embed(
                 title = "오류",
-                description = "최소 지급 경험치 또는 최대 지급 경험치 값이 0보다 작거나 같습니다.",
+                description = "최소 지급 경험치 또는 최대 지급 경험치 값이 0보다 작거나 같습니다.\n\n해당 값들 중 하나 이상이 입력되지 않았을 수도 있습니다.",
                 color = discord.Color.red()
             )
             await interaction.followup.send(embed = embed)
