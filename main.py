@@ -1952,7 +1952,7 @@ async def on_message(message):
             # 활동 멤버 부여 기준 안내
             if "활멤" in message.content or "활동 멤버" in message.content or "활동멤버" in message.content : 
                 if "부여" in message.content or "회수" in message.content or "지급" in message.content : 
-                    if "기준" in message.content : 
+                    if "기준" in message.content or ("어떻게" in message.content and ("해야" in message.content or "하면" in message.content)) : 
                         now = datetime.utcnow()
                         if ("active_role" in last_auto_respond_time and (not (now - last_auto_respond_time["active_role"] < timedelta(minutes=10)))) or "active_role" not in last_auto_respond_time : 
                             last_auto_respond_time["active_role"] = now
@@ -1976,7 +1976,32 @@ async def on_message(message):
                                     color = int("a5f0ff", 16)
                                 )
                                 await message.reply(embed = embed, mention_author=False)
-
+            
+            if "이게" in message.content or "저게" in message.content : 
+                if "왜" in message.content : 
+                    if "경고" in message.content or (("규정" in message.content or "규칙" in message.content) and "위반" in message.content) or "타임아웃" in message.content or "탐아" in message.content or "밴" in message.content : 
+                        now = datetime.utcnow()
+                        if ("report" in last_auto_respond_time and (not (now - last_auto_respond_time["automod_reason"] < timedelta(minutes=10)))) or "report" not in last_auto_respond_time : 
+                            last_auto_respond_time["report"] = now
+                            embed = discord.Embed(
+                                title = "안내",
+                                description = "특정 유저를 비판하는 내용이 포함된 문의는 <#1325041620084850708> 또는 소유자의 DM으로 하셔야 합니다. 공개적으로 여러 유저가 볼 수 있는 공간에서 관련한 문의를 하실 경우 규정에 따라 제재될 수 있습니다.\n\n여기서 말하는 "특정 유저를 비판하는 내용"은, 특정 관리자의 업무 처리에 대한 이의제기, 특정 유저의 규정 위반 신고 등을 포함합니다. 여기서 말하는 "문의"란, 명시적으로 문의라고 하지 않더라도 보편적으로 문의하는 것의 개념에 속한다면 전부 문의로 봅니다.\n\n-# 참고: 모든 운영 행위는 규정을 기준으로 합니다. 이 문구는 안내용이며 규정상 효력은 없습니다.",
+                                color = int("a5f0ff", 16)
+                            )
+                            await message.reply(embed = embed, mention_author=False)
+            
+            if ("규정" in message.content or "규칙" in message.content) and "위반" in message.content : 
+                if "까지는" in message.content or "아닌" in message.content or "아니지" in message.content : 
+                    if "근데" in message.content or "그런데" in message.content or "저거는" in message.content or "이건" in message.content or "저건" in message.content or "이거는" in message.content : 
+                        now = datetime.utcnow()
+                        if ("report" in last_auto_respond_time and (not (now - last_auto_respond_time["automod_reason"] < timedelta(minutes=10)))) or "report" not in last_auto_respond_time : 
+                            last_auto_respond_time["report"] = now
+                            embed = discord.Embed(
+                                title = "안내",
+                                description = "특정 유저를 비판하는 내용이 포함된 문의는 <#1325041620084850708> 또는 소유자의 DM으로 하셔야 합니다. 공개적으로 여러 유저가 볼 수 있는 공간에서 관련한 문의를 하실 경우 규정에 따라 제재될 수 있습니다.\n\n여기서 말하는 "특정 유저를 비판하는 내용"은, 특정 관리자의 업무 처리에 대한 이의제기, 특정 유저의 규정 위반 신고 등을 포함합니다. 여기서 말하는 "문의"란, 명시적으로 문의라고 하지 않더라도 보편적으로 문의하는 것의 개념에 속한다면 전부 문의로 봅니다.\n\n-# 참고: 모든 운영 행위는 규정을 기준으로 합니다. 이 문구는 안내용이며 규정상 효력은 없습니다.",
+                                color = int("a5f0ff", 16)
+                            )
+                            await message.reply(embed = embed, mention_author=False)
 
     if message.author.bot :
         return
