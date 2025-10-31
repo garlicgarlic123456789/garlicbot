@@ -620,45 +620,58 @@ def print_time(x):
     return " ".join(parts)
 
 class ModerationLogView(discord.ui.View):
-    def __init__(self, entries, user, page=0):
+    def __init__(self, entries, user, interact_user, page=0):
         super().__init__()
         self.entries = entries
         self.user = user
         self.page = page
+        self.interact_user = interact_user
 
     @property
     def max_pages(self):
-        return (len(self.entries) - 1) // 15 + 1
+        return (len(self.entries) - 1) // 10 + 1
 
     def get_embed(self):
         embed = discord.Embed(
             title=f"{self.user if self.user else '이 서버'}의 제재 내역",
             color=int("a5f0ff", 16)
         )
-        start = self.page * 15
-        end = start + 15
+        start = self.page * 10
+        end = start + 10
         for entry in self.entries[start:end]:
-            id_, user_id, admin_id, reason, type_, addinfo, server_id = entry
-            if addinfo > 0 and type_ == "timeout" :
-                addinfo = print_time(addinfo)
-            elif type_ == "timeout" :
-                addinfo = str(addinfo) + "초"
+            id_, user_id, admin_id, reason, type_, addinfo = entry[:6]
+            if type_ == "timeout" :
+                if addinfo is not None : 
+                    if addinfo > 0 : 
+                        addinfo = print_time(addinfo)
+                    else : 
+                        addinfo = str(addinfo) + "초"
             title = f"{type_mapping.get(type_, '알 수 없는 제재 유형')} - #{id_}"
+            if user_id is None : 
+                user_id = "*(알 수 없음)*"
             if admin_id is None : 
-                content = f"사용자: <@{user_id}>\n관리자: *(알 수 없음)*"
-            else : 
-                content = f"사용자: <@{user_id}>\n관리자: <@{admin_id}>"
+                user_id = "*(알 수 없음)*"
+            content = f"사용자: <@{user_id}>\n관리자: <@{admin_id}>"
             if type_ in ["warn", "unwarn"]:
-                content += f"\n개수: {'+' if type_ == 'warn' else '-'}{addinfo}"
+                if addinfo is not None : 
+                    content += f"\n개수: {'+' if type_ == 'warn' else '-'}{addinfo}"
+                else : 
+                    content += f"\n개수: *(알 수 없음)*"
             elif type_ == "timeout":
-                content += f"\n기간: {addinfo}"
+                if addinfo is not None : 
+                    content += f"\n기간: {addinfo}"
+                else : 
+                    content += f"\n기간: *(알 수 없음)*"
             content += f"\n사유: {reason}"
             embed.add_field(name=title, value=content, inline=False)
-        embed.set_footer(text=f"페이지 {self.page + 1}/{self.max_pages} (2025년 2월 17일 오후 3시 30분 이전 제재 내역은 여기에서 조회할 수 없으므로 제재 내역 채널을 확인해 주세요)")
+        embed.set_footer(text=f"페이지 {self.page + 1}/{self.max_pages}")
         return embed
 
     @discord.ui.button(label="이전", style=discord.ButtonStyle.gray, disabled=True)
     async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.interact_user.id : 
+            await interaction.response.send_message("자기 자신이 실행한 명령어 출력 결과의 버튼만 사용이 가능합니다.", ephemeral = True)
+            return
         self.page -= 1
         if self.page == 0:
             button.disabled = True
@@ -667,12 +680,42 @@ class ModerationLogView(discord.ui.View):
 
     @discord.ui.button(label="다음", style=discord.ButtonStyle.gray)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.interact_user.id : 
+            await interaction.response.send_message("자기 자신이 실행한 명령어 출력 결과의 버튼만 사용이 가능합니다.", ephemeral = True)
+            return
         self.page += 1
         if self.page >= self.max_pages - 1:
             button.disabled = True
         self.children[0].disabled = False
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
+    
+    @discord.ui.button(label="페이지 번호 입력", style=discord.ButtonStyle.primary)
+    async def select_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.interact_user.id : 
+            await interaction.response.send_message("자기 자신이 실행한 명령어 출력 결과의 버튼만 사용이 가능합니다.", ephemeral = True)
+            return
+        modal = self.PageInputModal(self)
+        await interaction.response.send_modal(modal)
 
+    class PageInputModal(discord.ui.Modal, title="페이지 번호로 이동"):
+        def __init__(self, parent_view):
+            super().__init__()
+            self.parent_view = parent_view
+        
+            pagenum = discord.ui.TextInput(label="이동할 페이지 번호", placeholder="이동할 페이지 번호", required=True)
+            self.pagenum = self.add_item(pagenum)
+
+        async def on_submit(self, interaction: discord.Interaction):
+            try : 
+                pagenum_value = int(self.children[0].value)
+            except ValueError : 
+                await interaction.response.send_message(f"유효하지 않은 페이지 번호 값입니다. 숫자를 입력해 주세요.", ephemeral = True)
+                return
+            if pagenum_value > self.parent_view.max_pages or pagenum_value < 1:
+                await interaction.response.send_message(f"유효하지 않은 페이지 번호 값입니다. 1 이상 {self.parent_view.max_pages} 이하의 값을 입력해 주세요.", ephemeral = True)
+                return
+            self.parent_view.page = pagenum_value - 1
+            await interaction.response.edit_message(embed=self.parent_view.get_embed(), view=self.parent_view)
 
 '''
 # 이메일 전송 함수
@@ -1162,15 +1205,55 @@ class ExpButton(discord.ui.View):
         else:
             await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 받았습니다!", ephemeral=False)
 
+class ExpRemoveButton(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.claimed = False  # 버튼이 눌렸는지 여부
+        self.exp_amount = random.randrange(150, 1001, 10)  # 150~1000XP, 10 단위
+        self.boost_exp_amount = random.randrange(300, 701, 10) # 300~700XP, 10 단위
+
+    @discord.ui.button(label="경험치 받기", style=discord.ButtonStyle.success)
+    async def remove_exp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.claimed:
+            await interaction.response.send_message("이미 다른 사용자가 경험치를 잃었습니다!", ephemeral=True)
+            return
+        await interaction.response.defer()  # 응답 지연
+        
+        self.claimed = True
+        button.disabled = True  # 버튼 비활성화
+        await interaction.message.edit(view=self)
+
+        server_id = interaction.guild.id
+        if any(role.id == server_booster_role_id for role in interaction.user.roles):
+            update_xp(server_id, interaction.user.id, self.exp_amount * -1)
+            update_xp(server_id, interaction.user.id, self.boost_exp_amount)
+            await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 **잃었습니다**! (단, 서버 부스터 혜택으로 `{self.boost_exp_amount}` 마늘은 다시 지급됨)", ephemeral=False)
+        else : 
+            update_xp(server_id, interaction.user.id, self.exp_amount * -1)
+            await interaction.followup.send(f"{interaction.user.mention}님이 `{self.exp_amount}` 마늘을 **잃었습니다**!", ephemeral=False)
+
+def add_or_remove() : 
+    temp = random.randint(0, 99)
+    if temp < 15 : 
+        return False
+    else : 
+        return True
+
 @tasks.loop(seconds=150)
 async def exp_event():
     current_hour = datetime.now(kst).hour
-    if 15 <= current_hour < 24:  # 7시 ~ 24시 사이에만 동작
+    if 15 <= current_hour < 24:  # 15시 ~ 24시 사이에만 동작
         if random.random() < 0.04:  # 4% 확률
-            channel = bot.get_channel(normal_channel)
-            if channel:
-                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!\n-# 일정 시간이 경과하면 버튼을 클릭해도 봇이 반응하지 않을 수도 있습니다.", color=int("a5f0ff", 16))
-                await channel.send(embed=embed, view=ExpButton())
+            if add_or_remove() : 
+                channel = bot.get_channel(normal_channel)
+                if channel:
+                    embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!", color=int("a5f0ff", 16))
+                    await channel.send(embed=embed, view=ExpButton())
+            else : 
+                channel = bot.get_channel(normal_channel)
+                if channel:
+                    embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 잃으세요!", color=int("a5f0ff", 16))
+                    await channel.send(embed=embed, view=ExpRemoveButton())
 
 async def handle_user_mentions(message):
     user_mentions = get_mention_delay_user(message.author.id, "all", message.guild.id)
@@ -1236,10 +1319,10 @@ def check_call_limit(user_id):
         call_limit[user_id] = [today, 1]  # 처음 호출
         return [True, MAX_CALLS_PER_DAY]
 
-
 @bot.event
 async def on_message(message):
     global error
+
     if message.author.id == developer : 
         if message.content.startswith("!부계추가 ") : 
             pattern = r"^!부계추가\s+(\d+)\s+(\d+)$"
@@ -1906,6 +1989,62 @@ async def on_message(message):
             if mention_cnt > 7: 
                 await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 7 * 60 * 60, True, None)
                 return
+    
+    if message.guild.id == using_server :
+        if message.channel.id == 1320303102703702042 or message.channel.id == 1417447633949163530 : 
+            # 활동 멤버 부여 기준 안내
+            if "활멤" in message.content or "활동 멤버" in message.content or "활동멤버" in message.content : 
+                if "부여" in message.content or "회수" in message.content or "지급" in message.content : 
+                    if "기준" in message.content or ("어떻게" in message.content and ("해야" in message.content or "하면" in message.content)) : 
+                        now = datetime.utcnow()
+                        if ("active_role" in last_auto_respond_time and (not (now - last_auto_respond_time["active_role"] < timedelta(minutes=10)))) or "active_role" not in last_auto_respond_time : 
+                            last_auto_respond_time["active_role"] = now
+                            embed = discord.Embed(
+                                title = "활동 멤버 부여 기준 안내",
+                                description = "- <@&1327145486192214119>: 2~3일에 한번씩 잠깐잠깐 활동하기라도 하면 부여됩니다. 단, 활동이 없을 시 금방 회수됩니다.\n- <@&1402457175598567485>: 서버 채팅에 하루에 1~2번 정도 보이면 부여됩니다. 단, 활동이 적거나 없을 시 금방 회수됩니다.\n- <@&1430446387803193445>: 서버에 매일 활동을 어느정도 하시면 (채팅에 적극적으로 참여하면 됨) 부여됩니다.\n- <@&1362763359488835674>: 서버에 **장기간** 활동 매우 자주 하시면 부여됩니다. 이 역할은 회수될 때도 **장기간** 활동이 적거나 없어야 회수됩니다.",
+                                color = int("a5f0ff", 16)
+                            )
+                            await message.reply(embed = embed, mention_author=False)
+            
+            if "이건" in message.content or "이거는" in message.content : 
+                if "왜" in message.content : 
+                    if "검열" in message.content : 
+                        if "안" in message.content : 
+                            now = datetime.utcnow()
+                            if ("automod_reason" in last_auto_respond_time and (not (now - last_auto_respond_time["automod_reason"] < timedelta(minutes=10)))) or "automod_reason" not in last_auto_respond_time : 
+                                last_auto_respond_time["automod_reason"] = now
+                                embed = discord.Embed(
+                                    title = "검열 안내",
+                                    description = "<@1316579106749681664> 검열 중 일부는 키워드만으로 판단하고 검열하지 않습니다. 일부 검열 필터는, 키워드에 걸렸을 때 AI가 한 번 더 판단하고 검열합니다.\n\n따라서 AI 판단에 따라 동일하게 특정 검열 키워드가 포함된 메시지더라도 일부 메시지는 검열되고 일부는 검열되지 않을 수 있는 점 양해 부탁드립니다.",
+                                    color = int("a5f0ff", 16)
+                                )
+                                await message.reply(embed = embed, mention_author=False)
+            
+            if "이게" in message.content or "저게" in message.content : 
+                if "왜" in message.content : 
+                    if "경고" in message.content or (("규정" in message.content or "규칙" in message.content) and "위반" in message.content) or "타임아웃" in message.content or "탐아" in message.content or "밴" in message.content : 
+                        now = datetime.utcnow()
+                        if ("report" in last_auto_respond_time and (not (now - last_auto_respond_time["automod_reason"] < timedelta(minutes=10)))) or "report" not in last_auto_respond_time : 
+                            last_auto_respond_time["report"] = now
+                            embed = discord.Embed(
+                                title = "안내",
+                                description = "특정 유저를 비판하는 내용이 포함된 문의는 <#1325041620084850708> 또는 소유자의 DM으로 하셔야 합니다. 공개적으로 여러 유저가 볼 수 있는 공간에서 관련한 문의를 하실 경우 규정에 따라 제재될 수 있습니다.\n\n여기서 말하는 \"특정 유저를 비판하는 내용\"은, 특정 관리자의 업무 처리에 대한 이의제기, 특정 유저의 규정 위반 신고 등을 포함합니다. 여기서 말하는 \"문의\"란, 명시적으로 문의라고 하지 않더라도 보편적으로 문의하는 것의 개념에 속한다면 전부 문의로 봅니다.\n\n-# 참고: 모든 운영 행위는 규정을 기준으로 합니다. 이 문구는 안내용이며 규정상 효력은 없습니다.",
+                                color = int("a5f0ff", 16)
+                            )
+                            await message.reply(embed = embed, mention_author=False)
+            
+            if ("규정" in message.content or "규칙" in message.content) and "위반" in message.content : 
+                if "까지는" in message.content or "아닌" in message.content or "아니지" in message.content : 
+                    if "근데" in message.content or "그런데" in message.content or "저거는" in message.content or "이건" in message.content or "저건" in message.content or "이거는" in message.content : 
+                        now = datetime.utcnow()
+                        if ("report" in last_auto_respond_time and (not (now - last_auto_respond_time["automod_reason"] < timedelta(minutes=10)))) or "report" not in last_auto_respond_time : 
+                            last_auto_respond_time["report"] = now
+                            embed = discord.Embed(
+                                title = "안내",
+                                description = "특정 유저를 비판하는 내용이 포함된 문의는 <#1325041620084850708> 또는 소유자의 DM으로 하셔야 합니다. 공개적으로 여러 유저가 볼 수 있는 공간에서 관련한 문의를 하실 경우 규정에 따라 제재될 수 있습니다.\n\n여기서 말하는 \"특정 유저를 비판하는 내용\"은, 특정 관리자의 업무 처리에 대한 이의제기, 특정 유저의 규정 위반 신고 등을 포함합니다. 여기서 말하는 \"문의\"란, 명시적으로 문의라고 하지 않더라도 보편적으로 문의하는 것의 개념에 속한다면 전부 문의로 봅니다.\n\n-# 참고: 모든 운영 행위는 규정을 기준으로 합니다. 이 문구는 안내용이며 규정상 효력은 없습니다.",
+                                color = int("a5f0ff", 16)
+                            )
+                            await message.reply(embed = embed, mention_author=False)
 
     if message.author.bot :
         return
@@ -1927,91 +2066,6 @@ async def on_message(message):
         else:
             # 사용자 초기 메시지 처리
             last_message_times[user_id] = message.created_at
-
-        if message.content.startswith("마늘아 권한대행") :
-            if message.author.id in owner :
-                if "마늘요리" in message.content :
-                    member = guild.get_member(1305492487137267722)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "세유" in message.content :
-                    member = guild.get_member(1063676895000018944)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "여의대로" in message.content :
-                    member = guild.get_member(1181084142969032848)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "챠무" in message.content :
-                    member = guild.get_member(1238750780459188225)
-                    role = message.guild.get_role(1335494095514374144)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    role = message.guild.get_role(1325846757636047030)
-                    await member.add_roles(role, reason = "소유자 권한대행")
-                    embed = discord.Embed(
-                        title = f"성공",
-                        description = f"{member.mention}의 권한 대행을 시작합니다.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                if "마늘요리" not in message.content and "세유" not in message.content and "여의대로" not in message.content and "챠무" not in message.content :
-                    match = re.match(r"마늘아 권한대행 <@!?(\d+)>", message.content)
-                    if match:
-                        user_id = int(match.group(1))
-                        member = message.guild.get_member(user_id)
-                        if member:
-                            role1 = message.guild.get_role(1335494095514374144)
-                            role2 = message.guild.get_role(1325846757636047030)
-                            await member.add_roles(role1, reason="소유자 권한대행")
-                            await member.add_roles(role2, reason="소유자 권한대행")
-                            embed = discord.Embed(
-                                title="성공",
-                                description=f"{member.mention}의 권한 대행을 시작합니다.",
-                                color=int("a5f0ff", 16)
-                            )
-                            await message.reply(embed=embed, mention_author=False)
-                            return
-                        else:
-                            await message.reply("해당 유저를 찾을 수 없습니다.", mention_author=False)
-                            return
-                    else :
-                        embed = discord.Embed(
-                            title = f"권한대행 명령어 사용 방법",
-                            description = f"입력 양식: `마늘아 권한대행 <사용자>` (필수 항목: 사용자)\n\n<사용자>에서 권한 대행할 사용자를 입력해 주세요.\n\n제대로 작동하지 않는 경우 띄어쓰기를 확인해주세요.",
-                            color = int("a5f0ff", 16)
-                        )
-                        await message.reply(embed = embed, mention_author=False)
-                        return
-            else :
-                pass
 
     if message.content == "마늘아" :
         status, until, reason = is_blocked(message.author)
@@ -2629,6 +2683,7 @@ async def on_message(message):
         asyncio.create_task(handle_user_mentions(message))  # 비동기 처리
         await bot.process_commands(message)
         
+        '''
         if message.guild.id == using_server and ("<@1305492487137267722>" in message.content or "<@!1305492487137267722>" in message.content) : 
             if message.author.id not in maneul_mention_no_warn : 
                 embed = discord.Embed(
@@ -2637,6 +2692,7 @@ async def on_message(message):
                     color = int("a5f0ff", 16)
                 )
                 await message.reply(embed = embed, mention_author=False)
+                '''
         
         status, until, reason = is_blocked(message.author)
     
@@ -3198,7 +3254,7 @@ async def on_member_update(before, after):
                     if True : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 존댓말 및 경어체 사용이 편하신 경우 <#1385993206285467719>을 이용하실 수 있습니다.\n- <#1344662756439359528>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.\n- 서버 적응에 도움이 필요한 경우 <@&1416704481382502470>을 멘션해 주세요.",
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- <#1344662756439359528>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         # await channel.send(f"<@{after.id}>님, 타 서버에 이 서버 초대 링크 도배 테러가 발생한 경우 https://discord.com/channels/1320303102703702037/1320304882393153586/1377955171929428039 확인 부탁드립니다. 저희도 이 사건을 유감스럽게 생각하며, 죄송하다는 말씀 드립니다.")
@@ -3328,7 +3384,7 @@ async def reset_chat(interaction: discord.Interaction):
     )
     await interaction.followup.send(embed=embed)
 
-@bot.tree.command(name="출석체크", description="출석체크하고 1000 ~ 2000 사이의 값(10 단위)만큼 경험치를 받습니다.")
+@bot.tree.command(name="출석체크", description="출석체크하고 경험치를 받습니다.")
 async def attendance(interaction: discord.Interaction):
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -3347,6 +3403,17 @@ async def attendance(interaction: discord.Interaction):
         )
         await interaction.followup.send(embed=embed)
         return
+    
+    settings = await get_attendance_settings(interaction.guild.id)
+    if settings["on_off"] == False : 
+        embed = discord.Embed(
+            title="오류",
+            description="출석체크 기능이 사용 중지되어 있는 서버입니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed)
+        return
+
     attendance_check, streak = process_attendance(interaction.guild.id, interaction.user.id)
 
     if not attendance_check:
@@ -3356,16 +3423,20 @@ async def attendance(interaction: discord.Interaction):
 
     streak_bonus = 0
     
-    if streak > 1 : 
-        streak_bonus = random.randrange(50, 101, 10)
-    if streak >= 7 : 
-        streak_bonus += random.randrange(50, 151, 10)
-    if streak >= 14 : 
-        streak_bonus += random.randrange(100, 201, 10)
-    if streak >= 30 :
-        streak_bonus += random.randrange(300, 501, 10)
+    if interaction.guild.id == using_server :
+        if streak > 1 : 
+            streak_bonus = random.randrange(50, 101, 10)
+        if streak >= 7 : 
+            streak_bonus += random.randrange(50, 151, 10)
+        if streak >= 14 : 
+            streak_bonus += random.randrange(100, 201, 10)
+        if streak >= 30 :
+            streak_bonus += random.randrange(300, 501, 10)
     
-    check_xp = random.randrange(1000, 2001, 10)
+    settings["maximum"] += 1
+    
+    check_xp = random.randrange(settings["minimum"], settings["maximum"], settings["step"])
+
     if interaction.guild.id == using_server and any(role.id == server_booster_role_id for role in interaction.user.roles):
         boost_check_xp = random.randrange(300, 1001, 10)
     else : 
@@ -3378,10 +3449,16 @@ async def attendance(interaction: discord.Interaction):
 
     unit = xp_setting[interaction.guild.id][5]
 
-    if boost_check_xp > 0 and streak_bonus > 0: 
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함, 연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
-    elif streak_bonus > 0 :
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` {unit}(연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
+    if boost_check_xp > 0 and streak > 1: 
+        if interaction.guild.id == using_server : 
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함, 연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
+        else : 
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함)(이)가 지급되었습니다.")
+    elif streak > 1 :
+        if interaction.guild.id == using_server : 
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` {unit}(연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
+        else : 
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` {unit}(이)가 지급되었습니다.")
     elif boost_check_xp > 0 :
         await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp+boost_check_xp}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함)(이)가 지급되었습니다.")
     else : 
@@ -6853,7 +6930,7 @@ async def 경고(interaction: discord.Interaction, 사용자: discord.User, 개�
 
 '''
 
-@bot.tree.command(name="제재내역확인", description="2025년 2월 17일 15시 30분 이후 제재 내역을 확인합니다.")
+@bot.tree.command(name="제재내역확인", description="이 서버의 제재 내역을 확인합니다.")
 @app_commands.describe(사용자="제재 내역 필터링 조건 (선택사항, 입력 시 이 사용자가 제재된 내역만 조회됨)", 관리자="제재 내역 필터링 조건 (선택사항, 입력 시 이 관리자가 제재한 내역만 조회됨)")
 async def check_moderation_log(interaction: discord.Interaction, 사용자: discord.User = None, 관리자: discord.User = None):
     await interaction.response.defer()
@@ -6892,13 +6969,37 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
     
     records = c.fetchall()
 
+    if interaction.guild.id == using_server : 
+        if 사용자 and 관리자 : 
+            c.execute(
+                "SELECT output_id, user_id, admin_id, reason, type, addinfo FROM blockhistory_old WHERE user_id = ? AND admin_id = ?", 
+                (사용자.id, 관리자.id)
+            )
+        elif 사용자:
+            c.execute(
+                "SELECT output_id, user_id, admin_id, reason, type, addinfo FROM blockhistory_old WHERE user_id = ?", 
+                (사용자.id,)
+            )
+        elif 관리자 : 
+            c.execute(
+                "SELECT output_id, user_id, admin_id, reason, type, addinfo FROM blockhistory_old WHERE admin_id = ?", 
+                (관리자.id,)
+            )
+        else:
+            c.execute(
+                "SELECT output_id, user_id, admin_id, reason, type, addinfo FROM blockhistory_old"
+            )
+        
+        records2 = c.fetchall()
+        records = records + records2
+
     if not records:
         await interaction.followup.send("제재 내역이 없습니다.", ephemeral=False)
         return
     
     conn.close()
 
-    view = ModerationLogView(records, 사용자)
+    view = ModerationLogView(records, 사용자, interaction.user)
     await interaction.followup.send(embed=view.get_embed(), view=view)
 
 def split_text(text, chunk_size=3000):
@@ -7781,11 +7882,19 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
                 add_likeability(interaction.user.id, favorability)
     elif 아이디 == 3 : 
         await interaction.response.defer(ephemeral=True)
-        channel = bot.get_channel(normal_channel)
+        if 입력1 is not None : 
+            channel = bot.get_channel(int(입력1))
+        else : 
+            channel = bot.get_channel(normal_channel)
         if channel:
-            embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!\n-# 일정 시간이 경과하면 버튼을 클릭해도 봇이 반응하지 않을 수도 있습니다.", color=int("a5f0ff", 16))
-            await channel.send(embed=embed, view=ExpButton())
+            if add_or_remove() : 
+                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!", color=int("a5f0ff", 16))
+                await channel.send(embed=embed, view=ExpButton())
+            else : 
+                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 잃으세요!", color=int("a5f0ff", 16))
+                await channel.send(embed=embed, view=ExpRemoveButton())
             await interaction.followup.send("처리되었습니다.")
+
     elif 아이디 == 4 : 
         user1 = await bot.fetch_user(int(입력1))
         user2 = await bot.fetch_user(int(입력2))
@@ -8013,6 +8122,10 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.response.defer(ephemeral=True)
         await migrate_mention_delay_user()
         await interaction.followup.send("처리되었습니다.")
+    elif 아이디 == 24 : 
+        channel = await bot.fetch_channel(1320304892992028785)
+        await interaction.response.send_message("처리 중입니다. 이 작업은 오랜 시간이 소요될 수 있습니다. 완료되면 알림이 전송됩니다.")
+        await migrate_old_blockhistory(interaction, channel)
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
 @app_commands.describe(

@@ -1,6 +1,8 @@
 import sqlite3
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
+import re
 import discord
 import asyncio
 from discord import app_commands
@@ -58,6 +60,16 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS quarantine_role (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, quarantine_role integer)") # 격리 역할
     c.execute("CREATE TABLE IF NOT EXISTS xp_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, onoff INTEGER,server_id INTEGER, chat_xp INTEGER, chat_xp_cooldown INTEGER, voice_xp INTEGER, voice_xp_cooldown INTEGER, unit TEXT)") # 서버별 경험치 기능 설정 테이블
     c.execute("CREATE TABLE IF NOT EXISTS xp (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS attendance_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            on_off INTEGER,
+            min INTEGER,
+            max INTEGER,
+            step INTEGER
+        )
+    """)
     c.execute("CREATE TABLE IF NOT EXISTS gpt_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # GPT 채팅 스레드
     c.execute("""
         CREATE TABLE IF NOT EXISTS vote (
@@ -153,6 +165,48 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def update_attendance_settings(server_id: int, on_off: int, minimum: int, maximum: int, step: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT id FROM attendance_settings WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    
+    if row:
+        c.execute("UPDATE attendance_settings SET on_off = ?, min = ?, max = ?, step = ? WHERE server_id = ?", (on_off, minimum, maximum, step, server_id))
+    else:
+        c.execute("INSERT INTO attendance_settings (server_id, on_off, min, max, step) VALUES (?, ?, ?, ?, ?)", (server_id, on_off, minimum, maximum, step))
+
+    conn.close()
+
+async def get_attendance_settings(server_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT * FROM attendance_settings WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+
+    if row : 
+        if row[2] == 1 : 
+            on_off = True
+        else : 
+            on_off = False
+        minimum = row[3]
+        maximum = row[4]
+        step = row[5]
+        return {
+            "on_off": on_off,
+            "minimum": minimum,
+            "maximum": maximum,
+            "step": step,
+        }
+    else : 
+        on_off = False
+        return {
+            "on_off": on_off,
+            "minimum": 0,
+            "maximum": 0,
+            "step": 1,
+        }
 
 async def get_anti_raid_settings(server_id: int) : 
     global anti_raid_settings_cache
@@ -1544,3 +1598,157 @@ async def join_route_autocomplete(
         app_commands.Choice(name=route, value=route)
         for route in routes if current.lower() in route.lower()
     ][:25]  # 최대 25개만 반환 가능
+
+async def migrate_old_blockhistory(interaction: discord.Interaction, channel: discord.TextChannel) : 
+    res = await interaction.original_response()
+    
+    kst = timezone(timedelta(hours=9))
+    dt_kst = datetime.fromtimestamp(1739773800, tz=kst)
+    dt_utc = dt_kst.astimezone(timezone.utc)
+    messages = [message async for message in channel.history(limit = None, before=dt_utc, oldest_first = False)]
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute('DROP TABLE IF EXISTS blockhistory_old')
+    c.execute("CREATE TABLE IF NOT EXISTS blockhistory_old (id INTEGER PRIMARY KEY AUTOINCREMENT, output_id integar, user_id integar, admin_id integar, reason text, type text, addinfo integar)") # 제재 내역 테이블
+
+    adding = []
+
+    for message in messages : 
+        migrate_msg = f" (이 제재 내역은 마늘이가 제재 내역을 db에 기록하지 않던 시기(2025년 2월 17일 15시 30분 이전)의 제재 내역을 <#1320304892992028785>을 바탕으로 2025년 10월 31일에 이전한 것입니다. 일부 정보가 부정확하거나 누락되어 있을 수 있습니다. | 원본 제재 내역: {message.jump_url})"
+        if message.author.id == 495574108046753814 : 
+            for i in message.embeds : 
+                if "언밴" in i.title : 
+                    blocktype = "unban"
+                elif "밴" in i.title : 
+                    blocktype = "ban"
+                elif "타임아웃" in i.title : 
+                    blocktype = "timeout"
+                elif "경고 차감" in i.title : 
+                    blocktype = "unwarn"
+                elif "경고" in i.title : 
+                    blocktype = "warn"
+                elif "킥" in i.title or "추방" in i.title : 
+                    blocktype = "kick"
+                
+                for j in i.fields : 
+                    if j.name == "유저" : 
+                        pattern = r"<@!?(\d+)>"
+                        match = re.search(pattern, j.value)
+                        if match:
+                            blockuser = int(match.group(1))
+                        else : 
+                            blockuser = None
+                    elif j.name == "관리자" : 
+                        pattern = r"<@!?(\d+)>"
+                        match = re.search(pattern, j.value)
+                        if match:
+                            blockadmin = int(match.group(1))
+                        else : 
+                            blockadmin = None
+                    elif j.name == "사유" : 
+                        if j.value == "없음" : 
+                            blockreason = "*(사유 입력되지 않음)*" + migrate_msg
+                        else : 
+                            blockreason = j.value + migrate_msg
+                    elif j.name == "경고 개수" : 
+                        if blocktype == "warn" : 
+                            pattern = r'\(\+\s*(\d+)\)'
+                            match = re.search(pattern, j.value)
+                            if match:
+                                blockaddinfo = int(match.group(1))
+                            else : 
+                                blockaddinfo = None
+                        elif blocktype == "unwarn" : 
+                            pattern = r'\(-?(\d+)\)'
+                            match = re.search(pattern, j.value)
+                            if match:
+                                blockaddinfo = int(match.group(1))
+                            else : 
+                                blockaddinfo = None
+                    elif j.name == "시간" : 
+                        if blocktype == "timeout" : 
+                            if "분" in j.value : 
+                                blockaddinfo = int(j.value[:-1]) * 60
+                            elif "시간" in j.value : 
+                                blockaddinfo = int(j.value[:-2]) * 60 * 60
+                            elif "초" in j.value : 
+                                blockaddinfo = int(j.value[:-1])
+                            elif "일" in j.value : 
+                                blockaddinfo = int(j.value[:-1]) * 60 * 60 * 24
+                
+                if not 'blockaddinfo' in locals():
+                    blockaddinfo = 0
+
+                adding.append([blockuser, blockadmin, blockreason, blocktype, blockaddinfo])
+        elif message.author.id == 1316579106749681664 : 
+            for i in message.embeds : 
+                if "차단 해제" in i.title : 
+                    blocktype = "unban"
+                elif "차단" in i.title : 
+                    blocktype = "ban"
+                elif "타임아웃 해제" in i.title : 
+                    blocktype = "untimeout"
+                elif "타임아웃" in i.title : 
+                    blocktype = "timeout"
+                elif "경고 차감" in i.title : 
+                    blocktype = "unwarn"
+                elif "경고" in i.title : 
+                    blocktype = "warn"
+                elif "추방" in i.title : 
+                    blocktype = "kick"
+                
+                for j in i.fields : 
+                    if j.name == "사용자" : 
+                        userlist = j.value.split(", ")
+                        if len(userlist) == 1 : 
+                            usercount = 1
+                            pattern = r"<@!?(\d+)>"
+                            match = re.search(pattern, userlist[0])
+                            if match:
+                                blockuser = int(match.group(1))
+                            else : 
+                                blockuser = None
+                        else : 
+                            usercount = len(userlist)
+                            blockuser = []
+                            for k in userlist : 
+                                match = re.search(pattern, k)
+                                if match:
+                                    blockuser.append(int(match.group(1)))
+                                else : 
+                                    blockuser.append(None)
+
+                    elif j.name == "관리자" : 
+                        pattern = r"<@!?(\d+)>"
+                        match = re.search(pattern, j.value)
+                        if match:
+                            blockadmin = match.group(1)
+                        else : 
+                            blockadmin = None
+                    elif j.name == "사유" : 
+                        if j.value == "없음" : 
+                            blockreason = "*(사유 입력되지 않음)*" + migrate_msg
+                        else : 
+                            blockreason = j.value + migrate_msg
+
+                if not 'blockaddinfo' in locals():
+                    blockaddinfo = 0
+
+                if usercount == 1 : 
+                    adding.append([blockuser, blockadmin, blockreason, blocktype, None])
+                else : 
+                    for i in blockuser : 
+                        adding.append([i, blockadmin, blockreason, blocktype, None])
+    
+    output_id = -1
+
+    for i in adding : 
+        c.execute("""
+            INSERT INTO blockhistory_old (output_id, user_id, admin_id, reason, type, addinfo)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (output_id, i[0], i[1], i[2], i[3], i[4]))
+        output_id -= 1
+    
+    await res.reply("작업이 처리되었습니다.", mention_author = False)
+    await interaction.user.send("작업이 처리되었습니다.")
