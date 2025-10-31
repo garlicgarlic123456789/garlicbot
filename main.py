@@ -639,7 +639,7 @@ class ModerationLogView(discord.ui.View):
         end = start + 15
         for entry in self.entries[start:end]:
             id_, user_id, admin_id, reason, type_, addinfo = entry[:6]
-            if addinfo > 0 and type_ == "timeout" :
+            if type_ == "timeout" :
                 addinfo = print_time(addinfo)
             elif type_ == "timeout" :
                 addinfo = str(addinfo) + "초"
