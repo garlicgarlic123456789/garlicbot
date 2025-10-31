@@ -640,9 +640,11 @@ class ModerationLogView(discord.ui.View):
         for entry in self.entries[start:end]:
             id_, user_id, admin_id, reason, type_, addinfo = entry[:6]
             if type_ == "timeout" :
-                addinfo = print_time(addinfo)
-            elif type_ == "timeout" :
-                addinfo = str(addinfo) + "초"
+                if addinfo is not None : 
+                    if addinfo > 0 : 
+                        addinfo = print_time(addinfo)
+                    else : 
+                        addinfo = str(addinfo) + "초"
             title = f"{type_mapping.get(type_, '알 수 없는 제재 유형')} - #{id_}"
             if user_id is None : 
                 user_id = "*(알 수 없음)*"
