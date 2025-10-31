@@ -1,6 +1,8 @@
 import sqlite3
 from datetime import datetime
 from datetime import timedelta
+from datetime import timezone
+import re
 import discord
 import asyncio
 from discord import app_commands
@@ -1544,3 +1546,151 @@ async def join_route_autocomplete(
         app_commands.Choice(name=route, value=route)
         for route in routes if current.lower() in route.lower()
     ][:25]  # 최대 25개만 반환 가능
+
+async def migrate_old_blockhistory(interaction: discord.Interaction, channel: discord.Channel) : 
+    res = await interaction.original_response()
+    
+    kst = timezone(timedelta(hours=9))
+    dt_kst = datetime.fromtimestamp(1739773800, tz=kst)
+    dt_utc = dt_kst.astimezone(timezone.utc)
+    messages = [message async for message in channel.history(before=dt_utc, oldest_first = False)]
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute('DROP TABLE IF EXISTS blockhistory_old')
+    c.execute("CREATE TABLE IF NOT EXISTS blockhistory_old (id INTEGER PRIMARY KEY AUTOINCREMENT, output_id integar, user_id integar, admin_id integar, reason text, type text, addinfo integar)") # 제재 내역 테이블
+
+    adding = []
+
+    async for message in messages : 
+        migrate_msg = f" (이 제재 내역은 마늘이가 제재 내역을 db에 기록하지 않던 시기(2025년 2월 17일 15시 30분 이전)의 제재 내역을 <#1320304892992028785>의 내역을 바탕으로 2025년 10월 31일에 이전한 것입니다. 일부 정보가 부정확하거나 누락되어 있을 수 있습니다. | 원본 제재 내역: {message.jump_url})"
+        if message.author.id == 495574108046753814 : 
+            for i in message.embeds : 
+                if "언밴" in i.title : 
+                    blocktype = "unban"
+                elif "밴" in i.title : 
+                    blocktype = "ban"
+                elif "타임아웃" in i.title : 
+                    blocktype = "timeout"
+                elif "경고 차감" in i.title : 
+                    blocktype = "unwarn"
+                elif "경고" in i.title : 
+                    blocktype = "warn"
+                elif "킥" in i.title or "추방" in i.title : 
+                    blocktype = "kick"
+                
+                for j in i.fields : 
+                    if j.name == "유저" : 
+                        pattern = r"<@!?(\d+)>"
+                        match = re.search(pattern, j.value)
+                        if match:
+                            blockuser = int(match.group(1))
+                        else : 
+                            blockuser = None
+                    elif j.name == "관리자" : 
+                        pattern = r"<@!?(\d+)>"
+                        match = re.search(pattern, j.value)
+                        if match:
+                            blockadmin = int(match.group(1))
+                        else : 
+                            blockadmin = None
+                    elif j.name == "사유" : 
+                        if j.value == "없음" : 
+                            blockreason = "*(사유 입력되지 않음)*" + migrate_msg
+                        else : 
+                            blockreason = j.value + migrate_msg
+                    elif j.name == "경고 개수" : 
+                        if blocktype == "warn" : 
+                            pattern = r'\(\+\s*(\d+)\)'
+                            match = re.search(pattern, j.value)
+                            if match:
+                                blockaddinfo = int(match.group(1))
+                            else : 
+                                blockaddinfo = None
+                        elif blocktype == "unwarn" : 
+                            pattern = r'\(-?(\d+)\)'
+                            match = re.search(pattern, j.value)
+                            if match:
+                                blockaddinfo = int(match.group(1))
+                            else : 
+                                blockaddinfo = None
+                    elif j.name == "시간" : 
+                        if blocktype == "timeout" : 
+                            if "분" in j.value : 
+                                blockaddinfo = int(j.value[:-1]) * 60
+                            elif "시간" in j.value : 
+                                blockaddinfo = int(j.value[:-2]) * 60 * 60
+                            elif "초" in j.value : 
+                                blockaddinfo = int(j.value[:-2])
+                            elif "일" in j.value : 
+                                blockaddinfo = int(j.value[:-2]) * 60 * 60 * 24
+
+                adding += [blockuser, blockadmin, blockreason, blocktype, blockaddinfo]
+        elif message.author.id == 1316579106749681664 : 
+            for i in message.embeds : 
+                if "차단 해제" in i.title : 
+                    blocktype = "unban"
+                elif "차단" in i.title : 
+                    blocktype = "ban"
+                elif "타임아웃 해제" in i.title : 
+                    blocktype = "untimeout"
+                elif "타임아웃" in i.title : 
+                    blocktype = "timeout"
+                elif "경고 차감" in i.title : 
+                    blocktype = "unwarn"
+                elif "경고" in i.title : 
+                    blocktype = "warn"
+                elif "추방" in i.title : 
+                    blocktype = "kick"
+                
+                for j in i.fields : 
+                    if j.name == "사용자" : 
+                        userlist = j.value.split(", ")
+                        if len(userlist) == 1 : 
+                            usercount = 1
+                            pattern = r"<@!?(\d+)>"
+                            match = re.search(pattern, userlist[0])
+                            if match:
+                                blockuser = int(match.group(1))
+                            else : 
+                                blockuser = None
+                        else : 
+                            usercount = len(userlist)
+                            blockuser = []
+                            for k in userlist : 
+                                match = re.search(pattern, k)
+                                if match:
+                                    blockuser.append(int(match.group(1)))
+                                else : 
+                                    blockuser.append(None)
+
+                    elif j.name == "관리자" : 
+                        pattern = r"<@!?(\d+)>"
+                        match = re.search(pattern, j.value)
+                        if match:
+                            blockadmin = match.group(1)
+                        else : 
+                            blockadmin = None
+                    elif j.name == "사유" : 
+                        if j.value == "없음" : 
+                            blockreason = "*(사유 입력되지 않음)*" + migrate_msg
+                        else : 
+                            blockreason = j.value + migrate_msg
+
+                if usercount == 1 : 
+                    adding += [blockuser, blockadmin, blockreason, blocktype, None]
+                else : 
+                    for i in blockuser : 
+                        adding += [i, blockadmin, blockreason, blocktype, None]
+    
+    output_id = -1
+
+    async for i in adding : 
+        c.execute("""
+            INSERT INTO blockhistory_old (output_id, user_id, admin_id, reason, type, addinfo)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (output_id, i[0], i[1], [2], i[3], [4]))
+        output_id -= 1
+    
+    await res.reply("작업이 처리되었습니다.", mention_author = False)
+    await interaction.user.send("작업이 처리되었습니다.")
