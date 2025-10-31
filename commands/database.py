@@ -1621,9 +1621,9 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
                             elif "시간" in j.value : 
                                 blockaddinfo = int(j.value[:-2]) * 60 * 60
                             elif "초" in j.value : 
-                                blockaddinfo = int(j.value[:-2])
+                                blockaddinfo = int(j.value[:-1])
                             elif "일" in j.value : 
-                                blockaddinfo = int(j.value[:-2]) * 60 * 60 * 24
+                                blockaddinfo = int(j.value[:-1]) * 60 * 60 * 24
                 
                 if not 'blockaddinfo' in locals():
                     blockaddinfo = 0
