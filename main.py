@@ -620,11 +620,12 @@ def print_time(x):
     return " ".join(parts)
 
 class ModerationLogView(discord.ui.View):
-    def __init__(self, entries, user, page=0):
+    def __init__(self, entries, user, interact_user, page=0):
         super().__init__()
         self.entries = entries
         self.user = user
         self.page = page
+        self.interact_user = interact_user
 
     @property
     def max_pages(self):
@@ -668,6 +669,9 @@ class ModerationLogView(discord.ui.View):
 
     @discord.ui.button(label="이전", style=discord.ButtonStyle.gray, disabled=True)
     async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.interact_user.id : 
+            await interaction.response.send_message("자기 자신이 실행한 명령어 출력 결과의 버튼만 사용이 가능합니다.", ephemeral = False)
+            return
         self.page -= 1
         if self.page == 0:
             button.disabled = True
@@ -676,12 +680,42 @@ class ModerationLogView(discord.ui.View):
 
     @discord.ui.button(label="다음", style=discord.ButtonStyle.gray)
     async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.interact_user.id : 
+            await interaction.response.send_message("자기 자신이 실행한 명령어 출력 결과의 버튼만 사용이 가능합니다.", ephemeral = False)
+            return
         self.page += 1
         if self.page >= self.max_pages - 1:
             button.disabled = True
         self.children[0].disabled = False
         await interaction.response.edit_message(embed=self.get_embed(), view=self)
+    
+    @discord.ui.button(label="페이지 번호 입력", style=discord.ButtonStyle.primary)
+    async def select_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.interact_user.id : 
+            await interaction.response.send_message("자기 자신이 실행한 명령어 출력 결과의 버튼만 사용이 가능합니다.", ephemeral = False)
+            return
+        modal = self.PageInputModal(self)
+        await interaction.response.send_modal(modal)
 
+    class PageInputModal(discord.ui.Modal, title="페이지 번호로 이동"):
+        def __init__(self, parent_view):
+            super().__init__()
+            self.parent_view = parent_view
+        
+            pagenum = discord.ui.TextInput(label="이동할 페이지 번호", placeholder="이동할 페이지 번호", required=True)
+            self.add_item(self.pagenum)
+
+        async def on_submit(self, interaction: discord.Interaction):
+            try : 
+                pagenum_value = int(self.pagenum.value)
+            except ValueError : 
+                await interaction.response.send_message(f"유효하지 않은 페이지 번호 값입니다. 숫자를 입력해 주세요.")
+                return
+            if pagenum_value > self.parent_view.max_pages or self.pagenum.value < 1:
+                await interaction.response.send_message(f"유효하지 않은 페이지 번호 값입니다. 1 이상 {self.parent_view.max_pages} 이하의 값을 입력해 주세요.")
+                return
+            self.parent_view.page = pagenum_value
+            await interaction.response.edit_message(embed=self.parent_view.get_embed(), view=self.parent_view)
 
 '''
 # 이메일 전송 함수
@@ -6965,7 +6999,7 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
     
     conn.close()
 
-    view = ModerationLogView(records, 사용자)
+    view = ModerationLogView(records, 사용자, interaction.user)
     await interaction.followup.send(embed=view.get_embed(), view=view)
 
 def split_text(text, chunk_size=3000):
