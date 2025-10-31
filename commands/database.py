@@ -1625,7 +1625,7 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
                             elif "일" in j.value : 
                                 blockaddinfo = int(j.value[:-2]) * 60 * 60 * 24
 
-                adding += [blockuser, blockadmin, blockreason, blocktype, blockaddinfo]
+                adding.append([blockuser, blockadmin, blockreason, blocktype, blockaddinfo])
         elif message.author.id == 1316579106749681664 : 
             for i in message.embeds : 
                 if "차단 해제" in i.title : 
@@ -1678,10 +1678,10 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
                             blockreason = j.value + migrate_msg
 
                 if usercount == 1 : 
-                    adding += [blockuser, blockadmin, blockreason, blocktype, None]
+                    adding.append([blockuser, blockadmin, blockreason, blocktype, None])
                 else : 
                     for i in blockuser : 
-                        adding += [i, blockadmin, blockreason, blocktype, None]
+                        adding.append([i, blockadmin, blockreason, blocktype, None])
     
     output_id = -1
 
