@@ -1,12 +1,14 @@
 import discord
 from discord import app_commands
-from discord import *
-from commands.define import *
-from commands.database import *
+from discord.ext import commands
+from utils.helpers import *
+from services.database_service import *
 
-class autorole(app_commands.Group) : 
-    def __init__(self):
-        super().__init__(name="자동역할", description="자동역할 관련 명령어")
+class AutoroleCog(commands.Cog):
+    """자동 역할 관리 Cog"""
+
+    def __init__(self, bot):
+        self.bot = bot
     
     @app_commands.command(name="추가", description="자동역할 설정을 추가합니다.")
     @app_commands.describe(역할="추가할 역할")
@@ -161,3 +163,8 @@ class autorole(app_commands.Group) :
                     bot_user = "봇 계정"
                 embed.description += f"- <@&{autorole['role_id']}> 역할 (부여 대상: 서버에 참가하는 {bot_user})\n"
         await interaction.followup.send(embed=embed)
+
+
+async def setup(bot):
+    """Cog를 봇에 추가합니다."""
+    await bot.add_cog(AutoroleCog(bot))
