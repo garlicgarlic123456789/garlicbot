@@ -703,7 +703,7 @@ class ModerationLogView(discord.ui.View):
             self.parent_view = parent_view
         
             pagenum = discord.ui.TextInput(label="이동할 페이지 번호", placeholder="이동할 페이지 번호", required=True)
-            self.add_item(self.pagenum)
+            self.add_item(pagenum)
 
         async def on_submit(self, interaction: discord.Interaction):
             try : 
