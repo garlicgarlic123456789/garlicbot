@@ -703,11 +703,11 @@ class ModerationLogView(discord.ui.View):
             self.parent_view = parent_view
         
             pagenum = discord.ui.TextInput(label="이동할 페이지 번호", placeholder="이동할 페이지 번호", required=True)
-            self.add_item(pagenum)
+            pagenum = self.add_item(pagenum)
 
         async def on_submit(self, interaction: discord.Interaction):
             try : 
-                pagenum_value = int(self.children.pagenum.value)
+                pagenum_value = int(self.pagenum.value)
             except ValueError : 
                 await interaction.response.send_message(f"유효하지 않은 페이지 번호 값입니다. 숫자를 입력해 주세요.")
                 return
