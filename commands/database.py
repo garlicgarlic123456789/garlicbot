@@ -1553,7 +1553,7 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
     kst = timezone(timedelta(hours=9))
     dt_kst = datetime.fromtimestamp(1739773800, tz=kst)
     dt_utc = dt_kst.astimezone(timezone.utc)
-    messages = [message async for message in channel.history(before=dt_utc, oldest_first = False)]
+    messages = [message async for message in channel.history(limit = None, before=dt_utc, oldest_first = False)]
 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
