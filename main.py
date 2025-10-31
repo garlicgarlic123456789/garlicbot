@@ -6942,12 +6942,12 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
         elif 사용자:
             c.execute(
                 "SELECT output_id, user_id, admin_id, reason, type, addinfo FROM blockhistory_old WHERE user_id = ?", 
-                (사용자.id)
+                (사용자.id,)
             )
         elif 관리자 : 
             c.execute(
                 "SELECT output_id, user_id, admin_id, reason, type, addinfo FROM blockhistory_old WHERE admin_id = ?", 
-                (관리자.id)
+                (관리자.id,)
             )
         else:
             c.execute(
