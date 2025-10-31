@@ -628,15 +628,15 @@ class ModerationLogView(discord.ui.View):
 
     @property
     def max_pages(self):
-        return (len(self.entries) - 1) // 15 + 1
+        return (len(self.entries) - 1) // 10 + 1
 
     def get_embed(self):
         embed = discord.Embed(
             title=f"{self.user if self.user else '이 서버'}의 제재 내역",
             color=int("a5f0ff", 16)
         )
-        start = self.page * 15
-        end = start + 15
+        start = self.page * 10
+        end = start + 10
         for entry in self.entries[start:end]:
             id_, user_id, admin_id, reason, type_, addinfo = entry[:6]
             if type_ == "timeout" :
