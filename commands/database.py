@@ -1689,7 +1689,7 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
         c.execute("""
             INSERT INTO blockhistory_old (output_id, user_id, admin_id, reason, type, addinfo)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (output_id, i[0], i[1], i[2], i[3], [4]))
+        """, (output_id, i[0], i[1], i[2], i[3], i[4]))
         output_id -= 1
     
     await res.reply("작업이 처리되었습니다.", mention_author = False)
