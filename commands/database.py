@@ -1624,6 +1624,9 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
                                 blockaddinfo = int(j.value[:-2])
                             elif "일" in j.value : 
                                 blockaddinfo = int(j.value[:-2]) * 60 * 60 * 24
+                
+                if not 'blockaddinfo' in locals():
+                    blockaddinfo = 0
 
                 adding.append([blockuser, blockadmin, blockreason, blocktype, blockaddinfo])
         elif message.author.id == 1316579106749681664 : 
@@ -1676,6 +1679,9 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
                             blockreason = "*(사유 입력되지 않음)*" + migrate_msg
                         else : 
                             blockreason = j.value + migrate_msg
+
+                if not 'blockaddinfo' in locals():
+                    blockaddinfo = 0
 
                 if usercount == 1 : 
                     adding.append([blockuser, blockadmin, blockreason, blocktype, None])
