@@ -1562,7 +1562,7 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
 
     adding = []
 
-    async for message in messages : 
+    for message in messages : 
         migrate_msg = f" (이 제재 내역은 마늘이가 제재 내역을 db에 기록하지 않던 시기(2025년 2월 17일 15시 30분 이전)의 제재 내역을 <#1320304892992028785>의 내역을 바탕으로 2025년 10월 31일에 이전한 것입니다. 일부 정보가 부정확하거나 누락되어 있을 수 있습니다. | 원본 제재 내역: {message.jump_url})"
         if message.author.id == 495574108046753814 : 
             for i in message.embeds : 
