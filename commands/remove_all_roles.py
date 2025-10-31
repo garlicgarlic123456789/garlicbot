@@ -1,21 +1,14 @@
 import discord
 
 from discord import app_commands
-from discord.ext import commands
 
-from utils.helpers import *
-from utils.constants import error
+from commands.define import *
 
 
-class RemoveAllRolesCog(commands.Cog):
-    """모든 역할 회수 Cog"""
-
-    def __init__(self, bot):
-        self.bot = bot
-
-    @app_commands.command(name="모든역할회수", description="특정 사용자의 모든 역할을 회수합니다.")
+def setup(bot) : 
+    @bot.tree.command(name="모든역할회수", description="특정 사용자의 모든 역할을 회수합니다.")
     @app_commands.default_permissions(manage_roles=True)
-    async def remove_all_roles(self, interaction: discord.Interaction, 사용자: discord.User):
+    async def 모든역할회수(interaction: discord.Interaction, 사용자: discord.User):
         if 사용자.top_role >= interaction.user.top_role :
             embed = discord.Embed(
                 title="오류",
@@ -88,8 +81,3 @@ class RemoveAllRolesCog(commands.Cog):
             await interaction.followup.send(embed=embed)
             error += 1
             return
-
-
-async def setup(bot):
-    """Cog를 봇에 추가합니다."""
-    await bot.add_cog(RemoveAllRolesCog(bot))

@@ -1,17 +1,13 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import re
 
-from services.database_service import *
-from utils.helpers import *
-from utils.constants import developer
+from commands.database import *
+from commands.define import *
 
-class MentionDelayCog(commands.Cog):
-    """멘션 지연 Cog"""
-
-    def __init__(self, bot):
-        self.bot = bot
+class mention_delay(app_commands.Group) : 
+    def __init__(self) : 
+        super().__init__(name="멘션지연", description="멘션지연 관련 명령어")
     
     @app_commands.command(name="차단", description="특정 사용자가 자신을 향해 멘션지연을 하는 것을 차단합니다.")
     @app_commands.describe(사용자 = "차단할 사용자", 차단여부 = "차단 여부")
@@ -299,9 +295,4 @@ class MentionDelayCog(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed = embed)
-
-
-async def setup(bot):
-    """Cog를 봇에 추가합니다."""
-    await bot.add_cog(MentionDelayCog(bot))
 

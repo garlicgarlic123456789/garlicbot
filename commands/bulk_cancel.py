@@ -12,19 +12,13 @@ from discord import *
 from datetime import datetime
 from pytz import timezone
 
-from utils.helpers import is_blocked, is_valid_time, kst
-from utils.constants import using_server, record_channel, message_log
+from commands.define import is_blocked, is_valid_time, kst, using_server, record_channel, message_log
 
 
-class BulkCancelCog(commands.Cog):
-    """대량 취소 관리 Cog"""
-
-    def __init__(self, bot):
-        self.bot = bot
-
-    @app_commands.command(name="일괄취소", description="특정 사용자의 특정 시각 이후 관리 권한 사용 행위를 실행취소합니다. 보안봇이 서버에 있는 경우 보안봇 화이트리스트에 마늘이를 추가한 후 사용해 주세요.")
-    @app_commands.describe(시각="취소 범위의 시작 지점을 입력해 주세요. (형식: YYYY-MM-DD HH:MM:SS)", 사용자="어느 사용자의 행위를 실행취소할지 입력해 주세요.")
-    async def bulk_cancel(self, interaction: discord.Interaction, 사용자: discord.User, 시각: str, 사유: str = None):
+def setup(bot: commands.Bot):
+    @bot.tree.command(name = "일괄취소", description = "특정 사용자의 특정 시각 이후 관리 권한 사용 행위를 실행취소합니다. 보안봇이 서버에 있는 경우 보안봇 화이트리스트에 마늘이를 추가한 후 사용해 주세요.")
+    @app_commands.describe(시각 = "취소 범위의 시작 지점을 입력해 주세요. (형식: YYYY-MM-DD HH:MM:SS)", 사용자 = "어느 사용자의 행위를 실행취소할지 입력해 주세요.")
+    async def bulk_cancel(interaction: discord.Interaction, 사용자: discord.User, 시각: str, 사유: str = None) :
         if interaction.guild.owner_id != interaction.user.id:
             embed = discord.Embed(
                 title="오류",
@@ -411,16 +405,11 @@ class BulkCancelCog(commands.Cog):
         embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
         embed.add_field(name="사유", value=사유, inline=False)
 
-        channel = self.bot.get_channel(record_channel)
+        channel = bot.get_channel(record_channel)
         if channel:
             await channel.send(embed=embed)
 
-        log_channel = self.bot.get_channel(message_log)
+        log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
-
-
-async def setup(bot):
-    """Cog를 봇에 추가합니다."""
-    await bot.add_cog(BulkCancelCog(bot))
 
 

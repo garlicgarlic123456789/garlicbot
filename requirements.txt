@@ -18,5 +18,5 @@ langchain-openai==0.0.7
 langchain_chroma
 requests==2.31.0
 selenium==4.21.0
-holidays==0.50
+holidays
 youtube-transcript-api==0.6.2
