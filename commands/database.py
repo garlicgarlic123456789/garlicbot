@@ -1685,7 +1685,7 @@ async def migrate_old_blockhistory(interaction: discord.Interaction, channel: di
     
     output_id = -1
 
-    async for i in adding : 
+    for i in adding : 
         c.execute("""
             INSERT INTO blockhistory_old (output_id, user_id, admin_id, reason, type, addinfo)
             VALUES (?, ?, ?, ?, ?, ?)
