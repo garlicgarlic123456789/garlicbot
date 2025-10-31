@@ -1547,7 +1547,7 @@ async def join_route_autocomplete(
         for route in routes if current.lower() in route.lower()
     ][:25]  # 최대 25개만 반환 가능
 
-async def migrate_old_blockhistory(interaction: discord.Interaction, channel: discord.Channel) : 
+async def migrate_old_blockhistory(interaction: discord.Interaction, channel: discord.TextChannel) : 
     res = await interaction.original_response()
     
     kst = timezone(timedelta(hours=9))
