@@ -558,6 +558,7 @@ mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=Fals
 
 bot = commands.Bot(
     command_prefix="마늘아마늘아마늘아 ",
+    max_messages=10000,
     intents=intents,
     heartbeat_timeout=180,
     shard_count=5,
