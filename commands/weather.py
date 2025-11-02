@@ -44,8 +44,8 @@ def get_weather_emoji(desc):
 
 
 def setup(bot):
-    @bot.tree.command(name="날씨", description="지역을 선택하여 현재 날씨를 확인합니다.")
-    @app_commands.describe(지역="날씨를 볼 지역 선택")
+    @bot.tree.command(name="날씨", description="현재 날씨를 확인합니다.")
+    @app_commands.describe(지역="지역 입력")
     @app_commands.choices(지역=REGION_CHOICES)
     async def 날씨(interaction: discord.Interaction, 지역: discord.app_commands.Choice[str]):
         await interaction.response.defer()
@@ -64,7 +64,7 @@ def setup(bot):
                     print(f"오류 #{error}: {resp.status}, {resp.reason}")
                     embed = discord.Embed(
                         title = "오류",
-                        description = f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+                        description = f"오류 #{error}\n\n지역을 올바르게 입력했는지 확인해 주세요. 문제가 지속된다면 마늘봇 서포트 서버에 문의하시기 바랍니다.",
                         color = discord.Color.red()
                     )
                     await interaction.followup.send(embed=embed)
@@ -78,10 +78,10 @@ def setup(bot):
         humidity = data['main']['humidity']
         emoji = get_weather_emoji(weather)
 
-        embed = discord.Embed(title=f"{지역.name}의 현재 날씨", description=f"{emoji} {weather}", color=int("a5f0ff", 16))
-        embed.add_field(name="🌡 온도", value=f"{temp}°C", inline=True)
-        embed.add_field(name="🥵 체감온도", value=f"{feels_like}°C", inline=True)
-        embed.add_field(name="💧 습도", value=f"{humidity}%", inline=True)
+        embed = discord.Embed(title=f"{지역.name}의 현재 날씨", color=int("a5f0ff", 16))
+        embed.add_field(name="일기", value=f"{emoji} {weather}", inline=True)
+        embed.add_field(name="온도", value=f"{temp}°C (체감: {feels_like}°C)", inline=True)
+        embed.add_field(name="습도", value=f"{humidity}%", inline=True)
         embed.set_footer(text="출처: OpenWeatherMap API")
 
         await interaction.followup.send(embed=embed)
