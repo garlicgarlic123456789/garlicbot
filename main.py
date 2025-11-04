@@ -3814,8 +3814,8 @@ async def gamble(interaction: discord.Interaction, amount: int, choice: app_comm
     if amount < 1 :
         await interaction.response.send_message("**[오류!]** amount의 값은 1 이상이여야 합니다.")
         return
-    if amount > 150000 :
-        await interaction.response.send_message("**[오류!]** amount의 값은 150000 이하여야 합니다.")
+    if amount > 1000000 :
+        await interaction.response.send_message("**[오류!]** amount의 값은 1000000 이하여야 합니다.")
         return
     await interaction.response.defer(ephemeral = True)
 
