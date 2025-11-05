@@ -99,7 +99,8 @@ def init_db() :
             done INTEGER,
             server_id INTEGER,
             send_type TEXT,
-            related_id TEXT
+            related_id TEXT,
+            cancel_together TEXT
         )
     """)
     c.execute("""
@@ -546,6 +547,17 @@ def process_mention_relation(related_id: list) :
             c.execute("UPDATE mention_delay_user SET related_id = ? WHERE id = ?", (related, i))
     conn.close()
 
+def process_mention_cancel_together(cancel_together: list) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    cancel_together = ",".join(cancel_together)
+    for i in cancel_together : 
+        c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (i,))
+        row = c.fetchone()
+        if row :
+            c.execute("UPDATE mention_delay_user SET cancel_together = ? WHERE id = ?", (cancel_together, i))
+    conn.close()
+
 def done_mention_delay_user(mention_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -553,24 +565,38 @@ def done_mention_delay_user(mention_id: int):
     c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
     conn.close()
 
-def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, trigger_server: int):
+def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, trigger_server: int, cancel_together: bool):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
 
     if not admin : 
-        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND sender_id = ?", (mention_id, trigger_user))
+        c.execute("SELECT cancel_together FROM mention_delay_user WHERE id = ? AND done = 0 AND sender_id = ?", (mention_id, trigger_user))
         row = c.fetchone()
         if row : 
             c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+            if cancel_together : 
+                if row[0] is not None : 
+                    cancel_together_list = row[0].split(",")
+                    for i in cancel_together_list : 
+                        c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (i,))
+                    conn.close()
+                    return True
             conn.close()
             return True
         else : 
             return False
     else : 
-        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
+        c.execute("SELECT cancel_together FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
         row = c.fetchone()
         if row : 
             c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+            if cancel_together : 
+                if row[0] is not None : 
+                    cancel_together_list = row[0].split(",")
+                    for i in cancel_together_list : 
+                        c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (i,))
+                    conn.close()
+                    return True
             conn.close()
             return True
         else : 
