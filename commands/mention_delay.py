@@ -265,12 +265,16 @@ class mention_delay(app_commands.Group) :
     @app_commands.command(name="취소", description = "/멘션지연으로 예약된 메시지 중 한 건을 취소합니다.")
     @app_commands.describe(ID = "취소할 멘션 ID", 역할멘션지연일괄취소여부 = "/멘션지연 역할 명령어로 일괄 멘션지연 처리한 모든 유저의 멘션지연 건을 한 번에 취소할지 그 여부")
     @app_commands.choices(역할멘션지연일괄취소여부 = [
-        app_commands.Choice(name = "/멘션지연 역할 명령어 사용에 의해 일괄적으로 같이 예약된 모든 멘션지연 건을 일괄적으로 취소 (옵션 활성화)", value = True),
-        app_commands.Choice(name = "이 ID에 해당되는 건 하나만 취소 (옵션 비활성화, 기본값)", value = False),
+        app_commands.Choice(name = "/멘션지연 역할 명령어 사용에 의해 일괄적으로 같이 예약된 모든 멘션지연 건을 일괄적으로 취소 (옵션 활성화)", value = "True"),
+        app_commands.Choice(name = "이 ID에 해당되는 건 하나만 취소 (옵션 비활성화, 기본값)", value = "False"),
     ])
-    async def cancel_mention(self, interaction: discord.Interaction, ID: int, 역할멘션지연일괄취소여부: bool = False):
+    async def cancel_mention(self, interaction: discord.Interaction, ID: int, 역할멘션지연일괄취소여부: str = "False"):
         await interaction.response.defer()
         mention_id = ID
+        if 역할멘션지연일괄취소여부 == "True" : 
+            cancel_together = True
+        else : 
+            cancel_together = False
 
         status, until, reason = is_blocked(interaction.user)
         if status:
