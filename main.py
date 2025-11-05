@@ -8142,11 +8142,9 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         await interaction.response.send_message("처리 중입니다. 이 작업은 오랜 시간이 소요될 수 있습니다. 완료되면 알림이 전송됩니다.")
         await migrate_old_blockhistory(interaction, channel)
     elif 아이디 == 25 : 
-        '''
         if True : 
             await interaction.response.send_message("폐지된 개발 명령.")
             return
-        '''
         await interaction.response.defer()
         await reset_exp(interaction.guild.id)
         await interaction.followup.send("처리되었습니다.")
