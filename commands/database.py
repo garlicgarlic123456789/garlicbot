@@ -550,12 +550,12 @@ def process_mention_relation(related_id: list) :
 def process_mention_cancel_together(cancel_together: list) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
-    cancel_together = ",".join(cancel_together)
+    cancel_together2 = ",".join(cancel_together)
     for i in cancel_together : 
         c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (i,))
         row = c.fetchone()
         if row :
-            c.execute("UPDATE mention_delay_user SET cancel_together = ? WHERE id = ?", (cancel_together, i))
+            c.execute("UPDATE mention_delay_user SET cancel_together = ? WHERE id = ?", (cancel_together2, i))
     conn.close()
 
 def done_mention_delay_user(mention_id: int):
