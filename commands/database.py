@@ -767,6 +767,17 @@ def get_xp(server_id: int, user_id: int):
         return row[0]
     return 0
 
+def get_old_xp(server_id: int, user_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM xp WHERE server_id = ? AND user_id = ?", (server_id, user_id))
+    row = c.fetchone()
+    conn.close()
+    if row : 
+        return row[0]
+    return None
+
 def update_user_join_route(user_id: int, join_route: str):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()

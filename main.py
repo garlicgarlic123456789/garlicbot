@@ -3493,17 +3493,29 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
         member = interaction.user
     
     exp = get_xp(interaction.guild.id, member.id)
+    
+    if interaction.guild.id == using_server :
+        old_exp = get_old_xp(interaction.guild.id, member.id)
+    else : 
+        old_exp = None
 
     lvl = return_level(exp)
 
     unit = xp_setting[interaction.guild.id][5]
-
-    embed = discord.Embed(
-        title="경험치 확인",
-        color=int("a5f0ff", 16),
-        description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을(를) 보유 중입니다."
-    )
     
+    if old_exp is not None : 
+        embed = discord.Embed(
+            title="경험치 확인",
+            color=int("a5f0ff", 16),
+            description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을(를) 보유 중입니다.\n-# 2025년 11월 5일 23시 29분에 경험치 초기화 작업이 이루어지기 전에는 {old_exp} {unit}을(를) 보유 중이었습니다."
+        )
+    else : 
+        embed = discord.Embed(
+            title="경험치 확인",
+            color=int("a5f0ff", 16),
+            description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을(를) 보유 중입니다."
+        )
+        
     await interaction.followup.send(embed = embed)
 
 @bot.tree.command(name="경험치선물", description = "특정 사용자에게 경험치를 선물합니다.")
