@@ -586,7 +586,7 @@ def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, t
         else : 
             return False
     else : 
-        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
+        c.execute("SELECT cancel_together FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
         row = c.fetchone()
         if row : 
             c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))

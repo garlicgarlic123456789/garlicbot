@@ -272,9 +272,9 @@ class mention_delay(app_commands.Group) :
         await interaction.response.defer()
         mention_id = id
         if 역할멘션지연일괄취소여부 == "True" : 
-            cancel_together = True
+            역할멘션지연일괄취소여부 = True
         else : 
-            cancel_together = False
+            역할멘션지연일괄취소여부 = False
 
         status, until, reason = is_blocked(interaction.user)
         if status:
