@@ -3507,7 +3507,7 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
         embed = discord.Embed(
             title="경험치 확인",
             color=int("a5f0ff", 16),
-            description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을(를) 보유 중입니다.\n-# - 경험치 초기화(https://discord.com/channels/1320303102703702037/1423235138950529085/1435640425703538768) 전: {old_exp} {unit}"
+            description = f"{member.mention}님은 {lvl} 레벨에 있으며, {exp} {unit}을(를) 보유 중입니다.\n-# [경험치 초기화](https://discord.com/channels/1320303102703702037/1423235138950529085/1435640425703538768) 전: {old_exp} {unit}"
         )
     else : 
         embed = discord.Embed(
