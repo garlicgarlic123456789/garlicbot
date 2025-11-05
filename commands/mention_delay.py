@@ -47,10 +47,10 @@ class mention_delay(app_commands.Group) :
             )
             await interaction.followup.send(embed = embed)
             return
-        elif len(role_users) > 30 : 
+        elif len(role_users) > 70 : 
             embed = discord.Embed(
                 title=f"오류",
-                description=f"해당 역할에 속한 사용자가 30명 이상이므로, 멘션지연을 예약할 수 없습니다.",
+                description=f"해당 역할에 속한 사용자가 70명 이상이므로, 멘션지연을 예약할 수 없습니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed = embed)
