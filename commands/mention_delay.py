@@ -285,22 +285,40 @@ class mention_delay(app_commands.Group) :
         if interaction.user.guild_permissions.mention_everyone:
             result = cancel_mention_delay_user(mention_id, True, interaction.user.id, interaction.guild.id, 역할멘션지연일괄취소여부)
             if result == True : 
+                if 역할멘션지연일괄취소여부 == True : 
+                    embed = discord.Embed(
+                        title=f"완료",
+                        description=f"멘션 #{mention_id} 및 해당 멘션 건 예약 시 일괄적으로 함께 예약된 다른 멘션들이 취소되었습니다.",
+                        color=int("a5f0ff", 16)
+                    )
+                    await interaction.followup.send(embed = embed)
+                    return
+                else : 
+                    embed = discord.Embed(
+                        title=f"완료",
+                        description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
+                        color=int("a5f0ff", 16)
+                    )
+                    await interaction.followup.send(embed = embed)
+                    return
+        
+        result = cancel_mention_delay_user(mention_id, False, interaction.user.id, interaction.guild.id, 역할멘션지연일괄취소여부)
+        if result == True : 
+            if 역할멘션지연일괄취소여부 == True : 
+                embed = discord.Embed(
+                    title=f"완료",
+                    description=f"멘션 #{mention_id} 및 해당 멘션 건 예약 시 일괄적으로 함께 예약된 다른 멘션들이 취소되었습니다.",
+                    color=int("a5f0ff", 16)
+                )
+                await interaction.followup.send(embed = embed)
+                return
+            else : 
                 embed = discord.Embed(
                     title=f"완료",
                     description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
                     color=int("a5f0ff", 16)
                 )
                 await interaction.followup.send(embed = embed)
-                return
-        
-        result = cancel_mention_delay_user(mention_id, False, interaction.user.id, interaction.guild.id, 역할멘션지연일괄취소여부)
-        if result == True : 
-            embed = discord.Embed(
-                title=f"완료",
-                description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
-                color=int("a5f0ff", 16)
-            )
-            await interaction.followup.send(embed = embed)
         else : 
             embed = discord.Embed(
                 title=f"오류",
