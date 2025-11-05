@@ -149,6 +149,19 @@ def init_db() :
     '''
     conn.close()
 
+async def reset_exp(server_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("CREATE TABLE IF NOT EXISTS xp_backup (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
+    c.execute("SELECT user_id, xp FROM xp WHERE server_id = ?", (server_id,))
+    rows = c.fetchall()
+    for row in rows:
+        user_id = row[0]
+        xp = row[1]
+        c.execute("INSERT INTO xp_backup (server_id, user_id, xp) VALUES (?, ?, ?)", (server_id, user_id, xp))
+    c.execute("DELETE FROM xp WHERE server_id = ?", (server_id,))
+    conn.close()
+
 async def update_attendance_settings(server_id: int, on_off: int, minimum: int, maximum: int, step: int) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
