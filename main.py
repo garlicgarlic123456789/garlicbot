@@ -2515,12 +2515,8 @@ async def on_message(message):
                         return
                     # 인명사전
                     elif "세유" == message.content[4:] or "나세유" == message.content[4:] :
-                        await message.reply("세유님은 이 서버에서 관리자이십니다. 개발을 무지 잘하시고 귀여우신 분이에용!", mention_author=False)
+                        await message.reply("개발을 무지 잘하시고 귀여우신 분이에용! 이 서버 주인에게 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요!", mention_author=False)
                         add_likeability(str(message.author.id), 5)
-                        return
-                    elif "유리" == message.content[4:] :
-                        await message.reply("서버에서 열심히 활동중인 분이세요!", mention_author=False)
-                        add_likeability(str(message.author.id), 1)
                         return
                     elif "챠무" == message.content[4:] :
                         await message.reply("챠무님은 이 서버에서, 그리고 사적으로 이 서버 주인에게 많은 도움을 주고 있어용!", mention_author=False)
@@ -2539,7 +2535,7 @@ async def on_message(message):
                         add_likeability(str(message.author.id), 1)
                         return
                     elif "플하" == message.content[4:] :
-                        await message.reply("플하님은 이 서버에서 관리자세요! 철도에 대해 많은 걸 알고 계셔요!", mention_author=False)
+                        await message.reply("플하님은 철도에 대해 많은 걸 알고 계셔요!", mention_author=False)
                         add_likeability(str(message.author.id), 1)
                         return
                     elif "리아" == message.content[4:]:
