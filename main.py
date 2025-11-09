@@ -5820,7 +5820,7 @@ async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = N
         if rule_guide is None : 
             rule_guide = "None"
 
-        chain = create_chain2(messages_list, rule, rule_guide)
+        chain = create_judge4_chain2(messages_list, rule, rule_guide)
         output = await asyncio.to_thread(chain.invoke, {"messages": output_dict, "before_blockhistory": blockhistory, "rule": rule, "rule_guide": rule_guide})
         print(output)
 
