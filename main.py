@@ -1152,27 +1152,32 @@ async def on_raw_reaction_add(payload) :
     
     await channel.send(embed=embed)
 
-@bot.event
-async def on_reaction_remove(reaction, user):
-    if user.bot:
-        return
 
-    if reaction.message.channel.id in no_log_channel :
+@bot.event
+async def on_raw_reaction_remove(payload) : 
+    if payload.channel_id in no_log_channel : 
         return
     
-    log_id = get_log_channel(reaction.message.guild.id)["reaction"]
+    log_id = get_log_channel(payload.guild_id)["reaction"]
     if log_id is None :
         return
     
     channel = bot.get_channel(log_id)
-    if not channel:
-        print("로그 채널을 찾을 수 없습니다.")
+    if not channel : 
         return
     
+    message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
+
     embed = discord.Embed(title="반응 제거됨", color=discord.Color.red())
-    embed.add_field(name="사용자", value=user.mention, inline=True)
-    embed.add_field(name="반응", value=str(reaction.emoji), inline=True)
-    embed.add_field(name="메시지 링크", value=f"{get_message_link(reaction.message)}", inline=False)
+    embed.add_field(name="사용자", value=f"<@{payload.user_id}>", inline=True)
+    if payload.emoji.is_custom_emoji() : 
+        if payload.emoji.animated : 
+            embed.add_field(name="반응", value=f"<a:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
+        else : 
+            embed.add_field(name="반응", value=f"<:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
+    else : 
+        embed.add_field(name="반응", value=f"{payload.emoji.name}", inline=True)
+    embed.add_field(name="메시지 링크", value=message_link, inline=False)
     
     await channel.send(embed=embed)
 
