@@ -1154,7 +1154,7 @@ async def on_raw_reaction_add(payload) :
 
 
 @bot.event
-async def on_raw_reaction_add(payload) : 
+async def on_raw_reaction_remove(payload) : 
     if payload.channel_id in no_log_channel : 
         return
     
