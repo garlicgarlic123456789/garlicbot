@@ -51,10 +51,16 @@ class train_command(app_commands.Group) :
             error += 1
             return
     
-    @app_commands.command(name = "도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
-    @app_commands.describe(역명 = "역명 (뒤에 \'역\' 자 제외)", 열차종류 = "확인할 열차의 종류 (선택 사항)", 행선지 = "확인할 열차의 행선지 (선택 사항)")
-    @app_commands.choices(열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")])
-    async def 지하철도착정보(self, interaction: discord.Interaction, 역명: str, 열차종류: str = None, 행선지: str = None):
+    @app_commands.command(name = "도착정보", description = "특정 역의 전철 도착 정보를 확인합니다.")
+    @app_commands.describe(역종류 = "확인할 역의 종류", 역명 = "역명 (뒤에 \'역\' 자 제외)", 열차종류 = "확인할 열차의 종류 (선택 사항)", 행선지 = "확인할 열차의 행선지 (선택 사항)")
+    @app_commands.choices(
+        역종류 = [
+            app_commands.Choice(name = "수도권 전철 (일부 경전철 노선 미지원)", value = "수도권"),
+            app_commands.Choice(name = "동남권 전철 (부산김해경전철, 동해선 미지원)", value = "부산"),
+        ]
+        열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")]
+    )
+    async def 지하철도착정보(self, interaction: discord.Interaction, 역종류: str, 역명: str, 열차종류: str = None, 행선지: str = None):
         await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
         
@@ -64,201 +70,213 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(msg)
             return
         
-        if 열차종류 == "전체" : 
-            열차종류 = None
-        
-        실제입력역명 = 역명
-        
-        if 역명 == "평택지제" : 
-            역명 = "지제"
-        elif 역명 == "총신대입구" or 역명 == "이수" or 역명 == "이수(총신대입구)" : 
-            역명 = "총신대입구(이수)"
-        elif 역명 == "응암" : 
-            역명 = "응암순환(상선)"
-        elif 역명 == "공릉" : 
-            역명 = "공릉(서울산업대입구)"
-        elif 역명 == "남한산성입구" : 
-            역명 = "남한산성입구(성남법원, 검찰청)"
-        elif 역명 == "대모산입구" : 
-            역명 = "대모산"
-        elif 역명 == "천호" : 
-            역명 = "천호(풍납토성)"
-        elif 역명 == "몽촌토성" : 
-            역명 = "몽촌토성(평화의문)"
-        elif 역명 == "쌍용" : 
-            역명 = "쌍용(나사렛대)"
-        elif 역명 == "신정" : 
-            역명 = "신정(은행정)"
-        elif 역명 == "오목교" : 
-            역명 = "오목교(목동운동장앞)"
-        elif 역명 == "군자" : 
-            역명 = "군자(능동)"
-        elif 역명 == "아차산" : 
-            역명 = "아차산(어린이대공원후문)"
-        elif 역명 == "광나루" : 
-            역명 = "광나루(장신대)"
-        elif 역명 == "굽은다리" : 
-            역명 = "굽은다리(강동구민회관앞)"
-        elif 역명 == "올림픽공원" : 
-            역명 = "올림픽공원(한국체대)"
-        elif 역명 == "새절" : 
-            역명 = "새절(신사)"
-        elif 역명 == "증산" : 
-            역명 = "증산(명지대앞)"
-        elif 역명 == "월드컵경기장" : 
-            역명 = "월드컵경기장(성산)"
-        elif 역명 == "대흥" : 
-            역명 = "대흥(서강대앞)"
-        elif 역명 == "안암" : 
-            역명 = "안암(고대병원앞)"
-        elif 역명 == "월곡" : 
-            역명 = "월곡(동덕여대)"
-        elif 역명 == "상월곡" : 
-            역명 = "상월곡(한국과학기술연구원)"
-        elif 역명 == "화랑대" : 
-            역명 = "화랑대(서울여대입구)"
-        elif 역명 == "어린이대공원" : 
-            역명 = "어린이대공원(세종대)"
-        elif 역명 == "숭실대입구" : 
-            역명 = "숭실대입구(살피재)"
-        elif 역명 == "상도" : 
-            역명 = "상도(중앙대앞)"
-        elif "신촌" in 역명 : 
-            if "경의" in 역명 or "민자" in 역명 or "지상" in 역명 : 
-                역명 = "신촌(경의중앙선)"
-            elif "지하" in 역명 or "2" in 역명 : 
-                역명 = "신촌"
-            else : 
+        if 역종류 == "수도권" : 
+            if 열차종류 == "전체" : 
+                열차종류 = None
+            
+            실제입력역명 = 역명
+            
+            if 역명 == "평택지제" : 
+                역명 = "지제"
+            elif 역명 == "총신대입구" or 역명 == "이수" or 역명 == "이수(총신대입구)" : 
+                역명 = "총신대입구(이수)"
+            elif 역명 == "응암" : 
+                역명 = "응암순환(상선)"
+            elif 역명 == "공릉" : 
+                역명 = "공릉(서울산업대입구)"
+            elif 역명 == "남한산성입구" : 
+                역명 = "남한산성입구(성남법원, 검찰청)"
+            elif 역명 == "대모산입구" : 
+                역명 = "대모산"
+            elif 역명 == "천호" : 
+                역명 = "천호(풍납토성)"
+            elif 역명 == "몽촌토성" : 
+                역명 = "몽촌토성(평화의문)"
+            elif 역명 == "쌍용" : 
+                역명 = "쌍용(나사렛대)"
+            elif 역명 == "신정" : 
+                역명 = "신정(은행정)"
+            elif 역명 == "오목교" : 
+                역명 = "오목교(목동운동장앞)"
+            elif 역명 == "군자" : 
+                역명 = "군자(능동)"
+            elif 역명 == "아차산" : 
+                역명 = "아차산(어린이대공원후문)"
+            elif 역명 == "광나루" : 
+                역명 = "광나루(장신대)"
+            elif 역명 == "굽은다리" : 
+                역명 = "굽은다리(강동구민회관앞)"
+            elif 역명 == "올림픽공원" : 
+                역명 = "올림픽공원(한국체대)"
+            elif 역명 == "새절" : 
+                역명 = "새절(신사)"
+            elif 역명 == "증산" : 
+                역명 = "증산(명지대앞)"
+            elif 역명 == "월드컵경기장" : 
+                역명 = "월드컵경기장(성산)"
+            elif 역명 == "대흥" : 
+                역명 = "대흥(서강대앞)"
+            elif 역명 == "안암" : 
+                역명 = "안암(고대병원앞)"
+            elif 역명 == "월곡" : 
+                역명 = "월곡(동덕여대)"
+            elif 역명 == "상월곡" : 
+                역명 = "상월곡(한국과학기술연구원)"
+            elif 역명 == "화랑대" : 
+                역명 = "화랑대(서울여대입구)"
+            elif 역명 == "어린이대공원" : 
+                역명 = "어린이대공원(세종대)"
+            elif 역명 == "숭실대입구" : 
+                역명 = "숭실대입구(살피재)"
+            elif 역명 == "상도" : 
+                역명 = "상도(중앙대앞)"
+            elif "신촌" in 역명 : 
+                if "경의" in 역명 or "민자" in 역명 or "지상" in 역명 : 
+                    역명 = "신촌(경의중앙선)"
+                elif "지하" in 역명 or "2" in 역명 : 
+                    역명 = "신촌"
+                else : 
+                    embed = discord.Embed(
+                        title="오류",
+                        description=f"경의선 신촌역과 2호선 신촌역을 구분하여 입력해 주세요.",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=embed)
+                    return
+
+            try : 
+                data = get_subway_info(역명)
+
+                arrivals = data["realtimeArrivalList"]
+            except Exception as e : 
+                global error
+                print(f"오류 #{error}: {e}")
                 embed = discord.Embed(
                     title="오류",
-                    description=f"경의선 신촌역과 2호선 신촌역을 구분하여 입력해 주세요.",
+                    description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
                     color=discord.Color.red()
                 )
                 await interaction.followup.send(embed=embed)
+                error += 1
                 return
 
-        try : 
-            data = get_subway_info(역명)
+            print(arrivals)
+            print("----------------------")
 
-            arrivals = data["realtimeArrivalList"]
-        except Exception as e : 
-            global error
-            print(f"오류 #{error}: {e}")
+            subway_info = {}
+
+            for arrival in arrivals:
+                if 열차종류 is not None and arrival["btrainSttus"] != 열차종류 : 
+                    continue
+                if 행선지 != None and arrival["bstatnNm"] != 행선지 : 
+                    continue
+                
+                if arrival["subwayId"] == "1001" :
+                    line = "1호선"
+                elif arrival["subwayId"] == "1002" :
+                    line = "2호선"
+                elif arrival["subwayId"] == "1003" :
+                    line = "3호선"
+                elif arrival["subwayId"] == "1004" :
+                    line = "4호선"
+                elif arrival["subwayId"] == "1005" :
+                    line = "5호선"
+                elif arrival["subwayId"] == "1006" :
+                    line = "6호선"
+                elif arrival["subwayId"] == "1007" :
+                    line = "7호선"
+                elif arrival["subwayId"] == "1008" :
+                    line = "8호선"
+                elif arrival["subwayId"] == "1063" :
+                    line = "경의중앙선"
+                elif arrival["subwayId"] == "1065" :
+                    line = "공항철도"
+                elif arrival["subwayId"] == "1077" :
+                    line = "신분당선"
+                elif arrival["subwayId"] == "1075" :
+                    line = "수인분당선"
+                elif arrival["subwayId"] == "1081" :
+                    line = "경강선"
+                elif arrival["subwayId"] == "1067" :
+                    line = "경춘선"
+                elif arrival["subwayId"] == "1092" :
+                    line = "우이신설선"
+                elif arrival["subwayId"] == "1009" :
+                    line = "9호선"
+                elif arrival["subwayId"] == "1093" :
+                    line = "서해선"
+                elif arrival["subwayId"] == "1032" : 
+                    line = "GTX-A"
+                elif arrival["subwayId"] == "1094" : 
+                    line = "신림선"
+                else : 
+                    line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
+                direction = arrival["updnLine"]  # 상행/하행
+                arrival_info = arrival["arvlMsg2"]
+                match = re.search(r"\[(\d+)\]번째 전역 \((.*?)\)", arrival_info)
+                if match:
+                    number = int(match.group(1))
+                    content = match.group(2)
+                    if content == "지제" : 
+                        content = "평택지제"
+                    elif content == "총신대입구" or content == "이수(총신대입구)" or content == "총신대입구(이수)" : 
+                        content = "이수"
+                    
+                    if number == 2 : 
+                        arrival_info = f"전전역 ({content})"
+                    else : 
+                        arrival_info = f"{number}전역 ({content})"
+                elif arrival_info == f"{역명} 도착" : 
+                    arrival_info = "당역 도착"
+                elif arrival_info == f"{역명} 진입" : 
+                    arrival_info = "당역 진입"
+                elif arrival_info == f"{역명} 출발" : 
+                    arrival_info = "당역 출발"
+                
+                train_info = {
+                    "열차번호": arrival["btrainNo"],
+                    "행선지": arrival["bstatnNm"] + " (" + arrival["btrainSttus"] + ")",
+                    "도착 정보": arrival_info,
+                    "도착 예정": f"약 {int(arrival['barvlDt']) // 60} 분 {int(arrival['barvlDt']) % 60}초 후"
+                }
+
+                if line not in subway_info:
+                    subway_info[line] = {}
+
+                if direction not in subway_info[line]:
+                    subway_info[line][direction] = []
+
+                subway_info[line][direction].append(train_info)
+
+            text = f"{실제입력역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
+
+            if len(subway_info) == 0 : 
+                text += "\n도착 정보가 비어 있습니다."
+            else : 
+                # 정리된 도착 정보 출력
+                for line, directions in subway_info.items():
+                    text += f"\n노선: {line} 도착 정보\n"
+                    for direction, trains in directions.items():
+                        text += f"- 방향: {direction}\n"
+                        for train in trains:
+                            text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착 예정: {train['도착 예정']}\n"
             embed = discord.Embed(
-                title="오류",
-                description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
-                color=discord.Color.red()
+                title=f"{실제입력역명}역의 지하철 도착 정보",
+                description=text,
+                color=int("a5f0ff", 16)
             )
             await interaction.followup.send(embed=embed)
-            error += 1
-            return
-
-        print(arrivals)
-        print("----------------------")
-
-        subway_info = {}
-
-        for arrival in arrivals:
-            if 열차종류 is not None and arrival["btrainSttus"] != 열차종류 : 
-                continue
-            if 행선지 != None and arrival["bstatnNm"] != 행선지 : 
-                continue
+        elif 역종류 == "부산" : 
+            if 열차종류 == "급행" or 열차종류 == "특급" : 
+                embed = discord.Embed(
+                    title = "오류",
+                    description = "현재 동남권 전철에는 급행 또는 특급 열차가 운행하지 않습니다.",
+                    color = discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
             
-            if arrival["subwayId"] == "1001" :
-                line = "1호선"
-            elif arrival["subwayId"] == "1002" :
-                line = "2호선"
-            elif arrival["subwayId"] == "1003" :
-                line = "3호선"
-            elif arrival["subwayId"] == "1004" :
-                line = "4호선"
-            elif arrival["subwayId"] == "1005" :
-                line = "5호선"
-            elif arrival["subwayId"] == "1006" :
-                line = "6호선"
-            elif arrival["subwayId"] == "1007" :
-                line = "7호선"
-            elif arrival["subwayId"] == "1008" :
-                line = "8호선"
-            elif arrival["subwayId"] == "1063" :
-                line = "경의중앙선"
-            elif arrival["subwayId"] == "1065" :
-                line = "공항철도"
-            elif arrival["subwayId"] == "1077" :
-                line = "신분당선"
-            elif arrival["subwayId"] == "1075" :
-                line = "수인분당선"
-            elif arrival["subwayId"] == "1081" :
-                line = "경강선"
-            elif arrival["subwayId"] == "1067" :
-                line = "경춘선"
-            elif arrival["subwayId"] == "1092" :
-                line = "우이신설선"
-            elif arrival["subwayId"] == "1009" :
-                line = "9호선"
-            elif arrival["subwayId"] == "1093" :
-                line = "서해선"
-            elif arrival["subwayId"] == "1032" : 
-                line = "GTX-A"
-            elif arrival["subwayId"] == "1094" : 
-                line = "신림선"
-            else : 
-                line = arrival["subwayId"]  # 노선 ID (1001: 1호선, 1002: 2호선 등)
-            direction = arrival["updnLine"]  # 상행/하행
-            arrival_info = arrival["arvlMsg2"]
-            match = re.search(r"\[(\d+)\]번째 전역 \((.*?)\)", arrival_info)
-            if match:
-                number = int(match.group(1))
-                content = match.group(2)
-                if content == "지제" : 
-                    content = "평택지제"
-                elif content == "총신대입구" or content == "이수(총신대입구)" or content == "총신대입구(이수)" : 
-                    content = "이수"
-                
-                if number == 2 : 
-                    arrival_info = f"전전역 ({content})"
-                else : 
-                    arrival_info = f"{number}전역 ({content})"
-            elif arrival_info == f"{역명} 도착" : 
-                arrival_info = "당역 도착"
-            elif arrival_info == f"{역명} 진입" : 
-                arrival_info = "당역 진입"
-            elif arrival_info == f"{역명} 출발" : 
-                arrival_info = "당역 출발"
-            
-            train_info = {
-                "열차번호": arrival["btrainNo"],
-                "행선지": arrival["bstatnNm"] + " (" + arrival["btrainSttus"] + ")",
-                "도착 정보": arrival_info,
-                "도착 예정": f"약 {int(arrival['barvlDt']) // 60} 분 {int(arrival['barvlDt']) % 60}초 후"
-            }
-
-            if line not in subway_info:
-                subway_info[line] = {}
-
-            if direction not in subway_info[line]:
-                subway_info[line][direction] = []
-
-            subway_info[line][direction].append(train_info)
-
-        text = f"{실제입력역명}역의 지하철 도착 정보입니다. 참고용으로만 사용하시기 바랍니다.\n"
-
-        if len(subway_info) == 0 : 
-            text += "\n도착 정보가 비어 있습니다."
-        else : 
-            # 정리된 도착 정보 출력
-            for line, directions in subway_info.items():
-                text += f"\n노선: {line} 도착 정보\n"
-                for direction, trains in directions.items():
-                    text += f"- 방향: {direction}\n"
-                    for train in trains:
-                        text += f"  - 열차번호: {train['열차번호']}, 행선지: {train['행선지']}, 현재 위치: {train['도착 정보']}, 도착 예정: {train['도착 예정']}\n"
-        embed = discord.Embed(
-            title=f"{실제입력역명}역의 지하철 도착 정보",
-            description=text,
-            color=int("a5f0ff", 16)
-        )
-        await interaction.followup.send(embed=embed)
+            # 추후 작성 예정
     
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
     @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 상하행 = "열차의 방향", 개인응답 = "개인응답 사용 여부")
