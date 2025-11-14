@@ -276,6 +276,14 @@ class train_command(app_commands.Group) :
                 await interaction.followup.send(embed = embed)
                 return
             
+            embed = discord.Embed(
+                title = "오류",
+                description = "아직 지원하지 않는 기능입니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+            
             # 추후 작성 예정
     
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
