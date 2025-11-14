@@ -34,8 +34,9 @@ xp_setting = {}
 
 gpt_chat_threads = {}
 
-train_timetable_api_key = os.getenv("train_timetable_api")
-train_arrivals_api_key = os.getenv("train_arrivals_api")
+train_timetable_api_key = os.getenv("train_timetable_api") # 수도권 전철 시각표정보 api
+train_arrivals_api_key = os.getenv("train_arrivals_api") # 수도권 전철 도착정보 api
+busan_train_arrivals_api_key = os.getenv("busan_train_arrivals_api") # 부산 지하철 도착정보 apu (시각표 기반)
 
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
