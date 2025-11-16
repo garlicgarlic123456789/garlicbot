@@ -140,6 +140,13 @@ def init_db() :
             join_time INTEGER
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS railblue_accept (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            accept INTEGER
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -148,6 +155,33 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+async def railblue_accept_get(user_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT accept FROM railblue_accept WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row : 
+        if row[0] == 1 : 
+            return True
+        else : 
+            return False
+    else : 
+        return False
+
+async def railblue_accept_update(user_id: int, accept: bool) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT accept FROM railblue_accept WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if accept : 
+        accept = 1
+    else : 
+        accept = 0
+    if row : 
+        c.execute("UPDATE railblue_accept SET accept = ? WHERE user_id = ?", (accept, user_id,))
+    else : 
+        c.execute("INSERT INTO railblue_accept (accept, user_id) VALUES (?, ?)", (accept, user_id,))
 
 async def reset_exp(server_id: int) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
