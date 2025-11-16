@@ -34,6 +34,8 @@ xp_setting = {}
 
 gpt_chat_threads = {}
 
+railblue_accept_ready = []
+
 train_timetable_api_key = os.getenv("train_timetable_api")
 train_arrivals_api_key = os.getenv("train_arrivals_api")
 
