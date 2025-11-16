@@ -1,6 +1,7 @@
 import discord
 import re
 from discord import app_commands
+from commands.database import *
 from commands.define import *
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -260,6 +261,53 @@ class train_command(app_commands.Group) :
         )
         await interaction.followup.send(embed=embed)
     
+    @app_commands.command(name = "레일블루정책확인", description = "철도 관련 명령어 중 레일블루 사이트에서 정보를 가져와서 제공되는 기능들에 대해 관련 정책을 확인합니다.")
+    async def railblue_accept_command(self, interaction: discord.Interaction) : 
+        await interaction.response.defer()
+        embed = discord.Embed(
+            title = "레일블루에서 제공되는 정보에 대한 정책",
+            description = "레일블루 사이트 링크: <https://rail.blue/>\n\n1. 레일블루 사이트를 통해 마늘봇에서 출력되는 정보는 __실시간 정보가 아니며, 참고용으로만 사용하시기 바랍니다.__\n2. 제공되는 정보는 정보의 정확성, 신뢰성, 최신성을 보장하지 않습니다. 이 정보에 대하여 철도 운영기관에 민원을 접수하지 마시기 바랍니다.\n\n귀하께서는 이 동의를 거부할 권리가 있으나, 거부 시 관련 기능 이용이 제한될 수 있습니다. 이 사항에 동의하시는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의 의사를 표시할 수 있으며, 추후 동의를 철회하려는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의를 철회할 수 있습니다.",
+            color = int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
+        railblue_accept_ready.append(interaction.user.id)
+        return
+
+    @app_commands.command(name = "레일블루정책동의", description = "철도 관련 명령어 중 레일블루 사이트에서 정보를 가져와서 제공되는 기능들에 대해 관련 정책에 동의합니다.")
+    @app_commands.describe(동의여부 = "정책 동의 여부")
+    @app_commands.choices(동의여부 = [
+        app_commands.Choice(name = "동의함", value = "True"),
+        app_commands.Choice(name = "동의하지 않음", value = "False"),
+    ])
+    async def railblue_accept_command2(self, interaction: discord.Interaction, 동의여부: str) : 
+        await interaction.response.defer()
+        status, until, reason = is_blocked(interaction.user)
+        
+        if status:
+            msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+            await interaction.followup.send(msg)
+            return
+        if 동의여부 == "True" : 
+            동의여부 = True
+        else : 
+            동의여부 = False
+        if interaction.user.id not in railblue_accept_ready and 동의여부: 
+            embed = discord.Embed(
+                title = "오류",
+                description = "정책에 동의하기 전 먼저 정책 내용을 확인해 주세요. </레일블루정책확인:1391677509111644200> 명령어를 사용해 주세요.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        await railblue_accept_update(interaction.user.id, 동의여부)
+        embed = discord.Embed(
+            title = "완료",
+            description = "설정이 저장되었습니다.",
+            color = int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
+        return
+
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
     @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 상하행 = "열차의 방향", 개인응답 = "개인응답 사용 여부")
     @app_commands.choices(상하행 = [app_commands.Choice(name="상행", value="상행"), app_commands.Choice(name="하행", value="하행"), app_commands.Choice(name="외선순환 (2호선)", value="외선"), app_commands.Choice(name="내선순환 (2호선)", value="내선")])
@@ -273,6 +321,17 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(msg)
             return
         
+        accept = await railblue_accept_get(interaction.user.id)
+
+        if not accept : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "레일블루에서 가져오는 정보에 대한 정책 동의 후 이용해 주세요. </레일블루정책확인:1391677509111644200> 명령어를 사용해 주세요.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
         if 날짜 is None : 
             날짜 = await today_to_text()
 
@@ -281,21 +340,21 @@ class train_command(app_commands.Group) :
             위치, 지연 = await get_train_info_railblue(열차번호, 날짜)
             timetable = await get_train_timetable(열차번호, 날짜, 상하행)
             embed2 = discord.Embed(
-                title = f"열차 #{열차번호} 실시간 정보",
-                description = f"**[주의!]** 이 정보는 참고용으로만 사용하시기 바랍니다.\n\n- 위치: {위치}\n- 지연: {지연}",
+                title = f"열차 #{열차번호} 정보",
+                description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
                 color = int("a5f0ff", 16),
             )
             embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
             if timetable[0] == False : 
                 embed2 = discord.Embed(
-                    title = f"열차 #{열차번호} 실시간 정보",
-                    description = f"**[주의!]** 이 정보는 참고용으로만 사용하시기 바랍니다.\n\n- 위치: {위치}\n- 지연: {지연}",
+                    title = f"열차 #{열차번호} 정보",
+                    description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
                     color = int("a5f0ff", 16),
                 )
                 embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
                 embed = discord.Embed(
                     title=f"열차 #{열차번호} 시각표 정보",
-                    description=f"**[주의!]** 이 정보는 시각표를 기준으로 한 정보입니다. 실제 도착 시각과 차이가 있을 수 있으며 가급적 아래의 지연 시간 정보를 함께 참고하시기 바랍니다.\n\n시각표 정보를 조회할 수 없었습니다. 지원되지 않는 노선이거나 열차 번호가 올바르지 않을 수 있습니다.",
+                    description=f"주의: 이 정보는 시각표를 기준으로 한 정보입니다. 실제 도착 시각과 차이가 있을 수 있으며 가급적 아래의 지연 시간 정보를 함께 참고하시기 바랍니다.\n\n시각표 정보를 조회할 수 없었습니다. 지원되지 않는 노선이거나 열차 번호가 올바르지 않을 수 있습니다.",
                     color = int("a5f0ff", 16)
                 )
                 await interaction.followup.send(embeds=[embed, embed2])
@@ -303,7 +362,7 @@ class train_command(app_commands.Group) :
             else : 
                 embed2 = discord.Embed(
                     title = f"열차 #{열차번호} 실시간 정보",
-                    description = f"**[주의!]** 이 정보는 참고용으로만 사용하시기 바랍니다.\n\n- 위치: {위치}\n- 지연: {지연}",
+                    description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
                     color = int("a5f0ff", 16),
                 )
                 embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
