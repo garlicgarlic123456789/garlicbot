@@ -309,9 +309,8 @@ class train_command(app_commands.Group) :
         return
 
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
-    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 상하행 = "열차의 방향", 개인응답 = "개인응답 사용 여부")
-    @app_commands.choices(상하행 = [app_commands.Choice(name="상행", value="상행"), app_commands.Choice(name="하행", value="하행"), app_commands.Choice(name="외선순환 (2호선)", value="외선"), app_commands.Choice(name="내선순환 (2호선)", value="내선")])
-    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 상하행: str, 날짜: str = None, 개인응답: bool = False) : 
+    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
+    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str = None, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
@@ -332,44 +331,91 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(embed = embed)
             return
         
+        today_text = await today_to_text()
+        
         if 날짜 is None : 
-            날짜 = await today_to_text()
+            날짜 = today_text
 
-        try : 
+        # try : 
+        if True : 
             기준시각 = await today_to_text2()
-            위치, 지연 = await get_train_info_railblue(열차번호, 날짜)
-            timetable = await get_train_timetable(열차번호, 날짜, 상하행)
+            위치, 지연, 지연업데이트시각 = await get_train_info_railblue(열차번호, 날짜)
+            timetable, delay = await get_train_timetable_railblue(열차번호, 날짜)
+            delay_old = 지연 # 레거시 방식의 지연시분 표시 방식대로 지연 정보 저장 (except문에서 사용)
+            try : 
+                if delay is not None : 
+                    timetable_delay_input_type = delay[1]
+                    timetable_delay_update_before = delay[3]
+                    timetable_delay_update = datetime.datetime.today()
+                    timetable_delay_update = timetable_delay_update.replace(
+                        hour=timetable_delay_update_before[0],
+                        minute=timetable_delay_update_before[1],
+                        second=timetable_delay_update_before[2],
+                        microsecond=0 # 마이크로초는 0으로 초기화
+                    )
+                    timetable_delay_time = [delay[2], delay[4]]
+                if 지연업데이트시각 is not None : 
+                    default_delay_input_type = 지연업데이트시각[0]
+                    default_delay_update = datetime.datetime.now() - timedelta(seconds=지연업데이트시각[1])
+                    if default_delay_update >= timetable_delay_update + timedelta(seconds = 20) : 
+                        지연 = 지연
+                        ago = datetime.datetime.now() - default_delay_update
+                        total_minutes = ago.total_seconds() // 60
+                        if total_minutes < 60 : 
+                            정보출처 = f"레일블루 - {default_delay_input_type} (약 {str(total_minutes)}분 전 업데이트됨)"
+                        else : 
+                            정보출처 = f"레일블루 - {default_delay_input_type} (약 {str(total_minutes // 60)}시간 전 업데이트됨)"
+                    else : 
+                        if timetable_delay_time[1][0] == 0 and timetable_delay_time[1][1] == 0 and timetable_delay_time[1][2] == 0 : 
+                            지연 = f"정시 운행 중"
+                        elif timetable_delay_time[0] : 
+                            지연 = f"{str(delay[4][0] * 60 + delay[4][1])}분 {str(delay[4][2])}초 지연 운행 중"
+                        else : 
+                            지연 = f"{str(delay[4][0] * 60 + delay[4][1])}분 {str(delay[4][2])}초 조기 운행 중"
+                        
+                        ago = datetime.datetime.now() - timetable_delay_update
+                        total_minutes = ago.total_seconds() // 60
+                        if total_minutes < 60 : 
+                            정보출처 = f"레일블루 - {timetable_delay_input_type} (약 {str(int(total_minutes))}분 전 업데이트됨)"
+                        else : 
+                            정보출처 = f"레일블루 - {timetable_delay_input_type} (약 {str(int(total_minutes // 60))}시간 전 업데이트됨)"
+                elif delay is not None : 
+                    if timetable_delay_time[1][0] == 0 and timetable_delay_time[1][1] == 0 and timetable_delay_time[1][2] == 0 : 
+                        지연 = f"정시 운행 중"
+                    elif timetable_delay_time[0] : 
+                        지연 = f"{str(delay[4][0] * 60 + delay[4][1])}분 {str(delay[4][2])}초 지연 운행 중"
+                    else : 
+                        지연 = f"{str(delay[4][0] * 60 + delay[4][1])}분 {str(delay[4][2])}초 조기 운행 중"
+                    
+                    ago = datetime.datetime.now() - timetable_delay_update
+                    total_minutes = ago.total_seconds() // 60
+                    if total_minutes < 60 : 
+                        정보출처 = f"레일블루 - {timetable_delay_input_type} (약 {str(int(total_minutes))}분 전 업데이트됨)"
+                    else : 
+                        정보출처 = f"레일블루 - {timetable_delay_input_type} (약 {str(int(total_minutes // 60))}시간 전 업데이트됨)"
+                else : 
+                    정보출처 = "레일블루 - *(알 수 없음)*"
+            except Exception as e : 
+                embed2 = discord.Embed(
+                    title = f"열차 #{열차번호} 정보",
+                    description = f"오류: 새로 업데이트된 열차 정보 표시 방식대로 열차 정보를 표시하는 도중 문제가 발생하여 레거시 방식으로 표시합니다.\n\n**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
+                    color = discord.Color.yellow(),
+                )
+                embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
+                pages = generate_pages(열차번호, timetable)
+                view = Paginator(pages, embed2)
+                await interaction.followup.send(embeds=[pages[0], embed2], view=view)
+                return
             embed2 = discord.Embed(
                 title = f"열차 #{열차번호} 정보",
-                description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
+                description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!), [레일블루 열차 시각표 정보](https://rail.blue/railroad/logis/scheduleinfo.aspx?date={날짜}&train={열차번호}#!)\n\n- 위치: {위치}\n- 지연: {지연}\n- 정보 출처: {정보출처}",
                 color = int("a5f0ff", 16),
             )
             embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
-            if timetable[0] == False : 
-                embed2 = discord.Embed(
-                    title = f"열차 #{열차번호} 정보",
-                    description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
-                    color = int("a5f0ff", 16),
-                )
-                embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
-                embed = discord.Embed(
-                    title=f"열차 #{열차번호} 시각표 정보",
-                    description=f"주의: 이 정보는 시각표를 기준으로 한 정보입니다. 실제 도착 시각과 차이가 있을 수 있으며 가급적 아래의 지연 시간 정보를 함께 참고하시기 바랍니다.\n\n시각표 정보를 조회할 수 없었습니다. 지원되지 않는 노선이거나 열차 번호가 올바르지 않을 수 있습니다.",
-                    color = int("a5f0ff", 16)
-                )
-                await interaction.followup.send(embeds=[embed, embed2])
-                return
-            else : 
-                embed2 = discord.Embed(
-                    title = f"열차 #{열차번호} 실시간 정보",
-                    description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
-                    color = int("a5f0ff", 16),
-                )
-                embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
-            pages = generate_pages(열차번호, timetable[2])
+            pages = generate_pages(열차번호, timetable)
             view = Paginator(pages, embed2)
             await interaction.followup.send(embeds=[pages[0], embed2], view=view)
-        except Exception as e : 
+        '''except Exception as e : 
             global error
             print(f"오류 #{error}: {e}")
             embed = discord.Embed(
@@ -379,45 +425,105 @@ class train_command(app_commands.Group) :
             )
             await interaction.followup.send(embed=embed)
             error += 1
-            return
+            return'''
 
 ITEMS_PER_PAGE = 5
 
 def generate_pages(train, data):
-    items = list(data.items())
     pages = []
 
     # 데이터 쪼개기
-    for i in range(0, len(items), ITEMS_PER_PAGE):
-        chunk = items[i:i+ITEMS_PER_PAGE]
+    for j in range(0, len(data), ITEMS_PER_PAGE):
+        chunk = data[j:j+ITEMS_PER_PAGE]
 
         embed = discord.Embed(
             title=f"열차 #{train} 시각표 정보",
             description=f"**[주의!]** 이 정보는 시각표를 기준으로 한 정보입니다. 실제 도착 시각과 차이가 있을 수 있으며 가급적 아래의 지연 시간 정보를 함께 참고하시기 바랍니다.",
             color=int("a5f0ff", 16)
         )
-        for k, v in chunk:
-            역명 = k
-            통과여부 = v['stop']
-            도착시간 = v['arrivetime']
-            출발시간 = v['departtime']
-
-            title = f"{역명}역 ({통과여부})"
-            if 통과여부 == "정차" : 
-                des = f"- 도착 시각: {도착시간}\n- 출발 시각: {출발시간}"
-            elif 통과여부 == "출발" : 
-                des = f"- 출발 시각: {출발시간}"
-            elif 통과여부 == "종착" : 
-                des = f"- 도착 시각: {도착시간}"
+        for i in chunk:
+            역명 = i["역명"]
+            정차유형 = i["정차유형"]
+            예정도착시간 = i['도착예정']
+            예정출발시간 = i['출발예정']
+            if i["도착시각"] != '' : 
+                실제도착시간 = i['도착시각']
+                도착지연 = i["도착지연"]
+                if 도착지연 == "00:00:00" : 
+                    도착지연 = "0"
+                elif "+" in 도착지연 : 
+                    temp = 도착지연[1:].split(":")
+                    for j in range(len(temp)) : 
+                        temp[j] = int(temp[j])
+                    도착지연 = "+" + str(temp[0] * 60 + temp[1])
+                elif "-" in 도착지연 : 
+                    temp = 도착지연[1:].split(":")
+                    for j in range(len(temp)) : 
+                        temp[j] = int(temp[j])
+                    도착지연 = "-" + str(temp[0] * 60 + temp[1])
             else : 
-                des = f"- 통과 시각: {출발시간}"
+                실제도착시간 = None
+                도착지연 = None
+            if i["출발시각"] != '' : 
+                실제출발시간 = i['출발시각']
+                출발지연 = i["출발지연"]
+                if 출발지연 == "00:00:00" : 
+                    출발지연 = "0"
+                elif "+" in 출발지연 : 
+                    temp = 출발지연[1:].split(":")
+                    for j in range(len(temp)) : 
+                        temp[j] = int(temp[j])
+                    출발지연 = "+" + str(temp[0] * 60 + temp[1])
+                elif "-" in 출발지연 : 
+                    temp = 출발지연[1:].split(":")
+                    for j in range(len(temp)) : 
+                        temp[j] = int(temp[j])
+                    출발지연 = "-" + str(temp[0] * 60 + temp[1])
+            else : 
+                실제출발시간 = None
+                출발지연 = None
+
+            title = f"{역명} ({정차유형})"
+            if 정차유형 == "정차" : 
+                if 실제도착시간 is None : 
+                    des = f"- 도착 시각: {예정도착시간}"
+                else : 
+                    des = f"- 도착 시각: ~~{예정도착시간}~~ {실제도착시간} ({도착지연})"
+                if 실제출발시간 is None : 
+                    des += f"\n- 출발 시각: {예정출발시간}"
+                else : 
+                    des += f"\n- 출발 시각: ~~{예정출발시간}~~ {실제출발시간} ({출발지연})"
+            elif 정차유형 == "통과" : 
+                if 실제출발시간 is None : 
+                    des = f"- 통과 시각: {예정출발시간}"
+                else : 
+                    des = f"- 통과 시각: ~~{예정출발시간}~~ {실제출발시간} ({출발지연})"
+            elif 정차유형 == "출발" : 
+                if 실제출발시간 is None : 
+                    des = f"- 출발 시각: {예정출발시간}"
+                else : 
+                    des = f"- 출발 시각: ~~{예정출발시간}~~ {실제출발시간} ({출발지연})"
+            elif 정차유형 == "종착" : 
+                if 실제도착시간 is None : 
+                    des = f"- 도착 시각: {예정도착시간}"
+                else : 
+                    des = f"- 도착 시각: ~~{예정도착시간}~~ {실제도착시간} ({도착지연})"
+            else : 
+                if 실제도착시간 is None : 
+                    des = f"- 도착 시각: {예정도착시간}"
+                else : 
+                    des = f"- 도착 시각: ~~{예정도착시간}~~ {실제도착시간} ({도착지연})"
+                if 실제출발시간 is None : 
+                    des += f"\n- 출발 시각: {예정출발시간}"
+                else : 
+                    des += f"\n- 출발 시각: ~~{예정출발시간}~~ {실제출발시간} ({출발지연})"
             embed.add_field(name=title, value=des, inline=False)
         
-        page_count = len(items)//ITEMS_PER_PAGE
-        if len(items) % ITEMS_PER_PAGE != 0 : 
+        page_count = len(data)//ITEMS_PER_PAGE
+        if len(data) % ITEMS_PER_PAGE != 0 : 
             page_count += 1
 
-        embed.set_footer(text=f"페이지 {i//ITEMS_PER_PAGE + 1} / {page_count}")
+        embed.set_footer(text=f"페이지 {j//ITEMS_PER_PAGE + 1} / {page_count}")
 
         pages.append(embed)
 
@@ -445,6 +551,178 @@ class Paginator(View):
             await interaction.response.edit_message(embeds=[self.pages[self.current_page], self.embed], view=self)
         else:
             await interaction.response.defer()
+
+async def get_train_timetable_railblue(train, date) : 
+    options = webdriver.FirefoxOptions()
+    options.add_argument("--headless")
+    driver = webdriver.Firefox(options=options)
+    driver.get(f"https://rail.blue/railroad/logis/magiainfo.aspx?train={train}&date={date}#!")
+    await asyncio.sleep(2.5)
+
+    # 1. 전체 테이블 찾기
+    table = driver.find_element(By.ID, "tblResult")
+
+    # 2. 데이터 행 가져오기 (헤더 제외)
+    rows = table.find_elements(By.CSS_SELECTOR, "tr.trResult_Time_Magia_H")
+
+    data_list = []
+
+    first_station = True
+    current = 1
+    row_cnt = len(rows) // 2
+
+    # 2줄씩 묶어서 처리 (i: 윗줄 / i+1: 아랫줄)
+    for i in range(0, len(rows), 2):
+        top_row = rows[i]       # 윗줄 (도착 정보 포함)
+        bottom_row = rows[i+1]  # 아랫줄 (출발 정보 포함)
+        
+        top_tds = top_row.find_elements(By.TAG_NAME, "td")
+        bottom_tds = bottom_row.find_elements(By.TAG_NAME, "td")
+
+        # --- [데이터 추출 및 공백 제거] ---
+        
+        # 1. 역명 (Top Row -> class="station_text_d")
+        try:
+            station_name = top_row.find_element(By.CSS_SELECTOR, ".station_text_d").text.strip()
+        except:
+            station_name = ""
+
+        # 2. 도착예정 (Top Row -> index 1)
+        # 값이 없으면 "&nbsp;" -> .text시 " " -> strip() 후 "" 가 됨
+        arrival_sched = top_tds[1].text.strip()
+
+        # 3. 출발예정 (Bottom Row -> index 0)
+        # 주의: 아랫줄은 앞쪽 셀(역명 등)이 rowspan으로 밀려서 0번이 출발예정임
+        dept_sched = bottom_tds[0].text.strip()
+
+        # 4. 입력구분 (Top Row -> index 2)
+        input_type = top_tds[2].text.strip()
+        input_type = input_type.replace("\n", ": ")
+        if input_type == "수기" : 
+            input_type = "수동: 수기"
+
+        # 5. 도착시각 (Top Row -> index 3)
+        arrival_real = top_tds[3].text.strip()
+
+        # 6. 출발시각 (Bottom Row -> index 1)
+        # 아랫줄 0번이 출발예정이므로, 1번이 출발시각(실제)
+        dept_real = bottom_tds[1].text.strip()
+
+        # 7. 도착지연 (Top Row -> index 4)
+        arrival_delay = top_tds[4].text.strip()
+
+        # 8. 출발지연 (Bottom Row -> index 2)
+        dept_delay = bottom_tds[2].text.strip()
+
+        if first_station : 
+            data_list.append({
+                "역명": station_name,
+                "도착예정": arrival_sched,
+                "출발예정": dept_sched,
+                "입력구분": input_type,
+                "도착시각": arrival_real,
+                "출발시각": dept_real,
+                "도착지연": arrival_delay,
+                "출발지연": dept_delay,
+                "정차유형": "출발",
+            })
+            first_station = False
+        else : 
+            if current == row_cnt : 
+                data_list.append({
+                    "역명": station_name,
+                    "도착예정": arrival_sched,
+                    "출발예정": dept_sched,
+                    "입력구분": input_type,
+                    "도착시각": arrival_real,
+                    "출발시각": dept_real,
+                    "도착지연": arrival_delay,
+                    "출발지연": dept_delay,
+                    "정차유형": "종착",
+                })
+            elif arrival_sched == "" or arrival_sched is None or arrival_sched == " " : 
+                data_list.append({
+                    "역명": station_name,
+                    "도착예정": arrival_sched,
+                    "출발예정": dept_sched,
+                    "입력구분": input_type,
+                    "도착시각": arrival_real,
+                    "출발시각": dept_real,
+                    "도착지연": arrival_delay,
+                    "출발지연": dept_delay,
+                    "정차유형": "통과",
+                })
+            else : 
+                data_list.append({
+                    "역명": station_name,
+                    "도착예정": arrival_sched,
+                    "출발예정": dept_sched,
+                    "입력구분": input_type,
+                    "도착시각": arrival_real,
+                    "출발시각": dept_real,
+                    "도착지연": arrival_delay,
+                    "출발지연": dept_delay,
+                    "정차유형": "정차",
+                })
+
+        current += 1
+    
+    delay = None
+    
+    for i in reversed(data_list) : 
+        # delay = [지연정보존재여부, 입력방식, 지연인지 조착인지(지연이 True), 지연시분[시, 분, 초], 입력시각[시, 분, 초]]
+        if i["출발지연"] != "" : 
+            if i["출발지연"] == "00:00:00" : 
+                temp = i["출발시각"].split(":")
+                for j in range(len(temp)) : 
+                    temp[j] = int(temp[j])
+                delay = [True, i["입력구분"], True, temp, [0, 0, 0]]
+                break
+            elif "+" in i["출발지연"] : 
+                temp = i["출발시각"].split(":")
+                for j in range(len(temp)) : 
+                    temp[j] = int(temp[j])
+                temp2 = i["출발지연"][1:].split(":")
+                for j in range(len(temp2)) : 
+                    temp2[j] = int(temp2[j])
+                delay = [True, i["입력구분"], True, temp, temp2]
+                break
+            elif "-" in i["출발지연"] : 
+                temp = i["출발시각"].split(":")
+                for j in range(len(temp)) : 
+                    temp[j] = int(temp[j])
+                temp2 = i["출발지연"][1:].split(":")
+                for j in range(len(temp2)) : 
+                    temp2[j] = int(temp2[j])
+                delay = [True, i["입력구분"], False, temp, temp2]
+                break
+        elif i["도착지연"] != "" : 
+            if i["도착지연"] == "00:00:00" : 
+                temp = i["도착시각"].split(":")
+                for j in range(len(temp)) : 
+                    temp[j] = int(temp[j])
+                delay = [True, i["입력구분"], True, temp, [0, 0, 0]]
+                break
+            elif "+" in i["도착지연"] : 
+                temp = i["도착시각"].split(":")
+                for j in range(len(temp)) : 
+                    temp[j] = int(temp[j])
+                temp2 = i["도착지연"][1:].split(":")
+                for j in range(len(temp2)) : 
+                    temp2[j] = int(temp2[j])
+                delay = [True, i["입력구분"], True, temp, temp2]
+                break
+            elif "-" in i["도착지연"] : 
+                temp = i["도착시각"].split(":")
+                for j in range(len(temp)) : 
+                    temp[j] = int(temp[j])
+                temp2 = i["도착지연"][1:].split(":")
+                for j in range(len(temp2)) : 
+                    temp2[j] = int(temp2[j])
+                delay = [True, i["입력구분"], False, temp, temp2]
+                break
+    
+    return data_list, delay   
 
 async def parse_train_info(text):
     # 3. '운행중' 포함 & 분 초 단위 지연
@@ -598,9 +876,33 @@ async def get_train_info_railblue(train, date):
         else : 
             delay_msg = "*(알 수 없음)*"
     
+    default_page_delay = driver.find_element(by = By.ID, value = "spDelayUpdated")
+    default_page_delay = default_page_delay.text
+    if "수동으로" in default_page_delay : 
+        if "방금" in default_page_delay : 
+            default_page_delay = ["수동", 20]
+        else : 
+            pattern = r'(\d+)(분|시간)'
+            match = re.search(pattern, default_page_delay)
+            result_seconds_int = 0
+
+            amount = match.group(1)
+            unit = match.group(2)
+
+            amount = int(amount)
+
+            if unit == '분':
+                seconds = amount * 60
+            elif unit == '시간':
+                seconds = amount * 60 * 60
+            
+            default_page_delay = ["수동: 직접 입력", seconds]
+    else : 
+        default_page_delay = None            
+    
     driver.quit()
     
-    return loc_msg, delay_msg
+    return loc_msg, delay_msg, default_page_delay
 
 async def today_to_text() : 
     return datetime.date.today().strftime("%Y%m%d")
