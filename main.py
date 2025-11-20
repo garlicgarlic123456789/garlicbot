@@ -6641,9 +6641,10 @@ gpt_4_1_cooldowns_d = 60 * 15
 @bot.tree.command(name="생성형인공지능", description="생성형 AI와 대화합니다.")
 @app_commands.choices(
     모델 = [
-        app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델이자 가장 뛰어난 모델)", value = "GPT-5"),
-        app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 최신 모델의 더 빠른 버전)", value = "GPT-5 mini"),
-        app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 최신 모델의 가장 빠른 버전)", value = "GPT-5 nano"),
+        app_commands.Choice(name = "GPT-5.1 (OpenAI에서 개발한 최신 모델이자 가장 뛰어난 모델)", value = "GPT-5.1"),
+        app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델의 직전 모델)", value = "GPT-5"),
+        app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 GPT-5 모델의 더 빠른 버전)", value = "GPT-5 mini"),
+        app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 GPT-5 모델의 가장 빠른 버전)", value = "GPT-5 nano"),
         app_commands.Choice(name = "Gemini 1.5 Flash (Google에서 개발한 빠르게 답변하는 이전 모델의 경량화 버전)", value = "Gemini 1.5 Flash"),
         app_commands.Choice(name = "Gemini 2.0 Flash (Google에서 개발한 빠르게 답변하는 최신 모델의 경량화 버전)", value = "Gemini 2.0 Flash"),
         app_commands.Choice(name = "Gemini 2.0 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.0 Flash Lite"),
@@ -6669,7 +6670,7 @@ gpt_4_1_cooldowns_d = 60 * 15
     파일 = "파일 입력 (선택)",
     effort = "api에서의 effort 값. 이 값은 모델이 얼마나 추론하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
 )
-async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5 nano", 파일: discord.Attachment = None, effort: str = "medium"):
+async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, effort: str = "medium"):
     # API 요청 보내기
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -6782,7 +6783,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             return
         response = await asyncio.to_thread(cute_model3.generate_content, 프롬프트)
         result = response.text
-    elif 모델 == "GPT-5" or 모델 == "GPT-5 mini" or 모델 == "GPT-5 nano" :
+    elif 모델 == "GPT-5.1" or 모델 == "GPT-5" or 모델 == "GPT-5 mini" or 모델 == "GPT-5 nano" :
         if get_premium(interaction.user.id) == False :
             user_id = interaction.user.id
             now = datetime.utcnow()
