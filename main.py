@@ -550,18 +550,19 @@ def load_suggestions():
     with open('suggestions.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
-'''
-# JSON 파일 경로
-WARNINGS_FILE = "warnings.json"
-
 # 경고 데이터 로드 및 저장 함수
-def load_warnings():
+def load_warnings(old_warning: bool = False):
+    if old_warning == False : 
+        raise NotImplementedError("load_warnings() 함수는 경고 개수 db를 json으로 사용하던 시절의 함수입니다. 현재는 sqlite로 관련 db가 이전되었으며 이 함수는 더 이상 사용되지 않습니다. 자세한 사항은 https://github.com/garlicfood1234/garlicbot/issues/345 참고하세요.\n\n참고: 여전히 이 함수를 사용해야 하는 경우 old_warning 매개변수를 True로 설정하여 이 오류를 무시할 수 있습니다.")
+        return
+    WARNINGS_FILE = "warnings.json"
     try:
         with open(WARNINGS_FILE, "r") as file:
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
+'''
 def save_warnings(warnings):
     with open(WARNINGS_FILE, "w") as file:
         json.dump(warnings, file, indent=4)
@@ -8626,6 +8627,19 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
             return
         await interaction.response.defer()
         await reset_exp(interaction.guild.id)
+        await interaction.followup.send("처리되었습니다.")
+    elif 아이디 == 26 : 
+        if 입력1 is not None and 입력1 == "True" : 
+            입력1 = True
+        else : 
+            입력1 = False
+        await interaction.response.defer()
+        warnings = load_warnings()
+        for key, value in warnings.items() : 
+            temp = key.split("/")
+            if len(temp) != 2: 
+                continue
+            await set_warning(int(temp[0]), int(temp[1]), value)
         await interaction.followup.send("처리되었습니다.")
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
