@@ -8634,7 +8634,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         else : 
             입력1 = False
         await interaction.response.defer()
-        warnings = load_warnings()
+        warnings = load_warnings(입력1)
         for key, value in warnings.items() : 
             temp = key.split("/")
             if len(temp) != 2: 
