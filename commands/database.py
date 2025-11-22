@@ -50,7 +50,15 @@ def init_db() :
     # -1은 기능 비활성회, 0은 삭제만 하고 타임아웃하지 않기, 1 이상은 타임아웃.
 
     c.execute("CREATE TABLE IF NOT EXISTS automod_exception_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER, on_off INTEGER)") # 자동검열 예외 채널
-
+    
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS warn (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            user_id INTEGER,
+            warn INTEGER
+        )
+    """)
     c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, max INTEGER)") # 검열기능 사용 여부
     c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
     c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
@@ -140,6 +148,13 @@ def init_db() :
             join_time INTEGER
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS railblue_accept (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            accept INTEGER
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -148,6 +163,80 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
     conn.close()
+
+'''
+c.execute("""
+        CREATE TABLE IF NOT EXISTS warn (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            user_id INTEGER,
+            warn INTEGER
+        )
+    """)'''
+
+async def set_warning(server_id: int, user_id: int, warn: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT warn FROM warn WHERE server_id = ? AND user_id = ?", (server_id, user_id,))
+    row = c.fetchone()
+    if row : 
+        c.execute("UPDATE warn SET warn = ? WHERE server_id = ? AND user_id = ?", (warn, server_id, user_id,))
+        return warn
+    else : 
+        c.execute("INSERT INTO warn (server_id, user_id, warn) VALUES (?, ?, ?)", (server_id, user_id, warn))
+        return warn
+
+async def add_warning(server_id: int, user_id: int, adding: int) : 
+    old_warning_cnt = await load_warning(server_id, user_id)
+    new_warning = old_warning_cnt + adding
+    new_warning_cnt = await set_warning(server_id, user_id, new_warning)
+    return [old_warning_cnt, adding, new_warning_cnt]
+
+async def remove_warning(server_id: int, user_id: int, removing: int) : 
+    old_warning_cnt = await load_warning(server_id, user_id)
+    if old_warning_cnt < removing : 
+        new_warning = 0
+    else :
+        new_warning = old_warning_cnt - removing
+    new_warning_cnt = await set_warning(server_id, user_id, new_warning)
+    return [old_warning_cnt, removing, new_warning_cnt]
+
+async def load_warning(server_id: int, user_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT warn FROM warn WHERE server_id = ? AND user_id = ?", (server_id, user_id,))
+    row = c.fetchone()
+    if row : 
+        return row[0]
+    else : 
+        return 0
+
+async def railblue_accept_get(user_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT accept FROM railblue_accept WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row : 
+        if row[0] == 1 : 
+            return True
+        else : 
+            return False
+    else : 
+        return False
+
+async def railblue_accept_update(user_id: int, accept: bool) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT accept FROM railblue_accept WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if accept : 
+        accept = 1
+    else : 
+        accept = 0
+    if row : 
+        c.execute("UPDATE railblue_accept SET accept = ? WHERE user_id = ?", (accept, user_id,))
+    else : 
+        c.execute("INSERT INTO railblue_accept (accept, user_id) VALUES (?, ?)", (accept, user_id,))
 
 async def reset_exp(server_id: int) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)

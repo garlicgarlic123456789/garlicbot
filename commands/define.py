@@ -18,6 +18,7 @@ from discord import PermissionOverwrite
 from discord import Permissions
 from discord import Embed
 from discord import Colour
+import pytz
 
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -27,6 +28,8 @@ import asyncio
 # API KEY 정보로드
 load_dotenv()
 
+KST = pytz.timezone('Asia/Seoul')
+
 warn_law = "**[경고!]** 본 자료는 법적 조언이 아닌 일반적인 정보 제공 목적만을 가지고 있습니다. 특정 상황에 대해 결정하시기 전, 반드시 법률 전문가와 상의하시기 바랍니다. 본 자료를 신뢰하여 생기는 손해나 피해에 대한 책임은 사용자의 판단에 따라 전적으로 사용자에게 있습니다."
 warn_secret = "**[경고!]** 이 문서에는 기밀 정보가 포함되어 있습니다. 다른 사람(사용자)에게 유출되지 않도록 주의가 필요합니다."
 
@@ -34,9 +37,10 @@ xp_setting = {}
 
 gpt_chat_threads = {}
 
-train_timetable_api_key = os.getenv("train_timetable_api") # 수도권 전철 시각표정보 api
-train_arrivals_api_key = os.getenv("train_arrivals_api") # 수도권 전철 도착정보 api
-busan_train_arrivals_api_key = os.getenv("busan_train_arrivals_api") # 부산 지하철 도착정보 apu (시각표 기반)
+railblue_accept_ready = []
+
+train_timetable_api_key = os.getenv("train_timetable_api")
+train_arrivals_api_key = os.getenv("train_arrivals_api")
 
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
