@@ -10,6 +10,7 @@ import asyncio
 import datetime
 import holidays
 from discord.ui import View, Button
+import pandas as pd
 
 class train_command(app_commands.Group) : 
     def __init__(self):
@@ -58,7 +59,7 @@ class train_command(app_commands.Group) :
         역종류 = [
             app_commands.Choice(name = "수도권 전철 (일부 경전철 노선 미지원)", value = "수도권"),
             app_commands.Choice(name = "동남권 전철 (부산김해경전철, 동해선 미지원)", value = "부산"),
-        ]
+        ],
         열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")]
     )
     async def 지하철도착정보(self, interaction: discord.Interaction, 역종류: str, 역명: str, 열차종류: str = None, 행선지: str = None):
@@ -146,7 +147,7 @@ class train_command(app_commands.Group) :
                     return
 
             try : 
-                data = get_subway_info(역명)
+                data = await get_subway_info(역명)
 
                 arrivals = data["realtimeArrivalList"]
             except Exception as e : 
@@ -276,16 +277,13 @@ class train_command(app_commands.Group) :
                 )
                 await interaction.followup.send(embed = embed)
                 return
-            
-            embed = discord.Embed(
-                title = "오류",
-                description = "아직 지원하지 않는 기능입니다.",
-                color = discord.Color.red()
-            )
-            await interaction.followup.send(embed = embed)
+
+            raise NotImplementedError("이 기능은 아직 개발 중이며 테스트되지 않았습니다. 자세한 사항은 https://github.com/garlicfood1234/garlicbot/issues/341 참고하세요.\n\n참고: 이 오류를 무시하고 이 함수를 사용하려는 경우 코드를 수정하세요.")
             return
-            
-            # 추후 작성 예정
+
+            df = pd.read_csv('busan_station.csv', header=0, encoding = 'cp949')
+            result = df[df['역명'].str.contains(역명)]
+            station_numbers = result['역번호'].tolist()
     
     @app_commands.command(name = "레일블루정책확인", description = "철도 관련 명령어 중 레일블루 사이트에서 정보를 가져와서 제공되는 기능들에 대해 관련 정책을 확인합니다.")
     async def railblue_accept_command(self, interaction: discord.Interaction) : 
@@ -952,6 +950,15 @@ async def date_weekend_or_bot(date) :
     else : 
         return False
 
+async def date_weekend_or_bot2(date) : 
+    weekday = date.weekday()
+    if weekday == 5 : 
+        return "2"
+    elif weekday == 6 : 
+        return "3"
+    else : 
+        return "1"
+
 async def return_time_now() : 
     now = datetime.datetime.now()
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
@@ -1043,7 +1050,28 @@ async def get_train_timetable(trainnum, date, updown) :
         print(e)
         return [False, date, None, e]
 
-def get_subway_info(station_name):
+async def get_subway_info_busan(station_code, warn: bool = False) : 
+    if not warn : 
+        raise NotImplementedError("이 기능은 아직 개발 중이며 테스트되지 않았습니다. 자세한 사항은 https://github.com/garlicfood1234/garlicbot/issues/341 참고하세요.\n\n참고: 이 오류를 무시하고 이 함수를 사용하려는 경우 warn 매개변수를 True로 설정하세요.")
+    date = datetime.now()
+    if await today_is_hoilday(date) : 
+        weekend = "3"
+    elif await date_weekend_or_bot2(date) == "2" : 
+        weekend = "2"
+    elif await date_weekend_or_bot2(date) == "3" : 
+        weekend = "3"
+    else : 
+        weekend = "1"
+    
+    start = f"{date.hour:02d}{date.minute:02d}"
+
+    one_hour_later = date + timedelta(hours=1)
+    end = one_hour_later.strftime("%H%M")
+    
+    url = f"https://data.humetro.busan.kr/voc/api/open_api_process.tnn?serviceKey={busan_train_arrivals_api_key}&day={weekend}&stime={start}&etime={end}&enum=10&act=json&scode={station_code}"
+    # Todo: 이어서 개발 필요
+
+async def get_subway_info(station_name):
     url = f"http://swopenapi.seoul.go.kr/api/subway/{train_arrivals_api_key}/json/realtimeStationArrival/1/25/{station_name}"
     
     try:

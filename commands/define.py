@@ -41,6 +41,7 @@ railblue_accept_ready = []
 
 train_timetable_api_key = os.getenv("train_timetable_api")
 train_arrivals_api_key = os.getenv("train_arrivals_api")
+busan_train_arrivals_api_key = os.getenv("busan_train_arrivals_api")
 
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
