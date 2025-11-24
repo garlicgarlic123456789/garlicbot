@@ -68,6 +68,7 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS quarantine_role (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, quarantine_role integer)") # 격리 역할
     c.execute("CREATE TABLE IF NOT EXISTS xp_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, onoff INTEGER,server_id INTEGER, chat_xp INTEGER, chat_xp_cooldown INTEGER, voice_xp INTEGER, voice_xp_cooldown INTEGER, unit TEXT)") # 서버별 경험치 기능 설정 테이블
     c.execute("CREATE TABLE IF NOT EXISTS xp (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
+    c.execute("CREATE TABLE IF NOT EXISTS monthly_xp (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, year INTEGER, month INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 월간 경험치 데이터
     c.execute("""
         CREATE TABLE IF NOT EXISTS attendance_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -238,7 +239,10 @@ async def railblue_accept_update(user_id: int, accept: bool) :
     else : 
         c.execute("INSERT INTO railblue_accept (accept, user_id) VALUES (?, ?)", (accept, user_id,))
 
-async def reset_exp(server_id: int) : 
+async def reset_exp(server_id: int, check: bool = False) : 
+    if not check : 
+        raise ValueError("reset_exp() 함수는 특정 서버의 경험치를 모두 초기화시킵니다. 초기화 후에는 복구할 수 없으니 주의하세요. 이 내용을 확인하였다면 함수의 check 매개변수 값을 True로 설정하여 이 함수를 실행합니다.")
+        return
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     c.execute("CREATE TABLE IF NOT EXISTS xp_backup (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
@@ -850,6 +854,56 @@ def get_xp(server_id: int, user_id: int):
     c = conn.cursor()
     
     c.execute("SELECT xp FROM xp WHERE server_id = ? AND user_id = ?", (server_id, user_id))
+    row = c.fetchone()
+    conn.close()
+    if row : 
+        return row[0]
+    return 0
+
+def update_month_xp(server_id: int, user_id: int, xp: int):
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM monthly_xp WHERE server_id = ? AND year = ? AND month = ? AND user_id = ?", (server_id, year, month, user_id))
+    row = c.fetchone()
+    
+    if row : 
+        current_xp = row[0]
+        new_xp = current_xp + xp
+        c.execute("UPDATE monthly_xp SET xp = ? WHERE server_id = ? AND year = ? AND month = ? AND user_id = ?", (new_xp, server_id, year, month, user_id))
+    else : 
+        c.execute("INSERT INTO monthly_xp (server_id, year, month, user_id, xp) VALUES (?, ?, ?, ?, ?)", (server_id, year, month, user_id, xp))
+    
+    conn.close()
+
+def get_all_month_xp(server_id: int):
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT user_id, xp FROM monthly_xp WHERE server_id = ? AND year = ? AND month = ?", (server_id, year, month))
+    rows = c.fetchall()
+    conn.close()
+    users_xp = {}
+    for i in rows : 
+        users_xp[i[0]] = i[1]
+    return users_xp
+
+def get_month_xp(server_id: int, user_id: int):
+    now = datetime.now()
+    year = now.year
+    month = now.month
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM monthly_xp WHERE server_id = ? AND year = ? AND month = ? AND user_id = ?", (server_id, year, month, user_id))
     row = c.fetchone()
     conn.close()
     if row : 
