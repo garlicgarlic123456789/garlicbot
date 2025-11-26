@@ -432,6 +432,8 @@ ITEMS_PER_PAGE = 5
 def generate_pages(train, data):
     pages = []
 
+    page_num = 1
+
     # 데이터 쪼개기
     for j in range(0, len(data), ITEMS_PER_PAGE):
         chunk = data[j:j+ITEMS_PER_PAGE]
@@ -523,9 +525,10 @@ def generate_pages(train, data):
         if len(data) % ITEMS_PER_PAGE != 0 : 
             page_count += 1
 
-        embed.set_footer(text=f"페이지 {j//ITEMS_PER_PAGE + 1} / {page_count}")
+        embed.set_footer(text=f"페이지 {page_num} / {page_count}")
 
         pages.append(embed)
+        page_num += 1
 
     return pages
 
