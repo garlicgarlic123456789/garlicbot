@@ -156,6 +156,24 @@ def init_db() :
             accept INTEGER
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS promote_server (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            information TEXT,
+            type TEXT,
+            last_bumped TEXT,
+            personal_information_required INTEGER,
+            bad_words_allowed INTEGER,
+            sexual_content_allowed INTEGER,
+            political_content_allowed INTEGER,
+            chat_or_voice TEXT,
+            added_at TEXT,
+            approved INTEGER,
+            approved_at TEXT,
+            blocked_until TEXT
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -373,6 +391,40 @@ async def update_anti_raid_settings(server_id: int, on_off: bool, action: str, a
         "duration": duration,
         "join_time": join_time
     }
+
+# 이 함수는 아직 제대로 동작하는지 테스트되지 않았음.
+async def add_promote_server(server: discord.Guild, information: str, server_type: str, personal_information_required: bool, bad_words_allowed: bool, sexual_content_allowed: bool, political_content_allowed: bool, chat_or_voice: str):
+    server_id = server.id
+    last_bumped = None
+    added_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    approved = 0
+    approved_at = None
+    blocked_until = None
+
+    if personal_information_required : 
+        personal_information_required = 1
+    else : 
+        personal_information_required = 0
+    
+    if bad_words_allowed : 
+        bad_words_allowed = 1
+    else : 
+        bad_words_allowed = 0
+    
+    if political_content_allowed : 
+        political_content_allowed = 1
+    else : 
+        political_content_allowed = 0
+    
+    if sexual_content_allowed : 
+        sexual_content_allowed = 1
+    else : 
+        sexual_content_allowed = 0
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO promote_server (server_id, information, server_type, last_bumped, personal_information_required, bad_words_allowed, sexual_content_allowed, political_content_allowed, added_at, approved, approved_at, blocked_until, chat_or_voice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (server_id, information, type, last_bumped, personal_information_required, bad_words_allowed, sexual_content_allowed, political_content_allowed, added_at, approved, approved_at, blocked_until, chat_or_voice))
+    conn.close()
 
 async def remove_phrase(phrase_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
