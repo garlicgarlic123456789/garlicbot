@@ -331,6 +331,17 @@ class train_command(app_commands.Group) :
             await interaction.followup.send(embed = embed)
             return
         
+        if interaction.user.id in railblue_last_time : 
+            time = datetime.datetime.now() - railblue_last_time[interaction.user.id]
+            if time.seconds < 45 : 
+                embed = discord.Embed(
+                    title = "오류",
+                    description = f"이 명령어는 45초에 한 번만 사용할 수 있습니다. 시간: {45 - time.seconds}초 후에 다시 시도하세요.",
+                    color = discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
+        
         today_text = await today_to_text()
         
         if 날짜 is None : 
@@ -339,8 +350,8 @@ class train_command(app_commands.Group) :
         # try : 
         if True : 
             기준시각 = await today_to_text2()
-            위치, 지연, 지연업데이트시각 = await get_train_info_railblue(열차번호, 날짜)
-            timetable, delay = await get_train_timetable_railblue(열차번호, 날짜)
+            위치, 지연, 지연업데이트시각 = await get_train_info_railblue(열차번호, 날짜, interaction.user.id)
+            timetable, delay = await get_train_timetable_railblue(열차번호, 날짜, interaction.user.id)
             delay_old = 지연 # 레거시 방식의 지연시분 표시 방식대로 지연 정보 저장 (except문에서 사용)
             try : 
                 if delay is not None : 
@@ -555,10 +566,11 @@ class Paginator(View):
         else:
             await interaction.response.defer()
 
-async def get_train_timetable_railblue(train, date) : 
+async def get_train_timetable_railblue(train, date, user_id) : 
     options = webdriver.FirefoxOptions()
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
+    railblue_last_time[user_id] = datetime.datetime.now()
     driver.get(f"https://rail.blue/railroad/logis/magiainfo.aspx?train={train}&date={date}#!")
     await asyncio.sleep(2.5)
 
@@ -813,10 +825,11 @@ async def parse_train_info(text):
     # 만약 어느 유형에도 해당하지 않으면 None 반환
     return None
 
-async def get_train_info_railblue(train, date):
+async def get_train_info_railblue(train, date, user_id):
     options = webdriver.FirefoxOptions()
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
+    railblue_last_time[user_id] = datetime.datetime.now()
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
     await asyncio.sleep(2.5)
     train_info = driver.find_element(by = By.ID, value = "spDrive")
