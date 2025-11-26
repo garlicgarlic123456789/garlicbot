@@ -333,7 +333,7 @@ class train_command(app_commands.Group) :
         
         if interaction.user.id in railblue_last_time : 
             time = datetime.datetime.now() - railblue_last_time[interaction.user.id]
-            if time.seconds < 45 : 
+            if time.seconds < 45 and interaction.user.id != developer : 
                 embed = discord.Embed(
                     title = "오류",
                     description = f"이 명령어는 45초에 한 번만 사용할 수 있습니다. 시간: {45 - time.seconds}초 후에 다시 시도하세요.",
