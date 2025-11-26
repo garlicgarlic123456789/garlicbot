@@ -47,10 +47,10 @@ class mention_delay(app_commands.Group) :
             )
             await interaction.followup.send(embed = embed)
             return
-        elif len(role_users) > 30 : 
+        elif len(role_users) > 70 : 
             embed = discord.Embed(
                 title=f"오류",
-                description=f"해당 역할에 속한 사용자가 30명 이상이므로, 멘션지연을 예약할 수 없습니다.",
+                description=f"해당 역할에 속한 사용자가 70명 이상이므로, 멘션지연을 예약할 수 없습니다.",
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed = embed)
@@ -126,10 +126,12 @@ class mention_delay(app_commands.Group) :
             for i in range(len(role_users)) : 
                 mention_id = add_mention_delay_user(role_users[i].id, interaction.user.id, 내용, 0, mention_server, send_type)
                 mention_ids.append(mention_id)
-            
+
             temp = len(mention_ids)
             for i in range(temp) : 
                 mention_ids[i] = str(mention_ids[i])
+            
+            process_mention_cancel_together(mention_ids)
         elif 전달방법 == "one" : 
             mention_ids = []
             for i in range(len(role_users)) : 
@@ -141,6 +143,7 @@ class mention_delay(app_commands.Group) :
                 mention_ids[i] = str(mention_ids[i])
 
             process_mention_relation(mention_ids)
+            process_mention_cancel_together(mention_ids)
         
         if role_users_count != role_users_count_before : 
             embed = discord.Embed(
@@ -260,8 +263,18 @@ class mention_delay(app_commands.Group) :
                 done_mention_delay_user(mention["id"])
 
     @app_commands.command(name="취소", description = "/멘션지연으로 예약된 메시지 중 한 건을 취소합니다.")
-    async def cancel_mention(self, interaction: discord.Interaction, mention_id: int):
+    @app_commands.describe(id = "취소할 멘션 ID", 역할멘션지연일괄취소여부 = "/멘션지연 역할 명령어로 일괄 멘션지연 처리한 모든 유저의 멘션지연 건을 한 번에 취소할지 그 여부")
+    @app_commands.choices(역할멘션지연일괄취소여부 = [
+        app_commands.Choice(name = "/멘션지연 역할 명령어 사용에 의해 일괄적으로 같이 예약된 모든 멘션지연 건을 일괄적으로 취소 (옵션 활성화)", value = "True"),
+        app_commands.Choice(name = "이 ID에 해당되는 건 하나만 취소 (옵션 비활성화, 기본값)", value = "False"),
+    ])
+    async def cancel_mention(self, interaction: discord.Interaction, id: int, 역할멘션지연일괄취소여부: str = "False"):
         await interaction.response.defer()
+        mention_id = id
+        if 역할멘션지연일괄취소여부 == "True" : 
+            역할멘션지연일괄취소여부 = True
+        else : 
+            역할멘션지연일괄취소여부 = False
 
         status, until, reason = is_blocked(interaction.user)
         if status:
@@ -270,24 +283,42 @@ class mention_delay(app_commands.Group) :
             return
 
         if interaction.user.guild_permissions.mention_everyone:
-            result = cancel_mention_delay_user(mention_id, True, interaction.user.id, interaction.guild.id)
+            result = cancel_mention_delay_user(mention_id, True, interaction.user.id, interaction.guild.id, 역할멘션지연일괄취소여부)
             if result == True : 
+                if 역할멘션지연일괄취소여부 == True : 
+                    embed = discord.Embed(
+                        title=f"완료",
+                        description=f"멘션 #{mention_id} 및 해당 멘션 건 예약 시 일괄적으로 함께 예약된 다른 멘션들이 취소되었습니다.",
+                        color=int("a5f0ff", 16)
+                    )
+                    await interaction.followup.send(embed = embed)
+                    return
+                else : 
+                    embed = discord.Embed(
+                        title=f"완료",
+                        description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
+                        color=int("a5f0ff", 16)
+                    )
+                    await interaction.followup.send(embed = embed)
+                    return
+        
+        result = cancel_mention_delay_user(mention_id, False, interaction.user.id, interaction.guild.id, 역할멘션지연일괄취소여부)
+        if result == True : 
+            if 역할멘션지연일괄취소여부 == True : 
+                embed = discord.Embed(
+                    title=f"완료",
+                    description=f"멘션 #{mention_id} 및 해당 멘션 건 예약 시 일괄적으로 함께 예약된 다른 멘션들이 취소되었습니다.",
+                    color=int("a5f0ff", 16)
+                )
+                await interaction.followup.send(embed = embed)
+                return
+            else : 
                 embed = discord.Embed(
                     title=f"완료",
                     description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
                     color=int("a5f0ff", 16)
                 )
                 await interaction.followup.send(embed = embed)
-                return
-        
-        result = cancel_mention_delay_user(mention_id, False, interaction.user.id, interaction.guild.id)
-        if result == True : 
-            embed = discord.Embed(
-                title=f"완료",
-                description=f"멘션 #{mention_id}(이)가 취소되었습니다.",
-                color=int("a5f0ff", 16)
-            )
-            await interaction.followup.send(embed = embed)
         else : 
             embed = discord.Embed(
                 title=f"오류",

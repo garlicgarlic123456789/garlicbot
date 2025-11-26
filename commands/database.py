@@ -50,7 +50,15 @@ def init_db() :
     # -1은 기능 비활성회, 0은 삭제만 하고 타임아웃하지 않기, 1 이상은 타임아웃.
 
     c.execute("CREATE TABLE IF NOT EXISTS automod_exception_channel (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, channel_id INTEGER, on_off INTEGER)") # 자동검열 예외 채널
-
+    
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS warn (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            user_id INTEGER,
+            warn INTEGER
+        )
+    """)
     c.execute("CREATE TABLE IF NOT EXISTS warn_max (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, max INTEGER)") # 검열기능 사용 여부
     c.execute("CREATE TABLE IF NOT EXISTS attendance (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, year INTEGER, month INTEGER, date INTEGER, streak INTEGER, max_streak INTEGER)") # 출첵 데이터
     c.execute("CREATE TABLE IF NOT EXISTS anonymous (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, onoff INTEGER, log_channel INTEGER)") # 출첵 데이터
@@ -60,6 +68,7 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS quarantine_role (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, quarantine_role integer)") # 격리 역할
     c.execute("CREATE TABLE IF NOT EXISTS xp_setting (id INTEGER PRIMARY KEY AUTOINCREMENT, onoff INTEGER,server_id INTEGER, chat_xp INTEGER, chat_xp_cooldown INTEGER, voice_xp INTEGER, voice_xp_cooldown INTEGER, unit TEXT)") # 서버별 경험치 기능 설정 테이블
     c.execute("CREATE TABLE IF NOT EXISTS xp (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
+    c.execute("CREATE TABLE IF NOT EXISTS monthly_xp (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, year INTEGER, month INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 월간 경험치 데이터
     c.execute("""
         CREATE TABLE IF NOT EXISTS attendance_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,7 +108,8 @@ def init_db() :
             done INTEGER,
             server_id INTEGER,
             send_type TEXT,
-            related_id TEXT
+            related_id TEXT,
+            cancel_together TEXT
         )
     """)
     c.execute("""
@@ -140,6 +150,13 @@ def init_db() :
         )
     """)
     c.execute("""
+        CREATE TABLE IF NOT EXISTS railblue_accept (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            accept INTEGER
+        )
+    """)
+    c.execute("""
         CREATE TABLE IF NOT EXISTS promote_server (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             server_id INTEGER,
@@ -164,6 +181,96 @@ def init_db() :
     c.execute("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar, time text)") # 제재 내역 테이블
     c.execute("CREATE TABLE IF NOT EXISTS warn (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, warn integar)") # 유저 경고 개수
     '''
+    conn.close()
+
+'''
+c.execute("""
+        CREATE TABLE IF NOT EXISTS warn (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            user_id INTEGER,
+            warn INTEGER
+        )
+    """)'''
+
+async def set_warning(server_id: int, user_id: int, warn: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT warn FROM warn WHERE server_id = ? AND user_id = ?", (server_id, user_id,))
+    row = c.fetchone()
+    if row : 
+        c.execute("UPDATE warn SET warn = ? WHERE server_id = ? AND user_id = ?", (warn, server_id, user_id,))
+        return warn
+    else : 
+        c.execute("INSERT INTO warn (server_id, user_id, warn) VALUES (?, ?, ?)", (server_id, user_id, warn))
+        return warn
+
+async def add_warning(server_id: int, user_id: int, adding: int) : 
+    old_warning_cnt = await load_warning(server_id, user_id)
+    new_warning = old_warning_cnt + adding
+    new_warning_cnt = await set_warning(server_id, user_id, new_warning)
+    return [old_warning_cnt, adding, new_warning_cnt]
+
+async def remove_warning(server_id: int, user_id: int, removing: int) : 
+    old_warning_cnt = await load_warning(server_id, user_id)
+    if old_warning_cnt < removing : 
+        new_warning = 0
+    else :
+        new_warning = old_warning_cnt - removing
+    new_warning_cnt = await set_warning(server_id, user_id, new_warning)
+    return [old_warning_cnt, removing, new_warning_cnt]
+
+async def load_warning(server_id: int, user_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT warn FROM warn WHERE server_id = ? AND user_id = ?", (server_id, user_id,))
+    row = c.fetchone()
+    if row : 
+        return row[0]
+    else : 
+        return 0
+
+async def railblue_accept_get(user_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT accept FROM railblue_accept WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row : 
+        if row[0] == 1 : 
+            return True
+        else : 
+            return False
+    else : 
+        return False
+
+async def railblue_accept_update(user_id: int, accept: bool) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT accept FROM railblue_accept WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if accept : 
+        accept = 1
+    else : 
+        accept = 0
+    if row : 
+        c.execute("UPDATE railblue_accept SET accept = ? WHERE user_id = ?", (accept, user_id,))
+    else : 
+        c.execute("INSERT INTO railblue_accept (accept, user_id) VALUES (?, ?)", (accept, user_id,))
+
+async def reset_exp(server_id: int, check: bool = False) : 
+    if not check : 
+        raise ValueError("reset_exp() 함수는 특정 서버의 경험치를 모두 초기화시킵니다. 초기화 후에는 복구할 수 없으니 주의하세요. 이 내용을 확인하였다면 함수의 check 매개변수 값을 True로 설정하여 이 함수를 실행합니다.")
+        return
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("CREATE TABLE IF NOT EXISTS xp_backup (id INTEGER PRIMARY KEY AUTOINCREMENT, server_id INTEGER, user_id INTEGER, xp INTEGER)") # 서버별 경험치 데이터
+    c.execute("SELECT user_id, xp FROM xp WHERE server_id = ?", (server_id,))
+    rows = c.fetchall()
+    for row in rows:
+        user_id = row[0]
+        xp = row[1]
+        c.execute("INSERT INTO xp_backup (server_id, user_id, xp) VALUES (?, ?, ?)", (server_id, user_id, xp))
+    c.execute("DELETE FROM xp WHERE server_id = ?", (server_id,))
     conn.close()
 
 async def update_attendance_settings(server_id: int, on_off: int, minimum: int, maximum: int, step: int) : 
@@ -598,6 +705,17 @@ def process_mention_relation(related_id: list) :
             c.execute("UPDATE mention_delay_user SET related_id = ? WHERE id = ?", (related, i))
     conn.close()
 
+def process_mention_cancel_together(cancel_together: list) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    cancel_together2 = ",".join(cancel_together)
+    for i in cancel_together : 
+        c.execute("SELECT id FROM mention_delay_user WHERE id = ?", (i,))
+        row = c.fetchone()
+        if row :
+            c.execute("UPDATE mention_delay_user SET cancel_together = ? WHERE id = ?", (cancel_together2, i))
+    conn.close()
+
 def done_mention_delay_user(mention_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -605,24 +723,38 @@ def done_mention_delay_user(mention_id: int):
     c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
     conn.close()
 
-def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, trigger_server: int):
+def cancel_mention_delay_user(mention_id: int, admin: bool, trigger_user: int, trigger_server: int, cancel_together: bool):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
 
     if not admin : 
-        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND sender_id = ?", (mention_id, trigger_user))
+        c.execute("SELECT cancel_together FROM mention_delay_user WHERE id = ? AND done = 0 AND sender_id = ?", (mention_id, trigger_user))
         row = c.fetchone()
         if row : 
             c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+            if cancel_together : 
+                if row[0] is not None : 
+                    cancel_together_list = row[0].split(",")
+                    for i in cancel_together_list : 
+                        c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (i,))
+                    conn.close()
+                    return True
             conn.close()
             return True
         else : 
             return False
     else : 
-        c.execute("SELECT id FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
+        c.execute("SELECT cancel_together FROM mention_delay_user WHERE id = ? AND done = 0 AND server_id = ? AND send_type = 'reply'", (mention_id, trigger_server))
         row = c.fetchone()
         if row : 
             c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (mention_id,))
+            if cancel_together : 
+                if row[0] is not None : 
+                    cancel_together_list = row[0].split(",")
+                    for i in cancel_together_list : 
+                        c.execute("UPDATE mention_delay_user SET done = 1 WHERE id = ?", (i,))
+                    conn.close()
+                    return True
             conn.close()
             return True
         else : 
@@ -779,6 +911,67 @@ def get_xp(server_id: int, user_id: int):
     if row : 
         return row[0]
     return 0
+
+def update_month_xp(server_id: int, user_id: int, xp: int):
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM monthly_xp WHERE server_id = ? AND year = ? AND month = ? AND user_id = ?", (server_id, year, month, user_id))
+    row = c.fetchone()
+    
+    if row : 
+        current_xp = row[0]
+        new_xp = current_xp + xp
+        c.execute("UPDATE monthly_xp SET xp = ? WHERE server_id = ? AND year = ? AND month = ? AND user_id = ?", (new_xp, server_id, year, month, user_id))
+    else : 
+        c.execute("INSERT INTO monthly_xp (server_id, year, month, user_id, xp) VALUES (?, ?, ?, ?, ?)", (server_id, year, month, user_id, xp))
+    
+    conn.close()
+
+def get_all_month_xp(server_id: int):
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT user_id, xp FROM monthly_xp WHERE server_id = ? AND year = ? AND month = ?", (server_id, year, month))
+    rows = c.fetchall()
+    conn.close()
+    users_xp = {}
+    for i in rows : 
+        users_xp[i[0]] = i[1]
+    return users_xp
+
+def get_month_xp(server_id: int, user_id: int):
+    now = datetime.now()
+    year = now.year
+    month = now.month
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM monthly_xp WHERE server_id = ? AND year = ? AND month = ? AND user_id = ?", (server_id, year, month, user_id))
+    row = c.fetchone()
+    conn.close()
+    if row : 
+        return row[0]
+    return 0
+
+def get_old_xp(server_id: int, user_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT xp FROM xp_backup WHERE server_id = ? AND user_id = ?", (server_id, user_id))
+    row = c.fetchone()
+    conn.close()
+    if row : 
+        return row[0]
+    return None
 
 def update_user_join_route(user_id: int, join_route: str):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
