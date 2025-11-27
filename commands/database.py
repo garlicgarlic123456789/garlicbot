@@ -9,6 +9,7 @@ from discord import app_commands
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import gpt_chat_threads
+from commands.define import DevelopingFuctionError, ObsoleteFunctionError
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -392,7 +393,10 @@ async def update_anti_raid_settings(server_id: int, on_off: bool, action: str, a
         "join_time": join_time
     }
 
-# 이 함수는 아직 제대로 동작하는지 테스트되지 않았음.
+async def bump_server(server: discord.Guild, ignore_cooltime: bool = False) : 
+    server_id = server.id
+    raise DevelopingFuctionError("아직 개발 중인 기능입니다. 자세히 알아보려면 https://github.com/garlicfood1234/garlicbot/issues/176 방문하세요.")
+
 async def add_promote_server(server: discord.Guild, information: str, server_type: str, personal_information_required: bool, bad_words_allowed: bool, sexual_content_allowed: bool, political_content_allowed: bool, chat_or_voice: str):
     server_id = server.id
     last_bumped = None

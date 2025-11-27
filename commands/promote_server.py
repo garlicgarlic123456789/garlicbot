@@ -63,6 +63,7 @@ class promote_server(app_commands.Group) :
     @app_commands.default_permissions(administrator=True)
     async def promote_server_add(self, interaction: discord.Interaction):
         modal = PromoteServerAddModal(interaction)
+        raise DevelopingFuctionError("아직 개발 중인 기능입니다. 자세히 알아보려면 https://github.com/garlicfood1234/garlicbot/issues/176 방문하세요.")
         await interaction.response.send_modal(modal)
         
 

@@ -25,10 +25,16 @@ from dotenv import load_dotenv
 
 import asyncio
 
+bump_cooldown = 60 * 60 * 1
+add_server_request_notify = 1329296309164834897
+
 # API KEY 정보로드
 load_dotenv()
 
 class ObsoleteFunctionError(Exception): # 오래되었고, 더 이상 현재 버전에서 사용되지 않는 기능
+    pass
+
+class DevelopingFuctionError(Exception): # 아직 개발 중이며 완성되지 않은 기능을 사용하는 경우
     pass
 
 KST = pytz.timezone('Asia/Seoul')
