@@ -55,7 +55,7 @@ genai.configure(api_key=gemini_api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 two_model = genai.GenerativeModel('gemini-2.0-flash')
 two_lite_model = genai.GenerativeModel('gemini-2.0-flash-lite')
-two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite')
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}"  # Gemini API 엔드포인트
 judge_model = genai.GenerativeModel('tunedModels/ai25040301-x1nhe0vhq77q')
 cute_model = genai.GenerativeModel('tunedModels/a-25040302-en35w7amd6ek')
