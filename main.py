@@ -6661,9 +6661,10 @@ gpt_4_1_cooldowns_d = 60 * 15
         app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델의 직전 모델)", value = "GPT-5"),
         app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 GPT-5 모델의 더 빠른 버전)", value = "GPT-5 mini"),
         app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 GPT-5 모델의 가장 빠른 버전)", value = "GPT-5 nano"),
-        app_commands.Choice(name = "Gemini 1.5 Flash (Google에서 개발한 빠르게 답변하는 이전 모델의 경량화 버전)", value = "Gemini 1.5 Flash"),
-        app_commands.Choice(name = "Gemini 2.0 Flash (Google에서 개발한 빠르게 답변하는 최신 모델의 경량화 버전)", value = "Gemini 2.0 Flash"),
-        app_commands.Choice(name = "Gemini 2.0 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.0 Flash Lite"),
+        app_commands.Choice(name = "Gemini 1.5 Flash (지원 종료됨)", value = "Gemini 1.5 Flash"),
+        app_commands.Choice(name = "Gemini 2.0 Flash (지원 종료됨)", value = "Gemini 2.0 Flash"),
+        app_commands.Choice(name = "Gemini 2.0 Flash Lite (지원 종료됨)", value = "Gemini 2.0 Flash Lite"),
+        app_commands.Choice(name = "Gemini 2.5 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.5 Flash Lite"),
         app_commands.Choice(name = "GPT-4.1 (OpenAI에서 개발한 대부분의 질문에 가장 탁월한 모델)", value = "GPT-4.1"),
         app_commands.Choice(name = "GPT-4.1 mini (OpenAI에서 개발한 대부분의 질문에 더 탁월한 모델)", value = "GPT-4.1 mini"),
         app_commands.Choice(name = "GPT-4.1 nano (OpenAI에서 개발한 대부분의 질문에 더 빠르고 탁월한 모델)", value = "GPT-4.1 nano"),
@@ -6765,6 +6766,17 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             await interaction.followup.send(embed=embed, ephemeral=False)
             return
         response = await asyncio.to_thread(two_lite_model.generate_content, 프롬프트)
+        result = response.text
+    elif 모델 == "Gemini 2.5 Flash Lite" :
+        if 파일 is not None : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 파일 첨부를 지원하지 않습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+        response = await asyncio.to_thread(two_five_lite_model.generate_content, 프롬프트)
         result = response.text
     elif 모델 == "귀여운 마늘이" :
         if 파일 is not None : 
