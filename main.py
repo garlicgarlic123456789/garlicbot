@@ -228,6 +228,7 @@ invite_cache = {}
 do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
 do_mention_role += [1418480822255616053, 1418481318806683678, 1418480277155614781, 1418481446380765289, 1418481595945586709, 1418481673909043210, 1418481752015503360, 1418481816276439163] # 새로운 대화하자 역할
 do_mention_role += [1446068454565220372] # 대화하지 말자 역할
+do_mention_role += [1446087517391552532] # 적응도움 역할
 
 do_mention_role2 = []
 for i in do_mention_role : 
@@ -3248,6 +3249,8 @@ async def on_member_join(member):
             if member.bot :
                 await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
 
+last_member_join_mention = None
+
 @bot.event
 async def on_member_update(before, after):
     if before.guild.id == using_server :
@@ -3263,16 +3266,43 @@ async def on_member_update(before, after):
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
+                channel = after.guild.get_channel(1446088567582363669)
+                if channel:
+                    if last_member_join_mention is None : 
+                        embed = discord.Embed(
+                            title=f"환영합니다!", # name
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            color=int("a5f0ff", 16)
+                        )
+                        last_member_join_mention = datetime.now()
+                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                    elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
+                        embed = discord.Embed(
+                            title=f"환영합니다!", # name
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            color=int("a5f0ff", 16)
+                        )
+                        last_member_join_mention = datetime.now()
+                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                    else : 
+                        embed = discord.Embed(
+                            title=f"환영합니다!", # name
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            color=int("a5f0ff", 16)
+                        )
+                        last_member_join_mention = datetime.now()
+                        message = await channel.send(f"<@{after.id}>", embed=embed)
+                    
+
                 channel = after.guild.get_channel(1320303102703702042)
                 if channel:
                     if True : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 다 같이 {message.jump_url}에서 환영해 줍시다!\n- <id:customize>에서 <@&1446087517391552532> 역할을 받으시면 적응에 도움이 필요한 유저가 해당 역할을 멘션하는 경우, 빠르게 달려가서 서버에 적응할 수 있도록 도움을 줄 수 있습니다.",
                             color=int("a5f0ff", 16)
                         )
-                        # await channel.send(f"<@{after.id}>님, 타 서버에 이 서버 초대 링크 도배 테러가 발생한 경우 https://discord.com/channels/1320303102703702037/1320304882393153586/1377955171929428039 확인 부탁드립니다. 저희도 이 사건을 유감스럽게 생각하며, 죄송하다는 말씀 드립니다.")
-                        await channel.send(embed=embed)
+                        message = await channel.send(embed=embed)
                 break
     
     if before.timed_out_until != after.timed_out_until:
