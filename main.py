@@ -227,6 +227,7 @@ invite_cache = {}
 
 do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
 do_mention_role += [1418480822255616053, 1418481318806683678, 1418480277155614781, 1418481446380765289, 1418481595945586709, 1418481673909043210, 1418481752015503360, 1418481816276439163] # 새로운 대화하자 역할
+do_mention_role += [1446068454565220372] # 대화하지 말자 역할
 
 do_mention_role2 = []
 for i in do_mention_role : 
@@ -2072,6 +2073,15 @@ async def on_message(message):
         else:
             # 사용자 초기 메시지 처리
             last_message_times[user_id] = message.created_at
+        
+    if message.guild.id == using_server and "<@&1446068454565220372>" in message.content :
+        embed = discord.Embed(
+            title = "이스터에그 발견!",
+            description = "`대화하자!`가 아닌 `대화하지 말자!` 역할을 찾으셨군요!",
+            color = int("a5f0ff", 16)
+        )
+        await message.reply(embed = embed, mention_author=False)
+        return
 
     if message.content == "마늘아" :
         status, until, reason = is_blocked(message.author)
