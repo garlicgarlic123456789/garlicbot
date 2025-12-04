@@ -3266,6 +3266,7 @@ async def on_member_update(before, after):
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
+                global last_member_join_mention
                 channel = after.guild.get_channel(1446088567582363669)
                 if channel:
                     if last_member_join_mention is None : 
