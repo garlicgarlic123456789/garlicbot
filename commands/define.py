@@ -47,11 +47,15 @@ railblue_accept_ready = []
 train_timetable_api_key = os.getenv("train_timetable_api")
 train_arrivals_api_key = os.getenv("train_arrivals_api")
 
+from google.genai import Client
+from google.genai import types
+
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
 # from IPython.display import Markdown
 # from transformers import AutoTokenizer, AutoModelForCausalLM
 genai.configure(api_key=gemini_api_key)
+gemini_client = Client(api_key=gemini_api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 two_model = genai.GenerativeModel('gemini-2.0-flash')
 two_lite_model = genai.GenerativeModel('gemini-2.0-flash-lite')
