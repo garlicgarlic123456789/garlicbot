@@ -6702,20 +6702,15 @@ gpt_4_1_cooldowns_d = 60 * 15
         app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델의 직전 모델)", value = "GPT-5"),
         app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 GPT-5 모델의 더 빠른 버전)", value = "GPT-5 mini"),
         app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 GPT-5 모델의 가장 빠른 버전)", value = "GPT-5 nano"),
-        app_commands.Choice(name = "Gemini 1.5 Flash (지원 종료됨)", value = "Gemini 1.5 Flash"),
-        app_commands.Choice(name = "Gemini 2.0 Flash (지원 종료됨)", value = "Gemini 2.0 Flash"),
-        app_commands.Choice(name = "Gemini 2.0 Flash Lite (지원 종료됨)", value = "Gemini 2.0 Flash Lite"),
-        app_commands.Choice(name = "Gemini 2.5 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.5 Flash Lite"),
+        app_commands.Choice(name = "Gemini 2.5 Flash Lite (Google에서 개발한 경량화된 모델)", value = "Gemini 2.5 Flash Lite"),
         app_commands.Choice(name = "GPT-4.1 (OpenAI에서 개발한 대부분의 질문에 가장 탁월한 모델)", value = "GPT-4.1"),
         app_commands.Choice(name = "GPT-4.1 mini (OpenAI에서 개발한 대부분의 질문에 더 탁월한 모델)", value = "GPT-4.1 mini"),
         app_commands.Choice(name = "GPT-4.1 nano (OpenAI에서 개발한 대부분의 질문에 더 빠르고 탁월한 모델)", value = "GPT-4.1 nano"),
         app_commands.Choice(name = "GPT-4o mini (OpenAI에서 개발한 대부분의 질문에 더 빠른 모델)", value = "GPT-4o mini"),
         app_commands.Choice(name = "GPT-3.5 (OpenAI에서 개발한 ChatGPT에서 가장 처음에 사용되었던 레거시 모델)", value = "GPT-3.5"),
-        app_commands.Choice(name = "o4-mini (OpenAI에서 개발한 더 빠른 추론 모델)", value = "o4-mini"),
-        app_commands.Choice(name = "o3-mini (OpenAI에서 개발한 빠른 추론 모델)", value = "o3-mini"),
-        app_commands.Choice(name = "판사 (Gemini 2.0 Flash 기반의 디스코드 사건 판결에 적합한 모델)", value = "판사"),
+        app_commands.Choice(name = "o4-mini (OpenAI에서 개발한 추론 모델)", value = "o4-mini"),
     ],
-    effort = [
+    사고깊이 = [
         app_commands.Choice(name = "minimal", value = "minimal"),
         app_commands.Choice(name = "low", value = "low"),
         app_commands.Choice(name = "medium", value = "medium"),
@@ -6726,9 +6721,9 @@ gpt_4_1_cooldowns_d = 60 * 15
     프롬프트 = "텍스트 입력", 
     모델 = "사용할 모델",
     파일 = "파일 입력 (선택)",
-    effort = "api에서의 effort 값. 이 값은 모델이 얼마나 추론하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
+    사고깊이 = "이 값은 모델이 얼마나 사고하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
 )
-async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, effort: str = "medium"):
+async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, 사고깊이: str = "medium"):
     # API 요청 보내기
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -6742,6 +6737,8 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         )
         await interaction.followup.send(embed = embed)
         return
+    
+    effort = 사고깊이
 
     if "discord.gg/" in 프롬프트 or "discord.com/invite/" in 프롬프트 :
         embed = discord.Embed(
@@ -6818,6 +6815,21 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             await interaction.followup.send(embed=embed, ephemeral=False)
             return
         response = await asyncio.to_thread(two_five_lite_model.generate_content, 프롬프트)
+        result = response.text
+    elif 모델 == "Gemini 3.0 Pro" : 
+        if 사고깊이 == "minimal" : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 사고깊이 값 \'minimal\'을 지원하지 않습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+        response = await asyncio.to_thread(gemini_client.models.generate_content,
+            model="gemini-3-pro-preview",
+            contents=프롬프트,
+            # config=types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_level=사고깊이))
+        )
         result = response.text
     elif 모델 == "귀여운 마늘이" :
         if 파일 is not None : 
