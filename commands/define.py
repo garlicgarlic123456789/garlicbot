@@ -53,15 +53,19 @@ railblue_accept_ready = []
 train_timetable_api_key = os.getenv("train_timetable_api")
 train_arrivals_api_key = os.getenv("train_arrivals_api")
 
+from google.genai import Client
+from google.genai import types
+
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
 # from IPython.display import Markdown
 # from transformers import AutoTokenizer, AutoModelForCausalLM
 genai.configure(api_key=gemini_api_key)
+gemini_client = Client(api_key=gemini_api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 two_model = genai.GenerativeModel('gemini-2.0-flash')
 two_lite_model = genai.GenerativeModel('gemini-2.0-flash-lite')
-two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite')
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}"  # Gemini API 엔드포인트
 judge_model = genai.GenerativeModel('tunedModels/ai25040301-x1nhe0vhq77q')
 cute_model = genai.GenerativeModel('tunedModels/a-25040302-en35w7amd6ek')
@@ -570,7 +574,7 @@ developer = 1305492487137267722 # 개발자
 intents = discord.Intents.all()
 intents.presences = False  # Presence Intent 비활성화
 
-mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=True)
+mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=True, replied_user=True)
 
 bot = commands.Bot(
     command_prefix="마늘아마늘아마늘아 ",

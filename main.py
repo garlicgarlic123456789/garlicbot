@@ -227,6 +227,8 @@ invite_cache = {}
 
 do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
 do_mention_role += [1418480822255616053, 1418481318806683678, 1418480277155614781, 1418481446380765289, 1418481595945586709, 1418481673909043210, 1418481752015503360, 1418481816276439163] # 새로운 대화하자 역할
+do_mention_role += [1446068454565220372] # 대화하지 말자 역할
+do_mention_role += [1446087517391552532] # 적응도움 역할
 
 do_mention_role2 = []
 for i in do_mention_role : 
@@ -2072,6 +2074,15 @@ async def on_message(message):
         else:
             # 사용자 초기 메시지 처리
             last_message_times[user_id] = message.created_at
+        
+    if message.guild.id == using_server and "<@&1446068454565220372>" in message.content :
+        embed = discord.Embed(
+            title = "이스터에그 발견!",
+            description = "`대화하자!`가 아닌 `대화하지 말자!` 역할을 찾으셨군요!",
+            color = int("a5f0ff", 16)
+        )
+        await message.reply(embed = embed, mention_author=False)
+        return
 
     if message.content == "마늘아" :
         status, until, reason = is_blocked(message.author)
@@ -3238,6 +3249,8 @@ async def on_member_join(member):
             if member.bot :
                 await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
 
+last_member_join_mention = None
+
 @bot.event
 async def on_member_update(before, after):
     if before.guild.id == using_server :
@@ -3253,16 +3266,44 @@ async def on_member_update(before, after):
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
+                global last_member_join_mention
+                channel = after.guild.get_channel(1446088567582363669)
+                if channel:
+                    if last_member_join_mention is None : 
+                        embed = discord.Embed(
+                            title=f"환영합니다!", # name
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            color=int("a5f0ff", 16)
+                        )
+                        last_member_join_mention = datetime.now()
+                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                    elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
+                        embed = discord.Embed(
+                            title=f"환영합니다!", # name
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            color=int("a5f0ff", 16)
+                        )
+                        last_member_join_mention = datetime.now()
+                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                    else : 
+                        embed = discord.Embed(
+                            title=f"환영합니다!", # name
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            color=int("a5f0ff", 16)
+                        )
+                        last_member_join_mention = datetime.now()
+                        message = await channel.send(f"<@{after.id}>", embed=embed)
+                    
+
                 channel = after.guild.get_channel(1320303102703702042)
                 if channel:
                     if True : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 다 같이 {message.jump_url}에서 환영해 줍시다!\n- <id:customize>에서 <@&1446087517391552532> 역할을 받으시면 적응에 도움이 필요한 유저가 해당 역할을 멘션하는 경우, 빠르게 달려가서 서버에 적응할 수 있도록 도움을 줄 수 있습니다.",
                             color=int("a5f0ff", 16)
                         )
-                        # await channel.send(f"<@{after.id}>님, 타 서버에 이 서버 초대 링크 도배 테러가 발생한 경우 https://discord.com/channels/1320303102703702037/1320304882393153586/1377955171929428039 확인 부탁드립니다. 저희도 이 사건을 유감스럽게 생각하며, 죄송하다는 말씀 드립니다.")
-                        await channel.send(embed=embed)
+                        message = await channel.send(embed=embed)
                 break
     
     if before.timed_out_until != after.timed_out_until:
@@ -6657,23 +6698,20 @@ gpt_4_1_cooldowns_d = 60 * 15
 @bot.tree.command(name="생성형인공지능", description="생성형 AI와 대화합니다.")
 @app_commands.choices(
     모델 = [
-        app_commands.Choice(name = "GPT-5.1 (OpenAI에서 개발한 최신 모델이자 가장 뛰어난 모델)", value = "GPT-5.1"),
-        app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 최신 모델의 직전 모델)", value = "GPT-5"),
+        app_commands.Choice(name = "GPT-5.2 (OpenAI에서 개발한 가장 뛰어난 최신 모델)", value = "GPT-5.2"),
+        app_commands.Choice(name = "GPT-5.1 (OpenAI에서 개발한 매우 뛰어난 모델)", value = "GPT-5.1"),
+        app_commands.Choice(name = "GPT-5 (OpenAI에서 개발한 뛰어난 모델)", value = "GPT-5"),
         app_commands.Choice(name = "GPT-5 mini (OpenAI에서 개발한 GPT-5 모델의 더 빠른 버전)", value = "GPT-5 mini"),
         app_commands.Choice(name = "GPT-5 nano (OpenAI에서 개발한 GPT-5 모델의 가장 빠른 버전)", value = "GPT-5 nano"),
-        app_commands.Choice(name = "Gemini 1.5 Flash (Google에서 개발한 빠르게 답변하는 이전 모델의 경량화 버전)", value = "Gemini 1.5 Flash"),
-        app_commands.Choice(name = "Gemini 2.0 Flash (Google에서 개발한 빠르게 답변하는 최신 모델의 경량화 버전)", value = "Gemini 2.0 Flash"),
-        app_commands.Choice(name = "Gemini 2.0 Flash Lite (Google에서 개발한 빠르게 답변하는 최신 모델의 빠른 버전)", value = "Gemini 2.0 Flash Lite"),
+        app_commands.Choice(name = "Gemini 2.5 Flash Lite (Google에서 개발한 경량화된 모델)", value = "Gemini 2.5 Flash Lite"),
         app_commands.Choice(name = "GPT-4.1 (OpenAI에서 개발한 대부분의 질문에 가장 탁월한 모델)", value = "GPT-4.1"),
         app_commands.Choice(name = "GPT-4.1 mini (OpenAI에서 개발한 대부분의 질문에 더 탁월한 모델)", value = "GPT-4.1 mini"),
         app_commands.Choice(name = "GPT-4.1 nano (OpenAI에서 개발한 대부분의 질문에 더 빠르고 탁월한 모델)", value = "GPT-4.1 nano"),
         app_commands.Choice(name = "GPT-4o mini (OpenAI에서 개발한 대부분의 질문에 더 빠른 모델)", value = "GPT-4o mini"),
         app_commands.Choice(name = "GPT-3.5 (OpenAI에서 개발한 ChatGPT에서 가장 처음에 사용되었던 레거시 모델)", value = "GPT-3.5"),
-        app_commands.Choice(name = "o4-mini (OpenAI에서 개발한 더 빠른 추론 모델)", value = "o4-mini"),
-        app_commands.Choice(name = "o3-mini (OpenAI에서 개발한 빠른 추론 모델)", value = "o3-mini"),
-        app_commands.Choice(name = "판사 (Gemini 2.0 Flash 기반의 디스코드 사건 판결에 적합한 모델)", value = "판사"),
+        app_commands.Choice(name = "o4-mini (OpenAI에서 개발한 추론 모델)", value = "o4-mini"),
     ],
-    effort = [
+    사고깊이 = [
         app_commands.Choice(name = "minimal", value = "minimal"),
         app_commands.Choice(name = "low", value = "low"),
         app_commands.Choice(name = "medium", value = "medium"),
@@ -6684,9 +6722,9 @@ gpt_4_1_cooldowns_d = 60 * 15
     프롬프트 = "텍스트 입력", 
     모델 = "사용할 모델",
     파일 = "파일 입력 (선택)",
-    effort = "api에서의 effort 값. 이 값은 모델이 얼마나 추론하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
+    사고깊이 = "이 값은 모델이 얼마나 사고하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
 )
-async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, effort: str = "medium"):
+async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, 사고깊이: str = "medium"):
     # API 요청 보내기
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -6700,6 +6738,8 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
         )
         await interaction.followup.send(embed = embed)
         return
+    
+    effort = 사고깊이
 
     if "discord.gg/" in 프롬프트 or "discord.com/invite/" in 프롬프트 :
         embed = discord.Embed(
@@ -6766,6 +6806,32 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             return
         response = await asyncio.to_thread(two_lite_model.generate_content, 프롬프트)
         result = response.text
+    elif 모델 == "Gemini 2.5 Flash Lite" :
+        if 파일 is not None : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 파일 첨부를 지원하지 않습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+        response = await asyncio.to_thread(two_five_lite_model.generate_content, 프롬프트)
+        result = response.text
+    elif 모델 == "Gemini 3.0 Pro" : 
+        if 사고깊이 == "minimal" : 
+            embed = discord.Embed(
+                title="오류",
+                description="이 모델을 사용할 수 없는 환경입니다.\n\n이 모델은 사고깊이 값 \'minimal\'을 지원하지 않습니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+        response = await asyncio.to_thread(gemini_client.models.generate_content,
+            model="gemini-3-pro-preview",
+            contents=프롬프트,
+            # config=types.GenerateContentConfig(thinking_config=types.ThinkingConfig(thinking_level=사고깊이))
+        )
+        result = response.text
     elif 모델 == "귀여운 마늘이" :
         if 파일 is not None : 
             embed = discord.Embed(
@@ -6799,7 +6865,7 @@ async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모
             return
         response = await asyncio.to_thread(cute_model3.generate_content, 프롬프트)
         result = response.text
-    elif 모델 == "GPT-5.1" or 모델 == "GPT-5" or 모델 == "GPT-5 mini" or 모델 == "GPT-5 nano" :
+    elif 모델 == "GPT-5.2" or 모델 == "GPT-5.1" or 모델 == "GPT-5" or 모델 == "GPT-5 mini" or 모델 == "GPT-5 nano" :
         if get_premium(interaction.user.id) == False :
             user_id = interaction.user.id
             now = datetime.utcnow()
