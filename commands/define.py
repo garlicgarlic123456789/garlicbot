@@ -28,12 +28,17 @@ import asyncio
 # API KEY 정보로드
 load_dotenv()
 
+class ObsoleteFunctionError(Exception): # 오래되었고, 더 이상 현재 버전에서 사용되지 않는 기능
+    pass
+
 KST = pytz.timezone('Asia/Seoul')
 
 warn_law = "**[경고!]** 본 자료는 법적 조언이 아닌 일반적인 정보 제공 목적만을 가지고 있습니다. 특정 상황에 대해 결정하시기 전, 반드시 법률 전문가와 상의하시기 바랍니다. 본 자료를 신뢰하여 생기는 손해나 피해에 대한 책임은 사용자의 판단에 따라 전적으로 사용자에게 있습니다."
 warn_secret = "**[경고!]** 이 문서에는 기밀 정보가 포함되어 있습니다. 다른 사람(사용자)에게 유출되지 않도록 주의가 필요합니다."
 
 xp_setting = {}
+
+railblue_last_time = {}
 
 gpt_chat_threads = {}
 
@@ -43,15 +48,19 @@ train_timetable_api_key = os.getenv("train_timetable_api")
 train_arrivals_api_key = os.getenv("train_arrivals_api")
 busan_train_arrivals_api_key = os.getenv("busan_train_arrivals_api")
 
+from google.genai import Client
+from google.genai import types
+
 gemini_api_key = os.getenv("GEMENI_API_KEY")
 # from IPython.display import display
 # from IPython.display import Markdown
 # from transformers import AutoTokenizer, AutoModelForCausalLM
 genai.configure(api_key=gemini_api_key)
+gemini_client = Client(api_key=gemini_api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 two_model = genai.GenerativeModel('gemini-2.0-flash')
 two_lite_model = genai.GenerativeModel('gemini-2.0-flash-lite')
-two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-06-17')
+two_five_lite_model = genai.GenerativeModel('gemini-2.5-flash-lite')
 API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_api_key}"  # Gemini API 엔드포인트
 judge_model = genai.GenerativeModel('tunedModels/ai25040301-x1nhe0vhq77q')
 cute_model = genai.GenerativeModel('tunedModels/a-25040302-en35w7amd6ek')
@@ -560,7 +569,7 @@ developer = 1305492487137267722 # 개발자
 intents = discord.Intents.all()
 intents.presences = False  # Presence Intent 비활성화
 
-mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=False, replied_user=True)
+mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=True, replied_user=True)
 
 bot = commands.Bot(
     command_prefix="마늘아마늘아마늘아 ",

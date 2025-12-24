@@ -48,7 +48,7 @@ class summarize_command(app_commands.Group) :
         if user_id not in bot.cooldowns:
             bot.cooldowns[user_id] = 0
 
-        if current_time - bot.cooldowns[user_id] < 1 * 60:  # 60초 = 1분
+        if current_time - bot.cooldowns[user_id] < 1 * 60 and interaction.user.id != developer:  # 60초 = 1분
             embed = discord.Embed(
                 title=f"오류", # name
                 description=f"이 명령어는 1분마다 한 번 사용 가능합니다.",
