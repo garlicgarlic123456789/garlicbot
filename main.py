@@ -335,7 +335,7 @@ greeting_channel = 1451611321932972099 # 가입 시 환영 채널
 byebye_channel = 1451611321932972099 # 탈퇴 시 메시지 보낼 채널
 get_exp_notify = 1451611322364989533
 
-verify_role = 1320303229954953247 # 인증된 사용자 역할 ID
+verify_role = 1451611320490393697 # 인증된 사용자 역할 ID
 
 slowmode_users = {}
 last_message_times = {}
@@ -3261,7 +3261,7 @@ async def on_member_update(before, after):
                 if channel:
                     embed = discord.Embed(
                         title=f"환영합니다!", # name
-                        description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!",
+                        description=f"{after.mention}님이 휴게소로 진입하셨습니다.",
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
