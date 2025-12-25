@@ -93,7 +93,7 @@ from commands import anti_raid_command
 
 from zoneinfo import ZoneInfo
 
-ticket_channel_id = 1325041620084850708
+ticket_channel_id = 1451611322113462429
 
 client = AsyncOpenAI()
 
@@ -8176,7 +8176,7 @@ class TicketButtonOwner(discord.ui.Button):
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
 
-        channel = bot.get_channel(1394966782426484796)
+        channel = bot.get_channel(1451611322113462430)
 
         # 비공개 스레드 생성
         thread = await channel.create_thread(
@@ -8237,10 +8237,6 @@ async def on_ready():
 
 **장난성 티켓을 생성할 경우 제재됩니다.**
 
-아래와 같은 문의/신고는 티켓이 아닌 다른 수단으로 문의/신고하시기 바랍니다.
-
-- 마늘봇 관련 문의: <#1388551689057079347>
-
 티켓을 열더라도 운영진이 멘션되지 않고 운영진에게 티켓 보기 권한 부여 및 로그 채널에 로그만 전송되므로, 티켓 처리에는 시간이 소요될 수 있으며, 재촉성 멘션을 할 경우 제재될 수 있습니다.
 
 티켓 유형 안내: 
@@ -8248,9 +8244,9 @@ async def on_ready():
 - 간편 티켓: 관련한 정보 첨부 없이 바로 문의/신고가 가능한 티켓입니다.
 - 티켓: 관련 메시지 링크 첨부 후 문의/신고가 가능한 티켓입니다.
 - 긴급 티켓: 테러 등 긴급 상황에 모든 운영진은 멘션할 수 있는 티켓입니다. **테러, 레이드 이외에는 사용해서는 안 되며, 사용 시 제재될 수 있습니다.**
-- 소유자 티켓: 소유자 (서버 주인) 만 볼 수 있는 티켓입니다. <#1394966782426484796>에 스레드가 생성됩니다.
+- 소유자 티켓: 소유자 (서버 주인) 만 볼 수 있는 티켓입니다. <#1451611322113462430>에 스레드가 생성됩니다.
 
-이 티켓이 제대로 동작하지 않는 경우 위로 스크롤하여 tickets v2를 이용해 주세요.""",
+이 티켓이 제대로 동작하지 않는 경우 직접 스레드를 생성해 주세요.""",
             color=int("a5f0ff", 16)
         )
         message = await channel.send(embed=embed, view=TicketView())
