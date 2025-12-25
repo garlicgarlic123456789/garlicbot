@@ -298,11 +298,11 @@ super_admin_id = 1451611320574021839 # 부섭장 역할
 admin = [1305492487137267722]
 admin_id = 1451611320557375765 # 관리자 역할 ID
 
-server_booster_role_id = 1326166759778029600
+server_booster_role_id = 1453663054654078997
 
 log_channel = 1394228444673605754 # 각종 로그 채널 ID
 익명로그 = 1340681195058364509 #익명채팅 로그
-automod_log = 1316575398607327282 # 검열 로그 채널 ID
+automod_log = 1451611324915122336 # 검열 로그 채널 ID
 automod_reason = "정치 관련 대화"
 automod_reason2 = "부적절한 표현 사용"
 automod_reason3 = "사기 또는 스팸으로 의심되는 활동"
