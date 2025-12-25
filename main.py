@@ -335,7 +335,7 @@ greeting_channel = 1451611321932972099 # 가입 시 환영 채널
 byebye_channel = 1451611321932972099 # 탈퇴 시 메시지 보낼 채널
 get_exp_notify = 1451611322364989533
 
-verify_role = 1320303229954953247 # 인증된 사용자 역할 ID
+verify_role = 1451611320490393697 # 인증된 사용자 역할 ID
 
 slowmode_users = {}
 last_message_times = {}
@@ -2864,7 +2864,7 @@ async def on_member_remove(member):
         if channel:
             embed = discord.Embed(
                 title="회원 탈퇴 알림",
-                description=f"{member.mention}님이 서버에서 퇴장하셨습니다.",
+                description=f"{member.mention}님이 휴게소에서 진출하셨습니다.",
                 color=discord.Color.red()
             )
             await channel.send(embed=embed)
@@ -3261,7 +3261,7 @@ async def on_member_update(before, after):
                 if channel:
                     embed = discord.Embed(
                         title=f"환영합니다!", # name
-                        description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!",
+                        description=f"{after.mention}님이 휴게소로 진입하셨습니다.",
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
@@ -3271,7 +3271,7 @@ async def on_member_update(before, after):
                     if last_member_join_mention is None : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
@@ -3279,7 +3279,7 @@ async def on_member_update(before, after):
                     elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
@@ -3287,7 +3287,7 @@ async def on_member_update(before, after):
                     else : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
