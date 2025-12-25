@@ -8045,7 +8045,7 @@ async def message_info(interaction: discord.Interaction, message: discord.Messag
     )
     await thread.send(embed = embed)
     await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-    channel = bot.get_channel(1349651598980288542)
+    channel = bot.get_channel(1451611324915122333)
     embed = discord.Embed(
         title = "티켓 생성됨",
         description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}",
@@ -8085,7 +8085,7 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
         )
         await thread.send(embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1349651598980288542)
+        channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
             title = "티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: {message_link}",
@@ -8126,7 +8126,7 @@ class TicketButton(discord.ui.Button):
         )
         await thread.send(embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1349651598980288542)
+        channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
             title = "티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
@@ -8159,7 +8159,7 @@ class TicketButtonEmergency(discord.ui.Button):
         )
         await thread.send("<@&1346047923460243507> <@&1325762715867943004> <@&1320303818004496430>", embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1349651598980288542)
+        channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
             title = "긴급 티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
