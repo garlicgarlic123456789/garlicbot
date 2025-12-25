@@ -293,11 +293,10 @@ no_response_list = [] #마늘이가 대답 안 하는 사람 목록
 no_auto_verify = [1360093367463055411, 1343462321044979815, 1142740632314597467, 1207080506328485976, 1345697924847505429, 1297882025121812502, 1341739833499979846, 1325010425376538697]# [1229421425622777953, 1106059731518369852, 1284111116582125605] # 자동 인증 제외
 
 owner = [1305492487137267722]
-owner_id = 1320308043350675497
-super_admin = [1063676895000018944, 1305492487137267722, 1181084142969032848, 717241733011996682, 1342044882080108564] # 마늘봇에서 최관 여부 판단 및 /권한회수 명령어 사용 가능 여부 판단에 사용됨
-super_admin_id = 1325762715867943004 # 최관 역할 ID
-admin = [1137207376869609513, 823346807350231060, 1326817332592513045, 1076065874596864041, 1063676895000018944, 1305492487137267722, 1181084142969032848, 717241733011996682, 1342044882080108564]
-admin_id = 1320303818004496430 # 관리자 역할 ID
+owner_id = 1451611320586731851
+super_admin_id = 1451611320574021839 # 부섭장 역할
+admin = [1305492487137267722]
+admin_id = 1451611320557375765 # 관리자 역할 ID
 
 server_booster_role_id = 1326166759778029600
 
@@ -858,7 +857,7 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     log_msg = None
     
     if message.guild.id == using_server :
-        channel = bot.get_channel(1349016766982000691)
+        channel = bot.get_channel(1451611324915122336)
         log_msg = await channel.send(embed = embed2)
     else : 
         channel = bot.get_channel(get_log_channel(message.guild.id)["editdelete"])
@@ -7606,13 +7605,8 @@ def split_text(text, chunk_size=3000):
 @bot.tree.command(name="일괄삭제", description = "범위를 지정하여 메시지를 일괄적으로 삭제합니다. 필요한 경우 특정 사용자의 메시지만 삭제할 수도 있습니다.")
 @app_commands.describe(시작 = "시작 메시지 링크", 끝 = "끝 메시지 링크 (선택사항)", 유저 = "특정 유저의 메시지만 삭제하려는 경우 해당되는 유저 (선택사항)", 사유 = "삭제 사유 (선택사항)")
 async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = None, 유저: discord.User = None, 사유: str = "*(사유 입력되지 않음)*"):
-    # 1. super_admin_id 역할 검사
-    if interaction.guild.id == using_server : 
-        if super_admin_id not in [role.id for role in interaction.user.roles]:
-            return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `관리자 역할`", ephemeral=False)
-    else :
-        if not interaction.user.guild_permissions.manage_messages:
-            return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `메시지 관리하기`", ephemeral=False)
+    if not interaction.user.guild_permissions.manage_messages:
+        return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `메시지 관리하기`", ephemeral=False)
 
     # 2. <시작> 값 확인
     if not 시작:
@@ -9550,7 +9544,7 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
         if interaction.user.id not in admin:
             embed = discord.Embed(
                 title=f"오류", # name
-                description=f"권한이 부족합니다. 다음 권한이 필요합니다: `관리자` 또는 `부관리자`",
+                description=f"권한이 부족합니다. 다음 권한이 필요합니다: `관리자`",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed = embed, ephemeral=False)
@@ -9571,7 +9565,7 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
     roles_to_remove = []
     guild = bot.get_guild(1320303102703702037)
     member = await guild.fetch_member(member.id)
-    for role_id in [super_admin_id, admin_id, 1337738931378061312]:
+    for role_id in [super_admin_id, admin_id]:
         role = guild.get_role(role_id)
         if role in member.roles:
             roles_to_remove.append(role)
