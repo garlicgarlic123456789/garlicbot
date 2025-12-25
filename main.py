@@ -330,10 +330,10 @@ raid_keyword1 = []
 xp_log_channel = 1325006023064293417 # 추첨 로그 채널 ID
 
 FORUM_CHANNEL_ID = 0  # 차소게 포럼 채널 ID를 정의
-normal_channel = 1320303102703702042 # 일반 채널
-greeting_channel = 1325008603425280010 # 가입 시 환영 채널
-byebye_channel = 1325008603425280010 # 탈퇴 시 메시지 보낼 채널
-get_exp_notify = 1342040521299984435
+normal_channel = 1451611322364989533 # 일반 채널
+greeting_channel = 1451611321932972099 # 가입 시 환영 채널
+byebye_channel = 1451611321932972099 # 탈퇴 시 메시지 보낼 채널
+get_exp_notify = 1451611322364989533
 
 verify_role = 1320303229954953247 # 인증된 사용자 역할 ID
 
@@ -3266,7 +3266,7 @@ async def on_member_update(before, after):
                     )
                     await channel.send(embed=embed)
                 global last_member_join_mention
-                channel = after.guild.get_channel(1446088567582363669)
+                channel = after.guild.get_channel(1451611322364989533)
                 if channel:
                     if last_member_join_mention is None : 
                         embed = discord.Embed(
@@ -3275,7 +3275,7 @@ async def on_member_update(before, after):
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                        message = await channel.send(f"<@{after.id}> <@&1451611320427216991>", embed=embed)
                     elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
@@ -3283,7 +3283,7 @@ async def on_member_update(before, after):
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                        message = await channel.send(f"<@{after.id}> <@&1451611320427216991>", embed=embed)
                     else : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
@@ -3292,18 +3292,6 @@ async def on_member_update(before, after):
                         )
                         last_member_join_mention = datetime.now()
                         message = await channel.send(f"<@{after.id}>", embed=embed)
-                    
-
-                channel = after.guild.get_channel(1320303102703702042)
-                if channel:
-                    if True : 
-                        embed = discord.Embed(
-                            title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 다 같이 {message.jump_url}에서 환영해 줍시다!\n- <id:customize>에서 <@&1446087517391552532> 역할을 받으시면 적응에 도움이 필요한 유저가 해당 역할을 멘션하는 경우, 빠르게 달려가서 서버에 적응할 수 있도록 도움을 줄 수 있습니다.",
-                            color=int("a5f0ff", 16)
-                        )
-                        message = await channel.send(embed=embed)
-                break
     
     if before.timed_out_until != after.timed_out_until:
         channel = bot.get_channel(get_block_log_channel(after.guild.id))
