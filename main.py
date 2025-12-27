@@ -225,10 +225,9 @@ get_all_xp_setting()
 # 서버별 초대코드 캐시
 invite_cache = {}
 
-do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
-do_mention_role += [1418480822255616053, 1418481318806683678, 1418480277155614781, 1418481446380765289, 1418481595945586709, 1418481673909043210, 1418481752015503360, 1418481816276439163] # 새로운 대화하자 역할
-do_mention_role += [1446068454565220372] # 대화하지 말자 역할
-do_mention_role += [1446087517391552532] # 적응도움 역할
+do_mention_role = [1451611320490393692, 1451611320490393691, 1451611320490393690, 1451611320427217000, 1451611320427216999, 1451611320427216997, 1451611320427216992] # 새로운 대화하자 역할
+do_mention_role += [1451611320427216992] # 대화하지 말자 역할
+do_mention_role += [1451611320427216991] # 적응도움 역할
 
 do_mention_role2 = []
 for i in do_mention_role : 
@@ -792,22 +791,17 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
         message_content = message.content
     guild = message.guild
 
-    # Check whitelist
-    if message.guild.id == using_server :
-        if any(role.id in spamming_filter_whitelist for role in member.roles):
-            if whitelist_apply == True or any(role.id in anti_nuke_whitelist for role in member.roles) : 
-                return
-    else : 
-        if get_automod(message.guild.id)['whitelist_permission'] == 'admin' and message.author.guild_permissions.administrator:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_server' and message.author.guild_permissions.manage_guild:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_messages' and message.author.guild_permissions.manage_messages:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'ban_members' and message.author.guild_permissions.ban_members:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'timeout_members' and message.author.guild_permissions.moderate_members:
-            return
+    if get_automod(message.guild.id)['whitelist_permission'] == 'admin' and message.author.guild_permissions.administrator:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_server' and message.author.guild_permissions.manage_guild:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_messages' and message.author.guild_permissions.manage_messages:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'ban_members' and message.author.guild_permissions.ban_members:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'timeout_members' and message.author.guild_permissions.moderate_members:
+        return
+    
     if ai_apply :
         temp = await spam_detect_ai(message_content)
         print(temp)
