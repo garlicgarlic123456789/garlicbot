@@ -285,7 +285,7 @@ type_mapping = {
 
 recent_joins = {}  # 최근 가입한 계정들을 저장하는 리스트
 
-friendly_list = [1355698620606709902, 1305492487137267722, 873128084193296406, 1238750780459188225, 1350460211739103305, 1063676895000018944] # 마늘봇 대화에서 좀 친한 분들
+friendly_list = []
 friendly_list2 = [] # 마늘아 사귀자에서 확률 좀 더 높음
 no_response_list = [] #마늘이가 대답 안 하는 사람 목록
 
@@ -2525,7 +2525,11 @@ async def on_message(message):
                         return
                     # 인명사전
                     elif "세유" == message.content[4:] or "나세유" == message.content[4:] :
-                        await message.reply("개발을 무지 잘하시고 귀여우신 분이에용! 이 서버 주인에게 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요!", mention_author=False)
+                        await message.reply("개발을 무지 잘하시고 귀여우신 분이에용! 이 서버 운영진이시기도 하죠! 이 서버 주인에게 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요!", mention_author=False)
+                        add_likeability(str(message.author.id), 5)
+                        return
+                    elif "캐북" == message.content[4:] :
+                        await message.reply("이 서버 상급 관리자이십니다. 이 서버의 채팅률 재활성화에 많은 도움을 주시고 계시고 이 서버 주인에게 사적인 도움도 주었죠!")
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "챠무" == message.content[4:] :
