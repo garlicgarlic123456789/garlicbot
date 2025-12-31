@@ -90,6 +90,7 @@ from commands.autorole import *
 from commands import rules
 from commands.phrase import *
 from commands import anti_raid_command
+from commands import compatibility
 
 from zoneinfo import ZoneInfo
 
@@ -10291,6 +10292,7 @@ slowmode.setup(bot)
 server_info.setup(bot)
 rules.setup(bot)
 anti_raid_command.setup(bot)
+compatibility.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
