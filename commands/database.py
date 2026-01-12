@@ -156,6 +156,14 @@ def init_db() :
             accept INTEGER
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS server_join_route_memo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            invite_link TEXT,
+            memo TEXT
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -174,6 +182,34 @@ c.execute("""
             warn INTEGER
         )
     """)'''
+
+
+async def get_server_join_route_memo(server_id: int, invite_link: str) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT memo FROM server_join_route_memo WHERE server_id = ? AND invite_link = ?", (server_id, invite_link,))
+    row = c.fetchone()
+    if row : 
+        return row[0]
+    else : 
+        return None
+
+async def update_server_join_route_memo(server_id: int, invite_link: str, memo: str) : 
+    if memo is not None and len(memo) > 150 : 
+        raise ValueError("set_server_join_route_memo() 함수에서 유효하지 않은 값. memo의 값은 150자를 초과할 수 없습니다.")
+    if len(invite_link) > 100 : 
+        raise ValueError("set_server_join_route_memo() 함수에서 유효하지 않은 값. invite_link의 값은 100자를 초과할 수 없습니다.")
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT memo FROM server_join_route_memo WHERE server_id = ? AND invite_link = ?", (server_id, invite_link,))
+    row = c.fetchone()
+    if row : 
+        c.execute("UPDATE server_join_route_memo SET memo = ? WHERE server_id = ? AND invite_link = ?", (memo, server_id, invite_link,))
+        return memo
+    else : 
+        c.execute("INSERT INTO server_join_route_memo (server_id, invite_link, memo) VALUES (?, ?, ?)", (server_id, invite_link, memo))
+        return memo
 
 async def set_warning(server_id: int, user_id: int, warn: int) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
