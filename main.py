@@ -9392,7 +9392,7 @@ async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.
 
 @bot.tree.command(name = "초대링크메모", description = "특정 초대 링크에 대해 메모를 설정합니다.")
 @app_commands.default_permissions(administrator = True)
-@app_commands.describe(초대링크 = "유입경로를 확인할 사용자를 입력해 주세요. (본인도 가능)")
+@app_commands.describe(초대링크 = "생성한 초대 링크 (discord.gg/나 discord.com/invite/는 생략하고 입력)", 메모 = "메모 내용")
 async def 초대링크메모(interaction: discord.Interaction, 초대링크: str, 메모: str = None) : 
     await interaction.response.defer(ephemeral=True)
     status, until, reason = is_blocked(interaction.user)
