@@ -9317,7 +9317,7 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
     )
     await interaction.followup.send(embed=embed)
 
-
+'''
 @bot.tree.command(name = "구분역할설정", description = "개발자용")
 @app_commands.default_permissions(administrator = True)
 @app_commands.describe(입력2 = "입력2")
@@ -9388,8 +9388,30 @@ async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.
         )
     await interaction.followup.send(embed=embed)
     return
+'''
 
-@bot.tree.command(name = "유입경로확인", description = "유입경로를 확인합니다.")
+@bot.tree.command(name = "초대링크메모", description = "특정 초대 링크에 대해 메모를 설정합니다.")
+@app_commands.default_permissions(administrator = True)
+@app_commands.describe(초대링크 = "생성한 초대 링크 (discord.gg/나 discord.com/invite/는 생략하고 입력)", 메모 = "메모 내용")
+async def 초대링크메모(interaction: discord.Interaction, 초대링크: str, 메모: str = None) : 
+    await interaction.response.defer(ephemeral=True)
+    status, until, reason = is_blocked(interaction.user)
+    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+    
+    await update_server_join_route_memo(interaction.guild.id, 초대링크, 메모)
+
+    embed = discord.Embed(
+        title = "완료",
+        description = f"완료되었습니다.",
+        color = int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed)
+
+@bot.tree.command(name = "유입경로확인", description = "특정 사용자가 유입된 초대 링크를 확인하고, 해당 초대 링크에 메모가 설정된 경우 메모도 확인합니다.")
 @app_commands.default_permissions(administrator = True)
 @app_commands.describe(사용자 = "유입경로를 확인할 사용자를 입력해 주세요. (본인도 가능)")
 async def 유입경로확인(interaction: discord.Interaction, 사용자: discord.User):
@@ -9406,7 +9428,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
     if len(way) == 0 : 
         embed = discord.Embed(
             title = "완료",
-            description = f"**{사용자.display_name}**님의 유입 경로는 다음과 같습니다:\n\n*(알 수 없음)*",
+            description = f"**{사용자.mention}**님의 유입 경로는 다음과 같습니다:\n\n*(알 수 없음)*",
             color = int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
@@ -9416,10 +9438,11 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
         if way[i] == None : 
             way[i] = "*(알 수 없음)*"
         else : 
-            if interaction.guild.id == using_server :
-                way[i] = await invite_log_check(way[i])
-            else : 
+            way_memo = await get_server_join_route_memo(interaction.guild.id, way[i])
+            if way_memo is None : 
                 way[i] = f"링크 {way[i]}"
+            else : 
+                way[i] = f"링크 {way[i]} (유입 경로 메모: {way_memo})"
     
     if len(way) > 2: 
         way_text = ", ".join(way)
@@ -9428,7 +9451,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
     
     embed = discord.Embed(
         title = "완료",
-        description = f"**{사용자.display_name}**님의 유입 경로는 다음과 같습니다:\n\n{way_text}",
+        description = f"**{사용자.mention}**님의 유입 경로는 다음과 같습니다:\n\n{way_text}",
         color = int("a5f0ff", 16)
     )
     await interaction.followup.send(embed=embed)

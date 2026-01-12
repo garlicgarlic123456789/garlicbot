@@ -1,4 +1,7 @@
+from commands.define import ObsoleteFunctionError
+
 async def invite_log_check(link) : 
+    raise ObsoleteFunctionError("더 이상 사용되지 않는 함수입니다.")
     if link == "tYvhXSfGcv" : return "그늅의 놀이터 홍보 채널 홍보지"
     elif link == "dH65wdUBar" : return "갈치 서버 또는 시안 서버 홍보 채널 홍보지"
     elif link == "eJ8z9dwvnV" : return "디스코드 아카이브 홍보 채널 홍보지"
