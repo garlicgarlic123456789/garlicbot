@@ -90,10 +90,11 @@ from commands.autorole import *
 from commands import rules
 from commands.phrase import *
 from commands import anti_raid_command
+from commands import compatibility
 
 from zoneinfo import ZoneInfo
 
-ticket_channel_id = 1325041620084850708
+ticket_channel_id = 1451611322113462429
 
 client = AsyncOpenAI()
 
@@ -225,10 +226,9 @@ get_all_xp_setting()
 # 서버별 초대코드 캐시
 invite_cache = {}
 
-do_mention_role = [1378253467940028498, 1375687128708677682, 1378256091070074900, 1400872501378158764, 1416704481382502470]
-do_mention_role += [1418480822255616053, 1418481318806683678, 1418480277155614781, 1418481446380765289, 1418481595945586709, 1418481673909043210, 1418481752015503360, 1418481816276439163] # 새로운 대화하자 역할
-do_mention_role += [1446068454565220372] # 대화하지 말자 역할
-do_mention_role += [1446087517391552532] # 적응도움 역할
+do_mention_role = [1451611320490393692, 1451611320490393691, 1451611320490393690, 1451611320427217000, 1451611320427216999, 1451611320427216997, 1451611320427216992] # 새로운 대화하자 역할
+do_mention_role += [1451611320427216992] # 대화하지 말자 역할
+do_mention_role += [1451611320427216991] # 적응도움 역할
 
 do_mention_role2 = []
 for i in do_mention_role : 
@@ -286,24 +286,23 @@ type_mapping = {
 
 recent_joins = {}  # 최근 가입한 계정들을 저장하는 리스트
 
-friendly_list = [1355698620606709902, 1305492487137267722, 873128084193296406, 1238750780459188225, 1350460211739103305, 1063676895000018944] # 마늘봇 대화에서 좀 친한 분들
+friendly_list = []
 friendly_list2 = [] # 마늘아 사귀자에서 확률 좀 더 높음
 no_response_list = [] #마늘이가 대답 안 하는 사람 목록
 
 no_auto_verify = [1360093367463055411, 1343462321044979815, 1142740632314597467, 1207080506328485976, 1345697924847505429, 1297882025121812502, 1341739833499979846, 1325010425376538697]# [1229421425622777953, 1106059731518369852, 1284111116582125605] # 자동 인증 제외
 
 owner = [1305492487137267722]
-owner_id = 1320308043350675497
-super_admin = [1063676895000018944, 1305492487137267722, 1181084142969032848, 717241733011996682, 1342044882080108564] # 마늘봇에서 최관 여부 판단 및 /권한회수 명령어 사용 가능 여부 판단에 사용됨
-super_admin_id = 1325762715867943004 # 최관 역할 ID
-admin = [1137207376869609513, 823346807350231060, 1326817332592513045, 1076065874596864041, 1063676895000018944, 1305492487137267722, 1181084142969032848, 717241733011996682, 1342044882080108564]
-admin_id = 1320303818004496430 # 관리자 역할 ID
+owner_id = 1451611320586731851
+super_admin_id = 1451611320574021839 # 부섭장 역할
+admin = [1305492487137267722]
+admin_id = 1451611320557375765 # 관리자 역할 ID
 
-server_booster_role_id = 1326166759778029600
+server_booster_role_id = 1453663054654078997
 
 log_channel = 1394228444673605754 # 각종 로그 채널 ID
 익명로그 = 1340681195058364509 #익명채팅 로그
-automod_log = 1316575398607327282 # 검열 로그 채널 ID
+automod_log = 1451611324915122336 # 검열 로그 채널 ID
 automod_reason = "정치 관련 대화"
 automod_reason2 = "부적절한 표현 사용"
 automod_reason3 = "사기 또는 스팸으로 의심되는 활동"
@@ -331,12 +330,12 @@ raid_keyword1 = []
 xp_log_channel = 1325006023064293417 # 추첨 로그 채널 ID
 
 FORUM_CHANNEL_ID = 0  # 차소게 포럼 채널 ID를 정의
-normal_channel = 1320303102703702042 # 일반 채널
-greeting_channel = 1325008603425280010 # 가입 시 환영 채널
-byebye_channel = 1325008603425280010 # 탈퇴 시 메시지 보낼 채널
-get_exp_notify = 1342040521299984435
+normal_channel = 1451611322364989533 # 일반 채널
+greeting_channel = 1451611321932972099 # 가입 시 환영 채널
+byebye_channel = 1451611321932972099 # 탈퇴 시 메시지 보낼 채널
+get_exp_notify = 1451611322364989533
 
-verify_role = 1320303229954953247 # 인증된 사용자 역할 ID
+verify_role = 1451611320490393697 # 인증된 사용자 역할 ID
 
 slowmode_users = {}
 last_message_times = {}
@@ -793,22 +792,17 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
         message_content = message.content
     guild = message.guild
 
-    # Check whitelist
-    if message.guild.id == using_server :
-        if any(role.id in spamming_filter_whitelist for role in member.roles):
-            if whitelist_apply == True or any(role.id in anti_nuke_whitelist for role in member.roles) : 
-                return
-    else : 
-        if get_automod(message.guild.id)['whitelist_permission'] == 'admin' and message.author.guild_permissions.administrator:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_server' and message.author.guild_permissions.manage_guild:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_messages' and message.author.guild_permissions.manage_messages:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'ban_members' and message.author.guild_permissions.ban_members:
-            return
-        elif get_automod(message.guild.id)['whitelist_permission'] == 'timeout_members' and message.author.guild_permissions.moderate_members:
-            return
+    if get_automod(message.guild.id)['whitelist_permission'] == 'admin' and message.author.guild_permissions.administrator:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_server' and message.author.guild_permissions.manage_guild:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'manage_messages' and message.author.guild_permissions.manage_messages:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'ban_members' and message.author.guild_permissions.ban_members:
+        return
+    elif get_automod(message.guild.id)['whitelist_permission'] == 'timeout_members' and message.author.guild_permissions.moderate_members:
+        return
+    
     if ai_apply :
         temp = await spam_detect_ai(message_content)
         print(temp)
@@ -858,7 +852,7 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     log_msg = None
     
     if message.guild.id == using_server :
-        channel = bot.get_channel(1349016766982000691)
+        channel = bot.get_channel(1451611324915122336)
         log_msg = await channel.send(embed = embed2)
     else : 
         channel = bot.get_channel(get_log_channel(message.guild.id)["editdelete"])
@@ -2532,7 +2526,11 @@ async def on_message(message):
                         return
                     # 인명사전
                     elif "세유" == message.content[4:] or "나세유" == message.content[4:] :
-                        await message.reply("개발을 무지 잘하시고 귀여우신 분이에용! 이 서버 주인에게 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요!", mention_author=False)
+                        await message.reply("개발을 무지 잘하시고 귀여우신 분이에용! 이 서버 운영진이시기도 하죠! 이 서버 주인에게 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요!", mention_author=False)
+                        add_likeability(str(message.author.id), 5)
+                        return
+                    elif "캐북" == message.content[4:] :
+                        await message.reply("이 서버 상급 관리자이십니다. 이 서버의 채팅률 재활성화에 많은 도움을 주시고 계시고 이 서버 주인에게 사적인 도움도 주었죠!")
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "챠무" == message.content[4:] :
@@ -2865,7 +2863,7 @@ async def on_member_remove(member):
         if channel:
             embed = discord.Embed(
                 title="회원 탈퇴 알림",
-                description=f"{member.mention}님이 서버에서 퇴장하셨습니다.",
+                description=f"{member.mention}님이 휴게소에서 진출하셨습니다.",
                 color=discord.Color.red()
             )
             await channel.send(embed=embed)
@@ -3262,49 +3260,37 @@ async def on_member_update(before, after):
                 if channel:
                     embed = discord.Embed(
                         title=f"환영합니다!", # name
-                        description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!",
+                        description=f"{after.mention}님이 휴게소로 진입하셨습니다.",
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
                 global last_member_join_mention
-                channel = after.guild.get_channel(1446088567582363669)
+                channel = after.guild.get_channel(1451611322364989533)
                 if channel:
                     if last_member_join_mention is None : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                        message = await channel.send(f"<@{after.id}> <@&1451611320427216991>", embed=embed)
                     elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}> <@&1446087517391552532>", embed=embed)
+                        message = await channel.send(f"<@{after.id}> <@&1451611320427216991>", embed=embed)
                     else : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1320304872200998974> 및 <#1354708402881826937>를 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1446087517391552532>를 멘션해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1325041620084850708>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1325041620084850708>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
                         message = await channel.send(f"<@{after.id}>", embed=embed)
-                    
-
-                channel = after.guild.get_channel(1320303102703702042)
-                if channel:
-                    if True : 
-                        embed = discord.Embed(
-                            title=f"환영합니다!", # name
-                            description=f"{after.mention}님, 마늘 서버에 오신 것을 환영합니다!\n\n- 다 같이 {message.jump_url}에서 환영해 줍시다!\n- <id:customize>에서 <@&1446087517391552532> 역할을 받으시면 적응에 도움이 필요한 유저가 해당 역할을 멘션하는 경우, 빠르게 달려가서 서버에 적응할 수 있도록 도움을 줄 수 있습니다.",
-                            color=int("a5f0ff", 16)
-                        )
-                        message = await channel.send(embed=embed)
-                break
     
     if before.timed_out_until != after.timed_out_until:
         channel = bot.get_channel(get_block_log_channel(after.guild.id))
@@ -7606,13 +7592,8 @@ def split_text(text, chunk_size=3000):
 @bot.tree.command(name="일괄삭제", description = "범위를 지정하여 메시지를 일괄적으로 삭제합니다. 필요한 경우 특정 사용자의 메시지만 삭제할 수도 있습니다.")
 @app_commands.describe(시작 = "시작 메시지 링크", 끝 = "끝 메시지 링크 (선택사항)", 유저 = "특정 유저의 메시지만 삭제하려는 경우 해당되는 유저 (선택사항)", 사유 = "삭제 사유 (선택사항)")
 async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = None, 유저: discord.User = None, 사유: str = "*(사유 입력되지 않음)*"):
-    # 1. super_admin_id 역할 검사
-    if interaction.guild.id == using_server : 
-        if super_admin_id not in [role.id for role in interaction.user.roles]:
-            return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `관리자 역할`", ephemeral=False)
-    else :
-        if not interaction.user.guild_permissions.manage_messages:
-            return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `메시지 관리하기`", ephemeral=False)
+    if not interaction.user.guild_permissions.manage_messages:
+        return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `메시지 관리하기`", ephemeral=False)
 
     # 2. <시작> 값 확인
     if not 시작:
@@ -7692,10 +7673,7 @@ async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = 
     else :
         embed.add_field(name="대상 사용자", value=f"모두", inline=False)
     embed.add_field(name="사유", value=사유, inline=False)
-    if interaction.guild.id != using_server : 
-        log_channel = bot.get_channel(get_log_channel(interaction.guild.id)["editdelete"])
-    else : 
-        log_channel = bot.get_channel(1394228444673605754)
+    log_channel = bot.get_channel(get_log_channel(interaction.guild.id)["editdelete"])
     if log_channel :
         await log_channel.send(embed=embed)
     else :
@@ -8063,7 +8041,7 @@ async def message_info(interaction: discord.Interaction, message: discord.Messag
     )
     await thread.send(embed = embed)
     await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-    channel = bot.get_channel(1349651598980288542)
+    channel = bot.get_channel(1451611324915122333)
     embed = discord.Embed(
         title = "티켓 생성됨",
         description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}",
@@ -8103,7 +8081,7 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
         )
         await thread.send(embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1349651598980288542)
+        channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
             title = "티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: {message_link}",
@@ -8144,7 +8122,7 @@ class TicketButton(discord.ui.Button):
         )
         await thread.send(embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1349651598980288542)
+        channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
             title = "티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
@@ -8177,7 +8155,7 @@ class TicketButtonEmergency(discord.ui.Button):
         )
         await thread.send("<@&1346047923460243507> <@&1325762715867943004> <@&1320303818004496430>", embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1349651598980288542)
+        channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
             title = "긴급 티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
@@ -8194,7 +8172,7 @@ class TicketButtonOwner(discord.ui.Button):
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
 
-        channel = bot.get_channel(1394966782426484796)
+        channel = bot.get_channel(1451611322113462430)
 
         # 비공개 스레드 생성
         thread = await channel.create_thread(
@@ -8255,10 +8233,6 @@ async def on_ready():
 
 **장난성 티켓을 생성할 경우 제재됩니다.**
 
-아래와 같은 문의/신고는 티켓이 아닌 다른 수단으로 문의/신고하시기 바랍니다.
-
-- 마늘봇 관련 문의: <#1388551689057079347>
-
 티켓을 열더라도 운영진이 멘션되지 않고 운영진에게 티켓 보기 권한 부여 및 로그 채널에 로그만 전송되므로, 티켓 처리에는 시간이 소요될 수 있으며, 재촉성 멘션을 할 경우 제재될 수 있습니다.
 
 티켓 유형 안내: 
@@ -8266,9 +8240,9 @@ async def on_ready():
 - 간편 티켓: 관련한 정보 첨부 없이 바로 문의/신고가 가능한 티켓입니다.
 - 티켓: 관련 메시지 링크 첨부 후 문의/신고가 가능한 티켓입니다.
 - 긴급 티켓: 테러 등 긴급 상황에 모든 운영진은 멘션할 수 있는 티켓입니다. **테러, 레이드 이외에는 사용해서는 안 되며, 사용 시 제재될 수 있습니다.**
-- 소유자 티켓: 소유자 (서버 주인) 만 볼 수 있는 티켓입니다. <#1394966782426484796>에 스레드가 생성됩니다.
+- 소유자 티켓: 소유자 (서버 주인) 만 볼 수 있는 티켓입니다. <#1451611322113462430>에 스레드가 생성됩니다.
 
-이 티켓이 제대로 동작하지 않는 경우 위로 스크롤하여 tickets v2를 이용해 주세요.""",
+이 티켓이 제대로 동작하지 않는 경우 직접 스레드를 생성해 주세요.""",
             color=int("a5f0ff", 16)
         )
         message = await channel.send(embed=embed, view=TicketView())
@@ -9343,7 +9317,7 @@ async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
     )
     await interaction.followup.send(embed=embed)
 
-
+'''
 @bot.tree.command(name = "구분역할설정", description = "개발자용")
 @app_commands.default_permissions(administrator = True)
 @app_commands.describe(입력2 = "입력2")
@@ -9414,8 +9388,30 @@ async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.
         )
     await interaction.followup.send(embed=embed)
     return
+'''
 
-@bot.tree.command(name = "유입경로확인", description = "유입경로를 확인합니다.")
+@bot.tree.command(name = "초대링크메모", description = "특정 초대 링크에 대해 메모를 설정합니다.")
+@app_commands.default_permissions(administrator = True)
+@app_commands.describe(초대링크 = "생성한 초대 링크 (discord.gg/나 discord.com/invite/는 생략하고 입력)", 메모 = "메모 내용")
+async def 초대링크메모(interaction: discord.Interaction, 초대링크: str, 메모: str = None) : 
+    await interaction.response.defer(ephemeral=True)
+    status, until, reason = is_blocked(interaction.user)
+    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
+    if status:
+        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+        await interaction.followup.send(msg)
+        return
+    
+    await update_server_join_route_memo(interaction.guild.id, 초대링크, 메모)
+
+    embed = discord.Embed(
+        title = "완료",
+        description = f"완료되었습니다.",
+        color = int("a5f0ff", 16)
+    )
+    await interaction.followup.send(embed=embed)
+
+@bot.tree.command(name = "유입경로확인", description = "특정 사용자가 유입된 초대 링크를 확인하고, 해당 초대 링크에 메모가 설정된 경우 메모도 확인합니다.")
 @app_commands.default_permissions(administrator = True)
 @app_commands.describe(사용자 = "유입경로를 확인할 사용자를 입력해 주세요. (본인도 가능)")
 async def 유입경로확인(interaction: discord.Interaction, 사용자: discord.User):
@@ -9432,7 +9428,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
     if len(way) == 0 : 
         embed = discord.Embed(
             title = "완료",
-            description = f"**{사용자.display_name}**님의 유입 경로는 다음과 같습니다:\n\n*(알 수 없음)*",
+            description = f"**{사용자.mention}**님의 유입 경로는 다음과 같습니다:\n\n*(알 수 없음)*",
             color = int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
@@ -9442,10 +9438,11 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
         if way[i] == None : 
             way[i] = "*(알 수 없음)*"
         else : 
-            if interaction.guild.id == using_server :
-                way[i] = await invite_log_check(way[i])
-            else : 
+            way_memo = await get_server_join_route_memo(interaction.guild.id, way[i])
+            if way_memo is None : 
                 way[i] = f"링크 {way[i]}"
+            else : 
+                way[i] = f"링크 {way[i]} (유입 경로 메모: {way_memo})"
     
     if len(way) > 2: 
         way_text = ", ".join(way)
@@ -9454,7 +9451,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
     
     embed = discord.Embed(
         title = "완료",
-        description = f"**{사용자.display_name}**님의 유입 경로는 다음과 같습니다:\n\n{way_text}",
+        description = f"**{사용자.mention}**님의 유입 경로는 다음과 같습니다:\n\n{way_text}",
         color = int("a5f0ff", 16)
     )
     await interaction.followup.send(embed=embed)
@@ -9550,7 +9547,7 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
         if interaction.user.id not in admin:
             embed = discord.Embed(
                 title=f"오류", # name
-                description=f"권한이 부족합니다. 다음 권한이 필요합니다: `관리자` 또는 `부관리자`",
+                description=f"권한이 부족합니다. 다음 권한이 필요합니다: `관리자`",
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed = embed, ephemeral=False)
@@ -9571,7 +9568,7 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
     roles_to_remove = []
     guild = bot.get_guild(1320303102703702037)
     member = await guild.fetch_member(member.id)
-    for role_id in [super_admin_id, admin_id, 1337738931378061312]:
+    for role_id in [super_admin_id, admin_id]:
         role = guild.get_role(role_id)
         if role in member.roles:
             roles_to_remove.append(role)
@@ -10318,6 +10315,7 @@ slowmode.setup(bot)
 server_info.setup(bot)
 rules.setup(bot)
 anti_raid_command.setup(bot)
+compatibility.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
