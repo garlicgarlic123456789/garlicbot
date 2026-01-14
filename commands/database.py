@@ -9,6 +9,7 @@ from discord import app_commands
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import gpt_chat_threads
+from commands.define import DevelopingFuctionError, ObsoleteFunctionError
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -162,6 +163,24 @@ def init_db() :
             server_id INTEGER,
             invite_link TEXT,
             memo TEXT
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS promote_server (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            information TEXT,
+            type TEXT,
+            last_bumped TEXT,
+            personal_information_required INTEGER,
+            bad_words_allowed INTEGER,
+            sexual_content_allowed INTEGER,
+            political_content_allowed INTEGER,
+            chat_or_voice TEXT,
+            added_at TEXT,
+            approved INTEGER,
+            approved_at TEXT,
+            blocked_until TEXT
         )
     """)
     '''
@@ -409,6 +428,43 @@ async def update_anti_raid_settings(server_id: int, on_off: bool, action: str, a
         "duration": duration,
         "join_time": join_time
     }
+
+async def bump_server(server: discord.Guild, ignore_cooltime: bool = False) : 
+    server_id = server.id
+    raise DevelopingFuctionError("아직 개발 중인 기능입니다. 자세히 알아보려면 https://github.com/garlicfood1234/garlicbot/issues/176 방문하세요.")
+
+async def add_promote_server(server: discord.Guild, information: str, server_type: str, personal_information_required: bool, bad_words_allowed: bool, sexual_content_allowed: bool, political_content_allowed: bool, chat_or_voice: str):
+    server_id = server.id
+    last_bumped = None
+    added_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    approved = 0
+    approved_at = None
+    blocked_until = None
+
+    if personal_information_required : 
+        personal_information_required = 1
+    else : 
+        personal_information_required = 0
+    
+    if bad_words_allowed : 
+        bad_words_allowed = 1
+    else : 
+        bad_words_allowed = 0
+    
+    if political_content_allowed : 
+        political_content_allowed = 1
+    else : 
+        political_content_allowed = 0
+    
+    if sexual_content_allowed : 
+        sexual_content_allowed = 1
+    else : 
+        sexual_content_allowed = 0
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO promote_server (server_id, information, server_type, last_bumped, personal_information_required, bad_words_allowed, sexual_content_allowed, political_content_allowed, added_at, approved, approved_at, blocked_until, chat_or_voice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (server_id, information, type, last_bumped, personal_information_required, bad_words_allowed, sexual_content_allowed, political_content_allowed, added_at, approved, approved_at, blocked_until, chat_or_voice))
+    conn.close()
 
 async def remove_phrase(phrase_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
