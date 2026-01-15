@@ -138,6 +138,18 @@ def init_db() :
             phrase TEXT
         )
     """)
+    # pass_station_visible: 시각표에 통과역을 표시할지 여부(subway는 열차번호 앞에 S, K 등 머리글자가 붙는 열차, train은 머리글자 없는 열차), timetable_delay_visible: 시각표에 지연 정보를 표시할지 여부
+    # simple_delay_info: 지연정보 간략화 여부 (3분 미만의 지연 표시 생략)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS train_info_option (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            subway_pass_station_visible INTEGER,
+            train_pass_station_visible INTEGER,
+            timetable_delay_visible INTEGER,
+            simple_delay_info INTEGER,
+        )
+    """)
     c.execute("""
         CREATE TABLE IF NOT EXISTS anti_raid_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
