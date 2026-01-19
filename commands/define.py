@@ -1,4 +1,3 @@
-from tkinter import N
 import discord
 from datetime import datetime, timedelta
 import json
