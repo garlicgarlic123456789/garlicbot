@@ -147,7 +147,7 @@ def init_db() :
             subway_pass_station_visible INTEGER,
             train_pass_station_visible INTEGER,
             timetable_delay_visible INTEGER,
-            simple_delay_info INTEGER,
+            simple_delay_info INTEGER
         )
     """)
     c.execute("""
