@@ -1184,6 +1184,20 @@ async def on_raw_reaction_remove(payload) :
 async def legacy_disable():
     init_dict()
 
+class enable_anti_nuke_button_temp(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="테러 방지 기능 다시 활성화하기", style=discord.ButtonStyle.danger)
+    async def enable_antinuke_temp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != interaction.guild.owner_id : 
+            await interaction.response.send_message("서버 소유자만 조작이 가능합니다. 번거로우시더라도 서버 소유자 계정을 통해 조작 부탁드립니다. 불편을 드려 죄송합니다.", ephemeral = True)
+            return
+        await interaction.response.defer()
+        update_anti_nuke_option(interaction.guild.id, True)
+        await interaction.followup.send("테러 방지 기능이 사용 설정되었습니다. 다시 한번 불편을 드려 죄송합니다.")
+        
+
 class legacy_maneul_chat_enable(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -8787,6 +8801,45 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
         
         await interaction.followup.send("완료되었습니다.")
         return
+    elif 아이디 == 28 : 
+        target = datetime(2026, 1, 25, 0, 0, 0)
+        now = datetime.now()
+        if not now < target : 
+            raise ObsoleteFunctionError("2026년 1월 25일 0시 0분 0초 이후로 더 이상 사용될 일이 없는 개발 명령입니다. \'입력1\'의 값을 True로 설정하여 이 개발 명령을 강제로 실행할 수 있습니다. **이 개발 명령이 무엇을 하는지 정확히 아는 것이 아니라면 테스트 환경에서만 실행하십시오..**")
+            return
+        
+        await interaction.response.send_message("처리 중입니다.")
+        message = await interaction.original_response()
+        
+        channel_list = await get_all_anti_nuke_notify_channel(True)
+
+        embed = discord.Embed(
+            title = "긴급 공지",
+            description = "이 서버는 과거 봇의 테러 방지 기능을 설정했던 것으로 보입니다. 그러나, 봇의 버그로 인해 테러 방지 기능이 제대로 설정되지 않은 것으로 확인됩니다. 우선 봇의 버그를 사전에 확인하여 조치하지 못하고, 이런 일로 심려를 끼려드린 점 사과드립니다..\n\n현재 봇의 db에 테러 방지 기능 사용 여부는 제대로 저장되지 않고 테러 방지 기능 작동 로그 채널만 저장된 것으로 보입니다. 따라서 현재까지 테러 방지 기능 로그 채널만 설정되고 테러 방지 기능 자체는 사용 설정되지 않은 상태였습니다..\n\n테러 방지 기능을 지속해서 사용하시려는 경우, 아래 버튼을 클릭하시면, 테러 방지 기능이 정상적으로 사용 설정됩니다. (버튼이 작동하지 않는 경우 `/테러방지설정` 명령어 사용 부탁드립니다.) 기능을 더 이상 사용하지 않으시려는 경우, 취해야 할 조치는 없습니다.\n\n다시 한 번 이런 일로 심려를 끼쳐 드려 죄송하다는 말씀 드리며, 앞으로 더 안정적인 봇 운영을 위해 노력하겠습니다. 추가적인 문의사항은 asdfasdf_123456789 계정에 친추 후 문의해주시면 감사하겠습니다.",
+            color = discord.Color.red()
+        )
+        
+        for server_id, channel_id in channel_list:
+            guild = bot.get_guild(server_id)
+            if guild is None:
+                continue  # 봇이 해당 서버에 없음
+
+            channel = guild.get_channel(channel_id)
+            if channel is None:
+                continue  # 채널이 없거나 접근 불가
+
+            try:
+                await channel.send(f"<@{guild.owner_id}>", embed = embed, view=enable_anti_nuke_button_temp())
+                print(f"서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) - 전송 성공")
+            except Exception as e:
+                try : 
+                    await channel.send(embed = embed, view=enable_anti_nuke_button_temp())
+                    print(f"서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) - 무멘션 전송 성공")
+                except Exception as e:
+                    print(f"메시지 전송 실패: 서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) / {e}")
+
+            await message.reply("처리되었습니다.")
+
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
 @app_commands.describe(
