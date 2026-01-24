@@ -50,7 +50,7 @@ class autorole(app_commands.Group) :
             return
         
         if 강제 == False :  
-            if (역할.permissions.administrator) or (역할.permissions.ban_members) or (역할.permissions.kick_members) or (역할.permissions.manage_messages) or (역할.permissions.manage_channels) or (역할.permissions.manage_guild) : 
+            if (역할.permissions.administrator) or (역할.permissions.ban_members) or (역할.permissions.kick_members) or (역할.permissions.manage_messages) or (역할.permissions.manage_roles) or (역할.permissions.manage_channels) or (역할.permissions.manage_guild) : 
                 embed = discord.Embed(
                     title="알림",
                     description=f"자동 역할로 <@&{역할.id}> 역할을 추가하려고 합니다. 해당 역할에는 관리 권한이 하나 이상 포함되어 있습니다.\n\n마늘이 봇은 이 서버에 참가하는 {유저유형} 유형의 계정에 전부 <@&{역할.id}> 역할을 부여할 것입니다. 즉, 향후 이 서버에 참가하는 {유저유형} 유형의 계정에 관리 권한 중 하나 이상이 부여됩니다.\n\n의도하지 않은 작업일 수 있으므로 작업을 중단했습니다. 이 사항을 알고 있고, 자동역할 기능에 해당 역할을 추가하려고 하신다면, 입력하신 `/자동역할 추가` 명령어를 다시 전송해주시되, `강제`의 값을 `True`로 설정하시면 작업이 처리됩니다.",
