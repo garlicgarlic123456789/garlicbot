@@ -1180,6 +1180,44 @@ async def on_raw_reaction_remove(payload) :
     
     await channel.send(embed=embed)
 
+@tasks.loop(minutes = 150)
+async def legacy_disable():
+    init_dict()
+
+class legacy_maneul_chat_enable(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="기능 활성화", style=discord.ButtonStyle.danger)
+    async def legacy_chat_enable(self, interaction: discord.Interaction, button: discord.ui.Button):
+        global no_support_fuction
+        if interaction.guild is None : 
+            no_support_fuction["마느라"]["dm"][interaction.user.id] = True
+
+            await interaction.followup.send("지원 종료된 기능을 사용 설정했습니다.")
+        if interaction.user.id != interaction.guild.owner_id : 
+            await interaction.response.send_message("서버 주인만 이 기능을 사용할 수 있습니다.", ephemeral = True)
+
+        await interaction.response.defer(ephemeral = True)  # 응답 지연
+
+        no_support_fuction["마느라"]["guild"][interaction.guild.id] = True
+
+        await interaction.followup.send("지원 종료된 기능을 사용 설정했습니다.")
+
+class legacy_maneul_chat_info(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="자세히 알아보기", style=discord.ButtonStyle.danger)
+    async def learn_more(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = discord.Embed(
+            title = "오류 (자세히)",
+            description = "현재 `마느라` 대화 기능의 지원은 종료되었습니다.\n\n**__지원이 종료된 기능은 봇 취약점에 관한 긴급 업데이트를 포함한 모든 기능 업데이트를 더 이상 진행하지 않으며, 기능을 지속 사용하는 것은 권장되지 않습니다.__ 따라서 현재 이 서버 또는 DM에서 해당 기능의 사용은 중지되었습니다.**\n\n일부 기능의 경우 아래 \'기능 활성화\' 버튼을 통해 일시적으로 기능을 사용 설정할 수 있습니다. 단, 사용 설정 후 몇 시간 ~ 며칠 이내로 다시 사용 중지되며, **__지원 종료된 기능을 계속 사용함으로서 발생하는 피해에 대한 모든 책임은 지원 종료된 기능을 활성화한 사용자에게 있습니다.__** 이에 동의하는 경우에만 \'기능 활성화\' 버튼을 클릭하세요. \'기능 활성화\' 버튼을 클릭하는 경우, 이에 동의한 것으로 간주합니다.",
+            color = discord.Color.red()
+        )
+        await interaction.response.send_message(embed = embed, view = legacy_maneul_chat_enable())
+        return
+
 class ExpButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -2123,18 +2161,37 @@ async def on_message(message):
             await message.reply(msg, mention_author=False)
             return
         
-        perm = await check_perm(message, "마느라")
-        if perm == "ignore" :
-            return
-        elif perm == "limit" :
+        if message.guild is not None : 
+            perm = await check_perm(message, "마느라")
+            if perm == "ignore" :
+                return
+            elif perm == "limit" :
+                embed = discord.Embed(
+                    title = f"오류",
+                    description = f"명령어 사용 권한이 없습니다.",
+                    color = discord.Color.red()
+                )
+                await message.reply(embed = embed, mention_author=False)
+                return
+        
+        if message.guild is None and ((message.author.id not in no_support_fuction["마느라"]["dm"]) or no_support_fuction["마느라"]["dm"][message.author.id] == False) : 
             embed = discord.Embed(
-                title = f"오류",
-                description = f"명령어 사용 권한이 없습니다.",
+                title = "오류",
+                description = "현재 `마느라` 대화 기능의 지원은 종료되었습니다.\n\n**__지원이 종료된 기능은 봇 취약점에 관한 긴급 업데이트를 포함한 모든 기능 업데이트를 더 이상 진행하지 않으며, 기능을 지속 사용하는 것은 권장되지 않습니다.__ 따라서 현재 이 서버에서 해당 기능의 사용은 중지되었습니다.**",
                 color = discord.Color.red()
             )
-            await message.reply(embed = embed, mention_author=False)
+            await message.reply(embed = embed, view = legacy_maneul_chat_info(), mention_author=False)
             return
         
+        if message.guild is not None and ((message.guild.id not in no_support_fuction["마느라"]["guild"]) or no_support_fuction["마느라"]["guild"][message.guild.id] == False) : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "현재 `마느라` 대화 기능의 지원은 종료되었습니다.\n\n**__지원이 종료된 기능은 봇 취약점에 관한 긴급 업데이트를 포함한 모든 기능 업데이트를 더 이상 진행하지 않으며, 기능을 지속 사용하는 것은 권장되지 않습니다.__ 따라서 현재 이 서버에서 해당 기능의 사용은 중지되었습니다.**",
+                color = discord.Color.red()
+            )
+            await message.reply(embed = embed, view = legacy_maneul_chat_info(), mention_author=False)
+            return
+
         if not check_call_limit(message.author.id)[0]:
             await message.reply(f"**[오류!]** 일일 사용량 한도에 도달하였습니다. 사용 한도를 확인하고 다시 시도하세요.\n\n사용 한도: {check_call_limit(message.author.id)[1]}", mention_author=False)
             return
@@ -8211,6 +8268,7 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
     status_loop.start()
     exp_event.start()
+    legacy_disable.start()
     bot.add_view(TicketView())  # persistent view 등록
 
     channel = bot.get_channel(ticket_channel_id)

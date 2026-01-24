@@ -195,6 +195,24 @@ c.execute("""
         )
     """)'''
 
+no_support_fuction = {}
+
+
+def init_dict() : 
+    global no_support_fuction
+
+    no_support_fuction = {
+        "마느라" : {
+            "dm": {
+
+            },
+            "guild": {
+
+            }
+        }
+    }
+
+init_dict()
 
 async def get_server_join_route_memo(server_id: int, invite_link: str) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
