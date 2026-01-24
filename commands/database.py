@@ -9,6 +9,7 @@ from discord import app_commands
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import gpt_chat_threads
+from commands.define import ObsoleteFunctionError
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -1562,6 +1563,21 @@ def get_anti_nuke_log_channel(server_id: int):
     else:
         return None  # 해당 server_id가 없을 경우
 
+async def get_all_anti_nuke_notify_channel(check: bool = False) : 
+    if check == False : 
+        raise ObsoleteFunctionError("이 함수는 개발명령 28을 위해 개발되었습니다. 무엇을 하는 함수인지 자세히 모른다면 테스트 환경에서 테스트 진행 후 \'check\' 매개변수의 값을 True로 변경하여 사용하십시오..")
+        return
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT server_id, channel_id FROM anti_nuke_log_channel")
+    rows = c.fetchall()
+
+    conn.close()
+
+    return rows
+
 def update_anti_nuke_option(server_id: int, ban_kick: bool):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -1594,7 +1610,10 @@ def get_anti_nuke_option(server_id: int):
     else:
         return False  # 해당 server_id가 없을 경우
 
-def update_anti_nuke_option(server_id: int, time: int):
+def update_server_link_block(server_id: int, time: int, force: bool = False):
+    if not force : 
+        raise ObsoleteFunctionError("더 이상 사용되지 않는 함수입니다. 이 함수를 지속해서 사용하려는 경우 \'force\' 매개변수를 True로 설정하고 이 함수를 호출하십시오.")
+    
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     
@@ -1610,7 +1629,10 @@ def update_anti_nuke_option(server_id: int, time: int):
         # 없으면 새 행 삽입
         c.execute("INSERT INTO server_link_block (server_id, time) VALUES (?, ?)", (server_id, time))
 
-def get_server_link_block(server_id: int):
+def get_server_link_block(server_id: int, force: bool = False):
+    if not force : 
+        raise ObsoleteFunctionError("더 이상 사용되지 않는 함수입니다. 이 함수를 지속해서 사용하려는 경우 \'force\' 매개변수를 True로 설정하고 이 함수를 호출하십시오.")
+    
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     
