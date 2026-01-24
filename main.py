@@ -1180,7 +1180,7 @@ async def on_raw_reaction_remove(payload) :
     
     await channel.send(embed=embed)
 
-@tasks.loop(minutes = 45)
+@tasks.loop(minutes = 150)
 async def legacy_disable():
     init_dict()
 
