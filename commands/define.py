@@ -46,6 +46,8 @@ railblue_accept_ready = []
 train_timetable_api_key = os.getenv("train_timetable_api")
 train_arrivals_api_key = os.getenv("train_arrivals_api")
 
+ex_api = os.getenv("ex_api") # 한국도로공사 api
+
 from google.genai import Client
 from google.genai import types
 
