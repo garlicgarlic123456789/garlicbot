@@ -9,15 +9,17 @@ class autorole(app_commands.Group) :
         super().__init__(name="자동역할", description="자동역할 관련 명령어")
     
     @app_commands.command(name="추가", description="자동역할 설정을 추가합니다.")
-    @app_commands.describe(역할="추가할 역할")
-    @app_commands.choices(유저유형=[app_commands.Choice(name="모든 계정", value="all"), app_commands.Choice(name="유저 계정", value="user"), app_commands.Choice(name="봇 계정", value="bot")])
+    @app_commands.describe(역할="추가할 역할", 계정유형="역할을 추가할 계정의 유형")
+    @app_commands.choices(계정유형=[app_commands.Choice(name="모든 계정", value="all"), app_commands.Choice(name="유저 계정", value="user"), app_commands.Choice(name="봇 계정", value="bot")])
     @app_commands.default_permissions(administrator=True)
-    async def add_autorole(self, interaction: discord.Interaction, 역할: discord.Role, 유저유형: str):
+    async def add_autorole(self, interaction: discord.Interaction, 역할: discord.Role, 계정유형: str, 강제: bool = False):
         await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
         if status:
             await interaction.followup.send(f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다.")
             return
+        
+        유저유형 = 계정유형
         
         if not interaction.user.guild_permissions.manage_roles:
             embed = discord.Embed(
@@ -46,6 +48,16 @@ class autorole(app_commands.Group) :
             )
             await interaction.followup.send(embed=embed)
             return
+        
+        if 강제 == False :  
+            if (역할.permissions.administrator) or (역할.permissions.ban_members) or (역할.permissions.kick_members) or (역할.permissions.manage_messages) or (역할.permissions.manage_roles) or (역할.permissions.manage_channels) or (역할.permissions.manage_guild) : 
+                embed = discord.Embed(
+                    title="알림",
+                    description=f"자동 역할로 <@&{역할.id}> 역할을 추가하려고 합니다. 해당 역할에는 관리 권한이 하나 이상 포함되어 있습니다.\n\n마늘이 봇은 이 서버에 참가하는 {유저유형} 유형의 계정에 전부 <@&{역할.id}> 역할을 부여할 것입니다. 즉, 향후 이 서버에 참가하는 {유저유형} 유형의 계정에 관리 권한 중 하나 이상이 부여됩니다.\n\n의도하지 않은 작업일 수 있으므로 작업을 중단했습니다. 이 사항을 알고 있고, 자동역할 기능에 해당 역할을 추가하려고 하신다면, 입력하신 `/자동역할 추가` 명령어를 다시 전송해주시되, `강제`의 값을 `True`로 설정하시면 작업이 처리됩니다.",
+                    color=discord.Color.yellow()
+                )
+                await interaction.followup.send(embed=embed)
+                return
 
         result = await add_autorole(interaction.guild.id, 역할.id, 유저유형)
         if result[0]:

@@ -13,6 +13,7 @@ from datetime import datetime
 from pytz import timezone
 
 from commands.define import is_blocked, is_valid_time, kst, using_server, record_channel, message_log
+from commands.database import *
 
 
 def setup(bot: commands.Bot):
@@ -166,16 +167,23 @@ def setup(bot: commands.Bot):
         else :
             reason = f"사용자 {interaction.user.name} ({interaction.user.id}) 의 /일괄취소 명령어 사용 (사유: {사유})"
         
+        blockhistory_reason = f"사용자 <@{interaction.user.id}>의 /일괄취소 명령어 사용 (사유: {사유})"
+
         for i in canceling_action :
             if i[0] == 'ban' :
                 try : 
                     await interaction.guild.unban(i[1], reason=reason)
+                    add_blockhistory(i[1].id, interaction.user.id, blockhistory_reason, "unban", 0, interaction.guild.id)
                     action_cnt += 1
                 except Exception as e:
                     action_error_cnt += 1
             elif i[0] == 'unban' :
-                await interaction.guild.ban(i[1], reason=reason)
-                action_cnt += 1
+                try : 
+                    await interaction.guild.ban(i[1], reason=reason)
+                    add_blockhistory(i[1].id, interaction.user.id, blockhistory_reason, "ban", 0, interaction.guild.id)
+                    action_cnt += 1
+                except Exception as e:
+                    action_error_cnt += 1
             elif i[0] == 'nick_change' :
                 try:
                     # 타임아웃 해제
@@ -187,6 +195,7 @@ def setup(bot: commands.Bot):
                 try:
                     # 타임아웃 해제
                     await i[1].edit(timed_out_until=None, reason = reason)
+                    add_blockhistory(i[1].id, interaction.user.id, blockhistory_reason, "untimeout", 0, interaction.guild.id)
                     action_cnt += 1
                 except Exception as e:
                     action_error_cnt += 1
@@ -194,6 +203,8 @@ def setup(bot: commands.Bot):
                 try:
                     # 타임아웃 해제
                     await i[1].edit(timed_out_until=i[2], reason = reason)
+                    timeout_duration = i[2] - discord.utils.utcnow()
+                    add_blockhistory(i[1].id, interaction.user.id, blockhistory_reason, "timeout", int(timeout_duration.total_seconds()), interaction.guild.id)
                     action_cnt += 1
                 except Exception as e:
                     action_error_cnt += 1
