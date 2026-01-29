@@ -69,7 +69,7 @@ def setup(bot: commands.Bot):
             if 조치방법 is None or 알림채널 is None : 
                 embed = discord.Embed(
                     title = "오류",
-                    description = "레이드 방지 기능을 활성화하려면 조치방법 값과 알림채널 값을 필수로 입력해야 합니다.",
+                    description = "레이드 방지 기능을 활성화하려면 `조치방법` 값과 `알림채널` 값을 필수로 입력해야 합니다.",
                     color = discord.Color.red()
                 )
                 await interaction.followup.send(embed = embed)
@@ -106,7 +106,7 @@ def setup(bot: commands.Bot):
 
             embed = discord.Embed(
                 title = "성공",
-                description = f"레이드 방지 기능의 옵션을 다음과 같이 설정했습니다. \n\n- 기능 사용 여부: 활성화\n- 조치 방법: {조치방법}\n- 알림 채널: <#{알림채널.id}>\n- 감지 방법: {시간범위}초 내에 {참가횟수}회 이상의 서버 참가가 발생하면 레이드로 판단",
+                description = f"레이드 방지 기능의 옵션을 다음과 같이 설정했습니다. \n\n- 기능 사용 여부: 활성화\n- 조치 방법: {조치방법}\n- 알림 채널: <#{알림채널.id}>\n- 감지 방법: {시간범위}초 내에 {참가횟수}회 이상의 서버 참가가 발생하면 레이드로 판단\n\n레이드 방지 기능을 더 안전하게 사용하기 위한 권장사항을 확인해보세요: - 마늘이 보안 기능과 타 봇 보안 기능을 동시에 사용 시에는 타 봇 보안 기능에서 마늘이를 테러방지 화이트리스트에 추가 및 마늘이 화이트리스트에 타 보안 봇을 추가하시는 것을 권장합니다.",
                 color = int("a5f0ff", 16)
             )
             await interaction.followup.send(embed = embed)
