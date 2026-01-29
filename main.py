@@ -827,6 +827,7 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
         reason = f"{reason} (키워드 기반 자동 검열)"
 
     await manage_timeout.add_timeout(member, timeout_duration, reason)
+    add_blockhistory(member.id, 1316579106749681664, reason, "timeout", timeout_d, guild.id)
 
     embed = discord.Embed(
         title="타임아웃",
@@ -846,10 +847,21 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     embed2.add_field(name="관리자", value=f"<@1316579106749681664>", inline=False)
     embed2.add_field(name="기간", value=f"{print_time(timeout_d)}", inline=False)
     embed2.add_field(name="사유", value=reason, inline=False)
+    if len(message_content) > 1024 : 
+        message_content2 = message_content[0:1000]
+        message_content2 += "\n\n*(이후 생략...)*"
+    else : 
+        message_content2 = message_content
     embed2.add_field(name="검열된 메시지", value=f"{message_content}", inline=False)
     embed2.add_field(name="검열된 키워드", value=f"{keyword}", inline=False)
 
     log_msg = None
+
+    if log_channel:
+        await log_channel.send(embed = embed)
+
+    if message.channel:
+        await message.channel.send(embed = embed)
     
     if message.guild.id == using_server :
         channel = bot.get_channel(1451611324915122336)
@@ -865,17 +877,9 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     else : 
         embed.add_field(name="사유", value=reason, inline=False)
 
-    if log_channel:
-        await log_channel.send(embed = embed)
-
-    if message.channel:
-        await message.channel.send(embed = embed)
-
     if message.guild.id == using_server :
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
-    
-    add_blockhistory(member.id, 1316579106749681664, reason, "timeout", timeout_d, guild.id)
 
 @bot.event
 async def on_raw_message_delete(payload) : 
