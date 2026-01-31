@@ -837,6 +837,7 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
     embed.add_field(name="관리자", value=f"<@1316579106749681664>", inline=False)
     embed.add_field(name="기간", value=f"{print_time(timeout_d)}", inline=False)
+    embed.add_field(name="사유", value=reason, inline=False)
 
     embed2 = discord.Embed(
         title="타임아웃",
