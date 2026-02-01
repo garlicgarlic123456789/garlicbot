@@ -8025,6 +8025,27 @@ async def message_info(interaction: discord.Interaction, message: discord.Messag
         await interaction.followup.send("이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)")
         return
     
+    if interaction.user.id in ticket_last_time:
+        if datetime.now() - ticket_last_time[interaction.user.id] < 60:
+            embed = discord.Embed(
+                title="오류",
+                description=f"해당 작업을 실행할 수 없습니다. 다음 시간 후에 다시 시도하세요: {(60 - (datetime.now() - ticket_last_time[interaction.user.id])).total_seconds()}초",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+    ticket_last_time[interaction.user.id] = datetime.now()
+
+    verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+    if verify_role_variable not in interaction.user.roles:
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        return
+    
     ticket_channel = bot.get_channel(ticket_channel_id)
 
     now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
@@ -8058,11 +8079,22 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
     def __init__(self, interaction: discord.Interaction):
         super().__init__()
         self.interaction = interaction
-    
+
     message_link = discord.ui.TextInput(label="관련 메시지 링크", placeholder="https://discord.com/channels/서버ID/채널ID/메시지ID", required=False)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
+
+        verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+        if verify_role_variable not in interaction.user.roles:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         if self.message_link.value == "" or self.message_link.value is None or self.message_link.value == " ":
             message_link = "*(알 수 없음)*"
         else : 
@@ -8099,6 +8131,16 @@ class TicketButtonLink(discord.ui.Button) :
         super().__init__(label="티켓 생성", style=discord.ButtonStyle.primary, custom_id="create_ticket_link")
     
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id in ticket_last_time:
+            if datetime.now() - ticket_last_time[interaction.user.id] < 60:
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"해당 작업을 실행할 수 없습니다. 다음 시간 후에 다시 시도하세요: {(60 - (datetime.now() - ticket_last_time[interaction.user.id])).total_seconds()}초",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        ticket_last_time[interaction.user.id] = datetime.now()
         modal = TicketModal(interaction)
         await interaction.response.send_modal(modal)
 
@@ -8107,7 +8149,29 @@ class TicketButton(discord.ui.Button):
         super().__init__(label="간편 티켓 생성", style=discord.ButtonStyle.success, custom_id="create_ticket")
 
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id in ticket_last_time:
+            if datetime.now() - ticket_last_time[interaction.user.id] < 60:
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"해당 작업을 실행할 수 없습니다. 다음 시간 후에 다시 시도하세요: {(60 - (datetime.now() - ticket_last_time[interaction.user.id])).total_seconds()}초",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        ticket_last_time[interaction.user.id] = datetime.now()
+
         await interaction.response.defer(ephemeral=True)
+
+        verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+        if verify_role_variable not in interaction.user.roles:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
 
@@ -8140,7 +8204,28 @@ class TicketButtonEmergency(discord.ui.Button):
         super().__init__(label="긴급 티켓 생성", style=discord.ButtonStyle.danger, custom_id="create_ticket_emergency")
 
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id in ticket_last_time:
+            if datetime.now() - ticket_last_time[interaction.user.id] < 60:
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"해당 작업을 실행할 수 없습니다. 다음 시간 후에 다시 시도하세요: {(60 - (datetime.now() - ticket_last_time[interaction.user.id])).total_seconds()}초",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        ticket_last_time[interaction.user.id] = datetime.now()
         await interaction.response.defer(ephemeral=True)
+
+        verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+        if verify_role_variable not in interaction.user.roles:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
 
@@ -8158,7 +8243,7 @@ class TicketButtonEmergency(discord.ui.Button):
             description = f"{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*\n\n환영합니다. 관리자에게 문의/신고할 내용을 작성해주세요. 잘못 여신 경우 잘못 여셨다고 남겨주시기 바랍니다.\n\n**__관리자 멘션으로 업무 처리 재촉 시 제재될 수 있습니다.__**",
             color = discord.Color.red()
         )
-        await thread.send("<@&1346047923460243507> <@&1325762715867943004> <@&1320303818004496430>", embed = embed)
+        await thread.send("<@&1451611320586731851> <@&1451611320574021839> <@&1451611320574021835> <@&1451611320557375765> <@&1451611320557375762> <@&1451611320557375761>", embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
         channel = bot.get_channel(1451611324915122333)
         embed = discord.Embed(
@@ -8173,7 +8258,18 @@ class TicketButtonOwner(discord.ui.Button):
         super().__init__(label="소유자 티켓 생성", style=discord.ButtonStyle.primary, custom_id="create_ticket_owner")
 
     async def callback(self, interaction: discord.Interaction):
+        if interaction.user.id in ticket_last_time:
+            if datetime.now() - ticket_last_time[interaction.user.id] < 60:
+                embed = discord.Embed(
+                    title="오류",
+                    description=f"해당 작업을 실행할 수 없습니다. 다음 시간 후에 다시 시도하세요: {(60 - (datetime.now() - ticket_last_time[interaction.user.id])).total_seconds()}초",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+        ticket_last_time[interaction.user.id] = datetime.now()
         await interaction.response.defer(ephemeral=True)
+
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
 
