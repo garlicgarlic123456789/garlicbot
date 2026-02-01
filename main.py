@@ -8036,7 +8036,7 @@ async def message_info(interaction: discord.Interaction, message: discord.Messag
             return
     ticket_last_time[interaction.user.id] = datetime.now()
 
-    verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+    verify_role_variable = interaction.guild.get_role(1451611320490393697)
     if verify_role_variable not in interaction.user.roles:
         embed = discord.Embed(
             title="오류",
@@ -8085,7 +8085,7 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+        verify_role_variable = interaction.guild.get_role(1451611320490393697)
         if verify_role_variable not in interaction.user.roles:
             embed = discord.Embed(
                 title="오류",
@@ -8162,7 +8162,7 @@ class TicketButton(discord.ui.Button):
 
         await interaction.response.defer(ephemeral=True)
 
-        verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+        verify_role_variable = interaction.guild.get_role(1451611320490393697)
         if verify_role_variable not in interaction.user.roles:
             embed = discord.Embed(
                 title="오류",
@@ -8216,7 +8216,7 @@ class TicketButtonEmergency(discord.ui.Button):
         ticket_last_time[interaction.user.id] = datetime.now()
         await interaction.response.defer(ephemeral=True)
 
-        verify_role_variable = await interaction.guild.get_role(1451611320490393697)
+        verify_role_variable = interaction.guild.get_role(1451611320490393697)
         if verify_role_variable not in interaction.user.roles:
             embed = discord.Embed(
                 title="오류",
