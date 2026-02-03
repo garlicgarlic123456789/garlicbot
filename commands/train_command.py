@@ -309,8 +309,50 @@ class train_command(app_commands.Group) :
         return
 
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
-    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
-    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str = None, 개인응답: bool = False) : 
+    @app_commands.choices(머리글자 = [
+        app_commands.Choice(name = "직접 입력", value = "직접 입력"),
+        app_commands.Choice(name = "기차 (KTX, SRT, 무궁화, 새마을, ITX 등)", value = "기차"),
+        app_commands.Choice(name = "수도권 1호선 (특급/급행/일반)", value = "line1"),
+        app_commands.Choice(name = "수도권 2호선", value = "line2"),
+        app_commands.Choice(name = "수도권 3호선", value = "line3"),
+        app_commands.Choice(name = "수도권 4호선 (급행/일반)", value = "line4"),
+        app_commands.Choice(name = "수도권 5호선", value = "line5"),
+        app_commands.Choice(name = "수도권 6호선", value = "line6"),
+        app_commands.Choice(name = "수도권 7호선", value = "line7"),
+        app_commands.Choice(name = "수도권 8호선", value = "line8"),
+        app_commands.Choice(name = "수도권 9호선 (일반)", value = "line9_allstop"),
+        app_commands.Choice(name = "수도권 9호선 (급행)", value = "line9_express"),
+        app_commands.Choice(name = "경의중앙선 (급행/일반)", value = "경의중앙선"),
+        app_commands.Choice(name = "공항철도 (일반)", value = "arex_allstop"),
+        app_commands.Choice(name = "공항철도 (직통)", value = "arex_express"),
+        app_commands.Choice(name = "수인분당선 (급행/일반)", value = "수인분당선"),
+        app_commands.Choice(name = "신분당선", value = "신분당선"),
+        app_commands.Choice(name = "경강선", value = "경강선"),
+        app_commands.Choice(name = "경춘선 (급행/일반)", value = "경춘선"),
+        app_commands.Choice(name = "우이신설선", value = "우이신설선"),
+        app_commands.Choice(name = "김포 골드라인", value = "김포 골드라인"),
+        app_commands.Choice(name = "김포 골병라인", value = "김포 골드라인"),
+        app_commands.Choice(name = "의정부 경전철", value = "의정부 경전철"),
+        app_commands.Choice(name = "용인 경전철", value = "용인 경전철"),
+        app_commands.Choice(name = "서해선 (전철)", value = "서해선"),
+        app_commands.Choice(name = "신림선", value = "신림선"),
+        app_commands.Choice(name = "GTX-A", value = "GTX-A"),
+        app_commands.Choice(name = "부산 1호선", value = "부산 1호선"),
+        app_commands.Choice(name = "부산 2호선", value = "부산 2호선"),
+        app_commands.Choice(name = "부산 3호선", value = "부산 3호선"),
+        app_commands.Choice(name = "부산 4호선", value = "부산 4호선"),
+        app_commands.Choice(name = "부산김해경전철 (사상 방면)", value = "부산김해경전철 (사상 방면)"),
+        app_commands.Choice(name = "부산김해경전철 (가야대 방면)", value = "부산김해경전철 (가야대 방면)"),
+        app_commands.Choice(name = "동해선 (전철)", value = "동해선"),
+        app_commands.Choice(name = "대구 1호선", value = "대구 1호선"),
+        app_commands.Choice(name = "대구 2호선", value = "대구 2호선"),
+        app_commands.Choice(name = "대구 3호선", value = "대구 3호선"),
+        app_commands.Choice(name = "대경선", value = "대경선"),
+        app_commands.Choice(name = "대전 1호선", value = "대전 1호선"),
+        app_commands.Choice(name = "광주 1호선", value = "광주 1호선"),
+    ])
+    @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자" 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
+    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 머리글자: str, 날짜: str = None, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
@@ -341,6 +383,8 @@ class train_command(app_commands.Group) :
                 )
                 await interaction.followup.send(embed = embed)
                 return
+        
+        열차번호 = await train_number_line(열차번호, 머리글자)
         
         today_text = await today_to_text()
         
@@ -1046,3 +1090,34 @@ def get_subway_info(station_name):
     except requests.exceptions.RequestException as e:
         print("Request failed:", e)
         return None
+
+async def train_number_line(train_num, line) : 
+    if line == "직접 입력" : return train_num
+    elif line == "기차" : return train_num
+    elif line == "line1" or line == "line3" or line == "line4" : return "K" + train_num
+    elif line == "line2" : return "S" + train_num
+    elif line == "line5" or line == "line6" or line == "line7" or line == "line8" : return "SMRT" + train_num
+    elif line == "line9_allstop" : return "SNC" + train_num
+    elif line == "line9_express" : return "SNE" + train_num
+    elif line == "경의중앙선" or line == "수인분당선" or line == "경강선" or line == "경춘선" or line == "서해선" : return "K" + train_num
+    elif line == "arex_allstop" or line == "arex_express" : return "A" + train_num
+    elif line == "신분당선" : return "DX" + train_num
+    elif line == "우이신설선" : return "UI" + train_num
+    elif line == "김포 골드라인" : return "GMP" + train_num
+    elif line == "의정부 경전철" : return "ULRT" + train_num
+    elif line == "용인 경전철" : return "EVER" + train_num
+    elif line == "신림선" : return "SL" + train_num
+    elif line == "GTX" : return "X" + train_num
+    elif line == "부산 1호선" : return "BTC" + train_num
+    elif line == "부산 2호선" : return "BTC" + train_num
+    elif line == "부산 3호선" : return "BTC" + train_num
+    elif line == "부산 4호선" : return "BTC" + train_num
+    elif line == "부산김해경전철 (사상 방면)" : return "BGLU" + train_num
+    elif line == "부산김해경전철 (가야대 방면)" : return "BGLD" + train_num
+    elif line == "동해선" : return "K" + train_num
+    elif line == "대구 1호선" : return "DTRO" + train_num
+    elif line == "대구 2호선" : return "DTRO" + train_num
+    elif line == "대구 3호선" : return "DTRO" + train_num
+    elif line == "대경선" : return "K" + train_num
+    elif line == "대전 1호선" : return "DJET" + train_num
+    elif line == "광주 1호선" : return "GWJ" + train_num
