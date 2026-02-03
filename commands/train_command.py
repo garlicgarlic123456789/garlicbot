@@ -351,7 +351,7 @@ class train_command(app_commands.Group) :
         app_commands.Choice(name = "대전 1호선", value = "대전 1호선"),
         app_commands.Choice(name = "광주 1호선", value = "광주 1호선"),
     ])
-    @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자" 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
+    @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
     async def train_info(self, interaction: discord.Interaction, 열차번호: str, 머리글자: str, 날짜: str = None, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
