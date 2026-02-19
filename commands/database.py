@@ -8,6 +8,7 @@ import asyncio
 from discord import app_commands
 
 from commands.define import anti_raid_settings_cache, xp_setting
+from commands.define import ObsoleteFunctionError
 from commands.define import gpt_chat_threads, chat_analyze_onoff_cache
 
 def init_db() : 
@@ -138,6 +139,18 @@ def init_db() :
             phrase TEXT
         )
     """)
+    # pass_station_visible: 시각표에 통과역을 표시할지 여부(subway는 열차번호 앞에 S, K 등 머리글자가 붙는 열차, train은 머리글자 없는 열차), timetable_delay_visible: 시각표에 지연 정보를 표시할지 여부
+    # simple_delay_info: 지연정보 간략화 여부 (3분 미만의 지연 표시 생략)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS train_info_option (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            subway_pass_station_visible INTEGER,
+            train_pass_station_visible INTEGER,
+            timetable_delay_visible INTEGER,
+            simple_delay_info INTEGER
+        )
+    """)
     c.execute("""
         CREATE TABLE IF NOT EXISTS anti_raid_settings (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,6 +167,14 @@ def init_db() :
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT,
             accept INTEGER
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS server_join_route_memo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            invite_link TEXT,
+            memo TEXT
         )
     """)
     c.execute("""
@@ -208,6 +229,52 @@ c.execute("""
             warn INTEGER
         )
     """)'''
+
+no_support_fuction = {}
+
+
+def init_dict() : 
+    global no_support_fuction
+
+    no_support_fuction = {
+        "마느라" : {
+            "dm": {
+
+            },
+            "guild": {
+
+            }
+        }
+    }
+
+init_dict()
+
+async def get_server_join_route_memo(server_id: int, invite_link: str) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT memo FROM server_join_route_memo WHERE server_id = ? AND invite_link = ?", (server_id, invite_link,))
+    row = c.fetchone()
+    if row : 
+        return row[0]
+    else : 
+        return None
+
+async def update_server_join_route_memo(server_id: int, invite_link: str, memo: str) : 
+    if memo is not None and len(memo) > 150 : 
+        raise ValueError("set_server_join_route_memo() 함수에서 유효하지 않은 값. memo의 값은 150자를 초과할 수 없습니다.")
+    if len(invite_link) > 100 : 
+        raise ValueError("set_server_join_route_memo() 함수에서 유효하지 않은 값. invite_link의 값은 100자를 초과할 수 없습니다.")
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT memo FROM server_join_route_memo WHERE server_id = ? AND invite_link = ?", (server_id, invite_link,))
+    row = c.fetchone()
+    if row : 
+        c.execute("UPDATE server_join_route_memo SET memo = ? WHERE server_id = ? AND invite_link = ?", (memo, server_id, invite_link,))
+        return memo
+    else : 
+        c.execute("INSERT INTO server_join_route_memo (server_id, invite_link, memo) VALUES (?, ?, ?)", (server_id, invite_link, memo))
+        return memo
 
 async def update_chat_analyze_onoff(server_id: int, onoff: bool):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -1568,6 +1635,21 @@ def get_anti_nuke_log_channel(server_id: int):
     else:
         return None  # 해당 server_id가 없을 경우
 
+async def get_all_anti_nuke_notify_channel(check: bool = False) : 
+    if check == False : 
+        raise ObsoleteFunctionError("이 함수는 개발명령 28을 위해 개발되었습니다. 무엇을 하는 함수인지 자세히 모른다면 테스트 환경에서 테스트 진행 후 \'check\' 매개변수의 값을 True로 변경하여 사용하십시오..")
+        return
+    
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT server_id, channel_id FROM anti_nuke_log_channel")
+    rows = c.fetchall()
+
+    conn.close()
+
+    return rows
+
 def update_anti_nuke_option(server_id: int, ban_kick: bool):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -1600,7 +1682,10 @@ def get_anti_nuke_option(server_id: int):
     else:
         return False  # 해당 server_id가 없을 경우
 
-def update_anti_nuke_option(server_id: int, time: int):
+def update_server_link_block(server_id: int, time: int, force: bool = False):
+    if not force : 
+        raise ObsoleteFunctionError("더 이상 사용되지 않는 함수입니다. 이 함수를 지속해서 사용하려는 경우 \'force\' 매개변수를 True로 설정하고 이 함수를 호출하십시오.")
+    
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     
@@ -1616,7 +1701,10 @@ def update_anti_nuke_option(server_id: int, time: int):
         # 없으면 새 행 삽입
         c.execute("INSERT INTO server_link_block (server_id, time) VALUES (?, ?)", (server_id, time))
 
-def get_server_link_block(server_id: int):
+def get_server_link_block(server_id: int, force: bool = False):
+    if not force : 
+        raise ObsoleteFunctionError("더 이상 사용되지 않는 함수입니다. 이 함수를 지속해서 사용하려는 경우 \'force\' 매개변수를 True로 설정하고 이 함수를 호출하십시오.")
+    
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
     

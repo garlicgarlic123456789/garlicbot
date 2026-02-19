@@ -27,7 +27,7 @@ def setup(bot):
             # 타임스탬프 출력
             embed = discord.Embed(
                 title="완료",
-                description=f"- 유닉스 시간: {timestamp}\n- 디스코드 문법: <t:{timestamp}> (<t:{timestamp}:R>)",
+                description=f"- 유닉스 시간: {timestamp}\n- 디스코드 문법: <t:{timestamp}> (<t:{timestamp}:R>)\n\n타임스탬프를 복사하려는 경우 다음을 참고하세요: `<t:{timestamp}>` (`<t:{timestamp}:R>`)",
                 color=int("a5f0ff", 16)
             )
             await interaction.followup.send(embed=embed)

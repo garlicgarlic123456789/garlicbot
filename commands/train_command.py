@@ -266,7 +266,7 @@ class train_command(app_commands.Group) :
         await interaction.response.defer()
         embed = discord.Embed(
             title = "레일블루에서 제공되는 정보에 대한 정책",
-            description = "레일블루 사이트 링크: <https://rail.blue/>\n\n1. 레일블루 사이트를 통해 마늘봇에서 출력되는 정보는 __실시간 정보가 아니며, 참고용으로만 사용하시기 바랍니다.__\n2. 제공되는 정보는 정보의 정확성, 신뢰성, 최신성을 보장하지 않습니다. 이 정보에 대하여 철도 운영기관에 민원을 접수하지 마시기 바랍니다.\n\n귀하께서는 이 동의를 거부할 권리가 있으나, 거부 시 관련 기능 이용이 제한될 수 있습니다. 이 사항에 동의하시는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의 의사를 표시할 수 있으며, 추후 동의를 철회하려는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의를 철회할 수 있습니다.",
+            description = "마늘이 봇의 철도 관련 기능 중 열차정보를 포함한 일부 기능은 레일블루 사이트의 허가 하에 레일블루 사이트의 정보를 가져오는 방식으로 제공되고 있습니다.\n\n레일블루 사이트 링크: <https://rail.blue/>\n\n1. 레일블루 사이트를 통해 마늘봇에서 출력되는 정보는 __실시간 정보가 아니며, 참고용으로만 사용하시기 바랍니다.__\n2. 제공되는 정보는 정보의 정확성, 신뢰성, 최신성을 보장하지 않습니다. 이 정보를 근거로 또는 이 정도에 관하여 철도 운영기관에 민원을 접수하지 마시기 바랍니다.\n3. 이 기능의 지원은 레일블루 사이트의 사정 등으로 인해 예고없이 중단될 수 있습니다.\n\n귀하께서는 이 동의를 거부할 권리가 있으나, 거부 시 관련 기능 이용이 제한될 수 있습니다. 이 사항에 동의하시는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의 의사를 표시할 수 있으며, 추후 동의를 철회하려는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의를 철회할 수 있습니다.",
             color = int("a5f0ff", 16)
         )
         await interaction.followup.send(embed = embed)
@@ -309,8 +309,35 @@ class train_command(app_commands.Group) :
         return
 
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
-    @app_commands.describe(열차번호 = "머리 글자 및 열차 번호", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
-    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 날짜: str = None, 개인응답: bool = False) : 
+    @app_commands.choices(머리글자 = [
+        app_commands.Choice(name = "직접 입력", value = "직접 입력"),
+        app_commands.Choice(name = "기차 (KTX, SRT, 무궁화, 새마을, ITX 등)", value = "기차"),
+        app_commands.Choice(name = "수도권 1, 3, 4호선", value = "line1,3,4"),
+        app_commands.Choice(name = "수도권 2호선", value = "line2"),
+        app_commands.Choice(name = "수도권 5~8호선", value = "line5~8"),
+        app_commands.Choice(name = "수도권 9호선 (일반)", value = "line9_allstop"),
+        app_commands.Choice(name = "수도권 9호선 (급행)", value = "line9_express"),
+        app_commands.Choice(name = "공항철도", value = "arex"),
+        app_commands.Choice(name = "수인분당선, 경의중앙선, 경춘선, 경강선, 서해선", value = "korail_line"),
+        app_commands.Choice(name = "신분당선", value = "신분당선"),
+        app_commands.Choice(name = "우이신설선", value = "우이신설선"),
+        app_commands.Choice(name = "김포 골드라인", value = "김포 골드라인"),
+        app_commands.Choice(name = "김포 골병라인", value = "김포 골드라인"),
+        app_commands.Choice(name = "의정부 경전철", value = "의정부 경전철"),
+        app_commands.Choice(name = "용인 경전철", value = "용인 경전철"),
+        app_commands.Choice(name = "신림선", value = "신림선"),
+        app_commands.Choice(name = "GTX-A", value = "GTX-A"),
+        app_commands.Choice(name = "부산 1~4호선", value = "부산 1~4호선"),
+        app_commands.Choice(name = "부산김해경전철 (사상 방면)", value = "부산김해경전철 (사상 방면)"),
+        app_commands.Choice(name = "부산김해경전철 (가야대 방면)", value = "부산김해경전철 (가야대 방면)"),
+        app_commands.Choice(name = "동해선", value = "동해선"),
+        app_commands.Choice(name = "대구 1~3호선", value = "대구 1~3호선"),
+        app_commands.Choice(name = "대경선", value = "대경선"),
+        app_commands.Choice(name = "대전 1호선", value = "대전 1호선"),
+        app_commands.Choice(name = "광주 1호선", value = "광주 1호선"),
+    ])
+    @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
+    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 머리글자: str, 날짜: str = None, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
@@ -341,6 +368,8 @@ class train_command(app_commands.Group) :
                 )
                 await interaction.followup.send(embed = embed)
                 return
+        
+        열차번호 = await train_number_line(열차번호, 머리글자)
         
         today_text = await today_to_text()
         
@@ -1046,3 +1075,29 @@ def get_subway_info(station_name):
     except requests.exceptions.RequestException as e:
         print("Request failed:", e)
         return None
+
+async def train_number_line(train_num, line) : 
+    if line == "직접 입력" : return train_num
+    elif line == "기차" : return train_num
+    elif line == "line1,3,4" : return "K" + train_num
+    elif line == "line2" : return "S" + train_num
+    elif line == "line5~8" : return "SMRT" + train_num
+    elif line == "line9_allstop" : return "SNC" + train_num
+    elif line == "line9_express" : return "SNE" + train_num
+    elif line == "korail_line" : return "K" + train_num
+    elif line == "arex" : return "A" + train_num
+    elif line == "신분당선" : return "DX" + train_num
+    elif line == "우이신설선" : return "UI" + train_num
+    elif line == "김포 골드라인" : return "GMP" + train_num
+    elif line == "의정부 경전철" : return "ULRT" + train_num
+    elif line == "용인 경전철" : return "EVER" + train_num
+    elif line == "신림선" : return "SL" + train_num
+    elif line == "GTX" : return "X" + train_num
+    elif line == "부산 1~4호선" : return "BTC" + train_num
+    elif line == "부산김해경전철 (사상 방면)" : return "BGLU" + train_num
+    elif line == "부산김해경전철 (가야대 방면)" : return "BGLD" + train_num
+    elif line == "동해선" : return "K" + train_num
+    elif line == "대구 1~3호선" : return "DTRO" + train_num
+    elif line == "대경선" : return "K" + train_num
+    elif line == "대전 1호선" : return "DJET" + train_num
+    elif line == "광주 1호선" : return "GWJ" + train_num
