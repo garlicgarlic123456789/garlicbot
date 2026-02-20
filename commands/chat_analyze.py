@@ -6,7 +6,7 @@ from commands.database import *
 
 class chat_analyze(app_commands.Group) : 
     def __init__(self):
-        super().__init__(name="채팅분석", description="채팅분석 관련 명령어")
+        super().__init__(name="채팅분석", description="채팅분석 관련 명령어", default_permissions=discord.Permissions(administrator=True))
     
     @app_commands.command(name="기능설정", description="채팅분석을 위한 기능을 활성화 또는 비활성화합니다.")
     @app_commands.describe(사용여부 = "기능 활성화 여부")
@@ -16,7 +16,6 @@ class chat_analyze(app_commands.Group) :
             app_commands.Choice(name="비활성화", value="비활성화"),
         ]
     )
-    @app_commands.default_permissions(administrator=True)
     async def chat_analyze_onoff(self, interaction: discord.Interaction, 사용여부: str, 내용동의여부: bool = False):
         await interaction.response.defer()
         if 사용여부 == "활성화" : onoff = True
