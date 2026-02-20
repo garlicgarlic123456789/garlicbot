@@ -1,6 +1,7 @@
 import discord
 import subprocess
 import statistics
+import aiocron
 from discord.ui import Button
 from discord.ext import commands, tasks
 import smtplib
@@ -89,6 +90,7 @@ from commands.mention_delay import *
 from commands.autorole import *
 from commands import rules
 from commands.phrase import *
+from commands.chat_analyze import *
 from commands import anti_raid_command
 from commands import compatibility
 
@@ -1388,6 +1390,31 @@ def check_call_limit(user_id):
 @bot.event
 async def on_message(message):
     global error
+
+    chat_analyze_onoff = await get_chat_analyze_onoff(message.guild.id)
+    if chat_analyze_onoff : 
+        now = datetime.now()
+        formatted_time = now.strftime("%Y-%m-%d %H:%M")
+        if formatted_time not in chat_analyze_count : 
+            chat_analyze_count[formatted_time] = {}
+        
+        if formatted_time not in chat_analyze_count_channel : 
+            chat_analyze_count_channel[formatted_time] = {}
+        
+        if not message.author.bot :
+            if message.guild.id not in chat_analyze_count[formatted_time]: 
+                chat_analyze_count[formatted_time][message.guild.id] = [message.author.id]
+            else : 
+                chat_analyze_count[formatted_time][message.guild.id].append(message.author.id)
+        
+            if message.guild.id not in chat_analyze_count_channel[formatted_time] : 
+                chat_analyze_count_channel[formatted_time][message.guild.id] = {}
+                chat_analyze_count_channel[formatted_time][message.guild.id][message.channel.id] = [message.author.id]
+            else : 
+                if message.channel.id not in chat_analyze_count_channel[formatted_time][message.guild.id] : 
+                    chat_analyze_count_channel[formatted_time][message.guild.id][message.channel.id] = [message.author.id]
+                else : 
+                    chat_analyze_count_channel[formatted_time][message.guild.id][message.channel.id].append(message.author.id)
 
     if message.author.id == developer : 
         if message.content.startswith("!부계추가 ") : 
@@ -8312,14 +8339,35 @@ class TicketView(View):
         self.add_item(TicketButtonEmergency())
         self.add_item(TicketButtonOwner())
 
+async def chat_analyze_save_to_db():
+    temp = datetime.now() - timedelta(minutes=1)
+    formatted_time = temp.strftime("%Y-%m-%d %H:%M")
+
+    if formatted_time  in chat_analyze_count : 
+        chat_dict = chat_analyze_count[formatted_time]
+        for server_id, user_list in chat_dict.items() : 
+            chat_count = len(user_list)
+            user_count = len(list(set(user_list)))
+            await add_chat_analyze_data(server_id, formatted_time, chat_count, user_count)
+    
+    if formatted_time  in chat_analyze_count_channel : 
+        chat_dict = chat_analyze_count_channel[formatted_time]
+        for server_id, channel_list in chat_dict.items() : 
+            for channel_id, user_list in channel_list.items() : 
+                chat_count = len(user_list)
+                user_count = len(list(set(user_list)))
+                await add_chat_analyze_channel_data(server_id, channel_id, formatted_time, chat_count, user_count)
+
 TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
 async def on_ready():
+    aiocron.crontab('* * * * *', func=chat_analyze_save_to_db)
     bot.tree.add_command(train_command())
     bot.tree.add_command(summarize_command())
     bot.tree.add_command(mention_delay())
     bot.tree.add_command(autorole())
     bot.tree.add_command(phrase())
+    bot.tree.add_command(chat_analyze())
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
     status_loop.start()

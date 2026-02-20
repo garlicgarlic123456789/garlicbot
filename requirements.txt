@@ -21,3 +21,4 @@ selenium==4.21.0
 holidays
 youtube-transcript-api==0.6.2
 google-genai
+aiocron
