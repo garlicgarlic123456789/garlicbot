@@ -8,8 +8,8 @@ import asyncio
 from discord import app_commands
 
 from commands.define import anti_raid_settings_cache, xp_setting
-from commands.define import gpt_chat_threads
 from commands.define import ObsoleteFunctionError
+from commands.define import gpt_chat_threads, chat_analyze_onoff_cache
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -177,6 +177,40 @@ def init_db() :
             memo TEXT
         )
     """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS chat_analyze_onoff (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            on_off INTEGER
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS chat_time (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            year INTEGER,
+            month INTEGER,
+            day INTEGER,
+            hour INTEGER,
+            minute INTEGER,
+            message INTEGER,
+            user INTEGER
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS chat_time_channel (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            server_id INTEGER,
+            channel INTEGER,
+            year INTEGER,
+            month INTEGER,
+            day INTEGER,
+            hour INTEGER,
+            minute INTEGER,
+            message INTEGER,
+            user INTEGER
+        )
+    """)
     '''
     c.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar UNIQUE, money integar)") # 유저 리스트
     c.execute("CREATE TABLE IF NOT EXISTS rails (id INTEGER PRIMARY KEY AUTOINCREMENT, owner_id integar, channel_id integar UNIQUE, rail_cnt integar, name text UNIQUE)") # 노선 (선로)
@@ -241,6 +275,72 @@ async def update_server_join_route_memo(server_id: int, invite_link: str, memo: 
     else : 
         c.execute("INSERT INTO server_join_route_memo (server_id, invite_link, memo) VALUES (?, ?, ?)", (server_id, invite_link, memo))
         return memo
+
+async def add_chat_analyze_data(server_id: int, dt: int, chat_count: int, user_count: int) : 
+    dt2 = datetime.strptime(dt, "%Y-%m-%d %H:%M")
+    dt2 = {
+        "year": dt2.year,
+        "month": dt2.month,
+        "day": dt2.day, 
+        "hour": dt2.hour,
+        "minute": dt2.minute
+    }
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO chat_time (server_id, year, month, day, hour, minute, message, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (server_id, dt2["year"], dt2["month"], dt2["day"], dt2["hour"], dt2["minute"], chat_count, user_count))
+    conn.close()
+
+async def add_chat_analyze_channel_data(server_id: int, channel_id: int, dt: int, chat_count: int, user_count: int) : 
+    dt2 = datetime.strptime(dt, "%Y-%m-%d %H:%M")
+    dt2 = {
+        "year": dt2.year,
+        "month": dt2.month,
+        "day": dt2.day, 
+        "hour": dt2.hour,
+        "minute": dt2.minute
+    }
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO chat_time_channel (server_id, channel, year, month, day, hour, minute, message, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (server_id, channel_id, dt2["year"], dt2["month"], dt2["day"], dt2["hour"], dt2["minute"], chat_count, user_count))
+    conn.close()
+
+async def update_chat_analyze_onoff(server_id: int, onoff: bool):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+
+    chat_analyze_onoff_cache[server_id] = onoff
+
+    if onoff : 
+        onoff = 1
+    else : 
+        onoff = 0
+
+    c.execute("SELECT id FROM chat_analyze_onoff WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE chat_analyze_onoff SET on_off = ? WHERE server_id = ?", (onoff, server_id))
+    else:
+        c.execute("INSERT INTO chat_analyze_onoff (server_id, on_off) VALUES (?, ?)", (server_id, onoff))
+    conn.close()
+
+async def get_chat_analyze_onoff(server_id: int):
+    if server_id in chat_analyze_onoff_cache : 
+        return chat_analyze_onoff_cache[server_id]
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT on_off FROM chat_analyze_onoff WHERE server_id = ?", (server_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        if row[0] == 1 : 
+            chat_analyze_onoff_cache[server_id] = True
+            return True
+        else : 
+            chat_analyze_onoff_cache[server_id] = False
+            return False
+    else : 
+        chat_analyze_onoff_cache[server_id] = False
+        return False
 
 async def set_warning(server_id: int, user_id: int, warn: int) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
