@@ -35,6 +35,12 @@ KST = pytz.timezone('Asia/Seoul')
 warn_law = "**[경고!]** 본 자료는 법적 조언이 아닌 일반적인 정보 제공 목적만을 가지고 있습니다. 특정 상황에 대해 결정하시기 전, 반드시 법률 전문가와 상의하시기 바랍니다. 본 자료를 신뢰하여 생기는 손해나 피해에 대한 책임은 사용자의 판단에 따라 전적으로 사용자에게 있습니다."
 warn_secret = "**[경고!]** 이 문서에는 기밀 정보가 포함되어 있습니다. 다른 사람(사용자)에게 유출되지 않도록 주의가 필요합니다."
 
+chat_analyze_onoff_cache = {}
+
+chat_analyze_count = {}
+
+chat_analyze_count_channel = {}
+
 xp_setting = {}
 
 railblue_last_time = {}
