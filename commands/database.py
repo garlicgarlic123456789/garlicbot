@@ -276,6 +276,34 @@ async def update_server_join_route_memo(server_id: int, invite_link: str, memo: 
         c.execute("INSERT INTO server_join_route_memo (server_id, invite_link, memo) VALUES (?, ?, ?)", (server_id, invite_link, memo))
         return memo
 
+async def add_chat_analyze_data(server_id: int, dt: int, chat_count: int, user_count: int) : 
+    dt2 = datetime.strptime(dt, "%Y-%m-%d %H:%M")
+    dt2 = {
+        "year": dt2.year,
+        "month": dt2.month,
+        "day": dt2.day, 
+        "hour": dt2.hour,
+        "minute": dt2.minute
+    }
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO chat_time (server_id, year, month, day, hour, minute, message, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (server_id, dt2["year"], dt2["month"], dt2["day"], dt2["hour"], dt2["minute"], chat_count, user_count))
+    conn.close()
+
+async def add_chat_analyze_channel_data(server_id: int, channel_id: int, dt: int, chat_count: int, user_count: int) : 
+    dt2 = datetime.strptime(dt, "%Y-%m-%d %H:%M")
+    dt2 = {
+        "year": dt2.year,
+        "month": dt2.month,
+        "day": dt2.day, 
+        "hour": dt2.hour,
+        "minute": dt2.minute
+    }
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("INSERT INTO chat_time_channel (server_id, channel, year, month, day, hour, minute, message, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (server_id, channel_id, dt2["year"], dt2["month"], dt2["day"], dt2["hour"], dt2["minute"], chat_count, user_count))
+    conn.close()
+
 async def update_chat_analyze_onoff(server_id: int, onoff: bool):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
@@ -290,9 +318,9 @@ async def update_chat_analyze_onoff(server_id: int, onoff: bool):
     c.execute("SELECT id FROM chat_analyze_onoff WHERE server_id = ?", (server_id,))
     row = c.fetchone()
     if row:
-        c.execute("UPDATE chat_analyze_onoff SET onoff = ? WHERE user_id = ?", (onoff, server_id))
+        c.execute("UPDATE chat_analyze_onoff SET on_off = ? WHERE server_id = ?", (onoff, server_id))
     else:
-        c.execute("INSERT INTO chat_analyze_onoff (server_id, onoff) VALUES (?, ?)", (server_id, onoff))
+        c.execute("INSERT INTO chat_analyze_onoff (server_id, on_off) VALUES (?, ?)", (server_id, onoff))
     conn.close()
 
 async def get_chat_analyze_onoff(server_id: int):
