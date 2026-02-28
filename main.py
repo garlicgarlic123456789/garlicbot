@@ -2632,7 +2632,7 @@ async def on_message(message):
                         await message.reply("개발과 마크, 발로란트를 무지 잘하시고 귀여우신 분이에용! 이 서버 주인과 많이 친하고 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요! 이 서버 주인 마늘요리님이 매우매우매우매우매우 고마워 하시는 분 중 한 명이에요.", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
-                    elif "하불" == message.content[4:] or "퓨리" == messsage.content[4:] :
+                    elif "하불" == message.content[4:] or "퓨리" == message.content[4:] :
                         await message.reply("하불님은 이 서버에 2025년 6월 쯤에 오셔서 지금까지 계속 이 서버에서만 활동하신 고정 멤버십니다! 이 서버 주인 마늘요리님이 정말 매우매우매우매우매우 고마워 하시는 분 중 한 명이에요.", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
