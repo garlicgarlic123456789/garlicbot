@@ -2620,20 +2620,24 @@ async def on_message(message):
                         add_likeability(str(message.author.id), 1)
                         return
                     elif "ㅁㄴㅇㄹ" == message.content[4:] :
-                        await message.reply("저를 개발한 주인이에요!", mention_author=False)
+                        await message.reply("저를 개발한 주인님의 활동 초창기 때 닉네임이에요!", mention_author=False)
                         add_likeability(str(message.author.id), 1)
                         return
                     elif "마늘요리" == message.content[4:] :
-                        await message.reply("저를 개발한 주인님에게 누가 지어준 별명이에요!", mention_author=False)
+                        await message.reply("저를 개발한 주인님이에요!", mention_author=False)
                         add_likeability(str(message.author.id), 2)
                         return
                     # 인명사전
-                    elif "세유" == message.content[4:] or "나세유" == message.content[4:] :
-                        await message.reply("개발을 무지 잘하시고 귀여우신 분이에용! 이 서버 운영진이시기도 하죠! 이 서버 주인에게 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요!", mention_author=False)
+                    elif "세유" == message.content[4:] or "나세유" == message.content[4:] or "루카" == message.content[4:] :
+                        await message.reply("개발과 마크, 발로란트를 무지 잘하시고 귀여우신 분이에용! 이 서버 주인과 많이 친하고 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요! 이 서버 주인 마늘요리님이 매우매우매우매우매우 고마워 하시는 분 중 한 명이에요.", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
-                    elif "캐북" == message.content[4:] :
-                        await message.reply("이 서버 상급 관리자이십니다. 이 서버의 채팅률 재활성화에 많은 도움을 주시고 계시고 이 서버 주인에게 사적인 도움도 주었죠!")
+                    elif "하불" == message.content[4:] or "퓨리" == messsage.content[4:] :
+                        await message.reply("하불님은 이 서버에 2025년 6월 쯤에 오셔서 지금까지 계속 이 서버에서만 활동하신 고정 멤버십니다! 이 서버 주인 마늘요리님이 정말 매우매우매우매우매우 고마워 하시는 분 중 한 명이에요.", mention_author=False)
+                        add_likeability(str(message.author.id), 5)
+                        return
+                    elif "조랭이" == message.content[4:] :
+                        await message.reply("조랭이님은 조랭이떡ㄱ.. 아니 이 서버의 전직 운영진이세요! 가끔 이 서버에 놀러 오십니다. ||오시면 조랭이떡국님이라고 부르시면 돼요!||", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "챠무" == message.content[4:] :
@@ -2641,7 +2645,7 @@ async def on_message(message):
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "감쟈" == message.content[4:] :
-                        await message.reply("수학과 과학을 무지 잘하시는 분이에용!", mention_author=False)
+                        await message.reply("수학과 과학을 무지 잘하시는 분이에용! 이 서버에 2025년 1월 말에 오신 매우 초창기 멤버이시기도 하구 전직 운영진이시기도 해요!", mention_author=False)
                         add_likeability(str(message.author.id), 3)
                         return
                     elif "여의대로" == message.content[4:] :
@@ -2649,36 +2653,20 @@ async def on_message(message):
                         add_likeability(str(message.author.id), 2)
                         return
                     elif "나르" == message.content[4:] :
-                        await message.reply("나르님은 이 서버에서 활동 중이신 분이에요! 가끔 \'우우...\'라고 쓰시는게 특징입니다.", mention_author=False)
+                        await message.reply("나르님은 이 서버에서 가끔 활동 중이신 분이에요! 가끔 \'우우...\'라고 쓰시는게 특징입니다.", mention_author=False)
                         add_likeability(str(message.author.id), 1)
                         return
                     elif "플하" == message.content[4:] :
                         await message.reply("플하님은 철도에 대해 많은 걸 알고 계셔요!", mention_author=False)
                         add_likeability(str(message.author.id), 1)
                         return
+                    elif "주둥이" == message.content[4:] or "동글납작이" == message.content[4:] or "주안" == message.content[4:] :
+                        await message.reply("이 서버에 2025년 2월에 오신 초창기 멤버분이세요!", mention_author=False)
+                        add_likeability(str(message.author.id), 1)
+                        return
                     elif "리아" == message.content[4:]:
                         await message.reply("롯데리아 시베리아 코리아 시리아 아리아", mention_author=False)
                         add_likeability(str(message.author.id), 5)
-                        return
-                    # 사용자 요구로 추가.
-                    elif "마늘아 6호선" == message.content :
-                        await message.reply(f"최고의 노선\n-# 이 답변은 철도덕후님(1312414847639752748)에 의해 추가되었으며 서버 측의 입장과 무관합니다. <#1327116951805493279>에서 자세히 알아보세요.", mention_author=False)
-                        return
-                    elif "마늘아 3호선" == message.content :
-                        await message.reply(f"6호선보다 나음 ㅇㅇ\n-# 이 답변은 발사나무님(1306484294105174099)에 의해 추가되었으며 서버 측의 입장과 무관합니다. <#1327116951805493279>에서 자세히 알아보세요.", mention_author=False)
-                        return
-                    elif "마늘아 BFDI" == message.content :
-                        await message.reply(f"개쩜\n-# 이 답변은 발사나무님(1306484294105174099)에 의해 추가되었으며 서버 측의 입장과 무관합니다. <#1327116951805493279>에서 자세히 알아보세요.", mention_author=False)
-                        return
-
-                    elif "마늘아 마요덮밥" == message.content :
-                        await message.reply(f"주인님으로 만든 덮밥이에요!\n-# 이 답변은 Náb⎯i9님(637498059303026707)에 의해 추가되었으며 서버 측의 입장과 무관합니다. <#1327116951805493279>에서 자세히 알아보세요.", mention_author=False)
-                        return
-                    elif "마늘아 새절역" == message.content :
-                        await message.reply(f"6호선의 역이에요! 열차가 주박을하기도 하고 6호선 본선의 기,종점이에요\n-# 이 답변은 철도덕후님(1312414847639752748)에 의해 추가되었으며 서버 측의 입장과 무관합니다. <#1327116951805493279>에서 자세히 알아보세요.", mention_author=False)
-                        return
-                    elif "마늘아 큐브주둥이" == message.content :
-                        await message.reply(f"철덕\n-# 이 답변은 철도덕후님(1312414847639752748)에 의해 추가되었으며 서버 측의 입장과 무관합니다. <#1327116951805493279>에서 자세히 알아보세요.", mention_author=False)
                         return
                     
                 status, until, reason = is_blocked(message.author)
