@@ -10,6 +10,7 @@ import asyncio
 import datetime
 import holidays
 from discord.ui import View, Button
+import base64
 
 class train_command(app_commands.Group) : 
     def __init__(self):
@@ -52,6 +53,7 @@ class train_command(app_commands.Group) :
             error += 1
             return
     
+    '''
     @app_commands.command(name = "도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
     @app_commands.describe(역명 = "역명 (뒤에 \'역\' 자 제외)", 열차종류 = "확인할 열차의 종류 (선택 사항)", 행선지 = "확인할 열차의 행선지 (선택 사항)")
     @app_commands.choices(열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")])
@@ -260,6 +262,7 @@ class train_command(app_commands.Group) :
             color=int("a5f0ff", 16)
         )
         await interaction.followup.send(embed=embed)
+    '''
     
     @app_commands.command(name = "레일블루정책확인", description = "철도 관련 명령어 중 레일블루 사이트에서 정보를 가져와서 제공되는 기능들에 대해 관련 정책을 확인합니다.")
     async def railblue_accept_command(self, interaction: discord.Interaction) : 
@@ -307,7 +310,125 @@ class train_command(app_commands.Group) :
         )
         await interaction.followup.send(embed = embed)
         return
+    
+    @app_commands.command(name = "도착정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
+    @app_commands.choices(노선 = [
+        app_commands.Choice(name = "기차 (KTX, SRT, 무궁화, 새마을, ITX 등)", value = "train"),
+        app_commands.Choice(name = "수도권 1호선, 경춘선, 수인분당선, 경의중앙선, 경강선, 서해선", value = "Korail"),
+        app_commands.Choice(name = "수도권 2호선", value = "Seoul_Line_2"),
+        app_commands.Choice(name = "수도권 3호선", value = "Seoul_Line_3"),
+        app_commands.Choice(name = "수도권 4호선", value = "Seoul_Line_4"),
+        app_commands.Choice(name = "수도권 5~8호선", value = "SMRT"),
+        app_commands.Choice(name = "수도권 9호선", value = "Metro9"),
+        app_commands.Choice(name = "신분당선", value = "Sinbundang"),
+        app_commands.Choice(name = "공항철도", value = "AREX"),
+        app_commands.Choice(name = "GTX-A", value = "GTXA"),
+        app_commands.Choice(name = "신림선", value = "SL"),
+        app_commands.Choice(name = "우이신설선", value = "UI"),
+        app_commands.Choice(name = "김포 골드라인", value = "GMP"),
+        app_commands.Choice(name = "김포 골병라인", value = "GMP"),
+        app_commands.Choice(name = "의정부 경전철", value = "ULRT"),
+        app_commands.Choice(name = "용인 경전철", value = "EVER"),
+        app_commands.Choice(name = "부산 1~4호선", value = "BTC"),
+        app_commands.Choice(name = "부산김해경전철", value = "BGL"),
+        app_commands.Choice(name = "동해선 광역전철", value = "Korail"),
+        app_commands.Choice(name = "대구 1~3호선", value = "DTRO"),
+        app_commands.Choice(name = "대경선", value = "Korail"),
+        app_commands.Choice(name = "광주 1호선", value = "GWJ"),
+        app_commands.Choice(name = "대전 1호선", value = "DJET"),
+    ])
+    @app_commands.describe(역명 = "역명", 노선 = "노선", 통과열차표시여부 = "통과 열차 표시 여부", 개인응답 = "개인응답 사용 여부")
+    async def arrival_info_railblue(self, interaction: discord.Interaction, 역명: str, 노선: str, 통과열차표시여부: bool = False, 개인응답: bool = False) : 
+        await interaction.response.defer(ephemeral=개인응답)
 
+        status, until, reason = is_blocked(interaction.user)
+        
+        if status:
+            msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
+            await interaction.followup.send(msg)
+            return
+        
+        accept = await railblue_accept_get(interaction.user.id)
+
+        if not accept : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "레일블루에서 가져오는 정보에 대한 정책 동의 후 이용해 주세요. </레일블루정책확인:1391677509111644200> 명령어를 사용해 주세요.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
+        if interaction.user.id in railblue_last_time : 
+            time = datetime.datetime.now() - railblue_last_time[interaction.user.id]
+            if time.seconds < 45 and interaction.user.id != developer : 
+                embed = discord.Embed(
+                    title = "오류",
+                    description = f"레일블루 사이트 관련 명령어는 45초에 한 번만 사용할 수 있습니다. 시간: {45 - time.seconds}초 후에 다시 시도하세요.",
+                    color = discord.Color.red()
+                )
+                await interaction.followup.send(embed = embed)
+                return
+        
+        if 통과열차표시여부 : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "통과 열차 표시 여부 활성화는 현재 지원되지 않습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+        
+        기준시각 = await today_to_text2()
+
+        try : 
+            train_list = await get_arrival_info_railblue(역명, 노선, 통과열차표시여부, interaction.user.id)
+        except Exception as e:
+            embed = discord.Embed(
+                title = "오류",
+                description = f"레일블루 사이트 관련 명령어 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+                color = discord.Color.red()
+            )
+            print(e)
+            await interaction.followup.send(embed = embed)
+            return
+
+        up_list = train_list[0]
+        down_list = train_list[1]
+        link = train_list[2]
+
+        des = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n"
+
+        des += f"정보 출처: [레일블루 전철도착정보]({link})\n\n"
+
+        up_text = ""
+        down_text = ""
+
+        if len(up_list) >= 5: 
+            for train in up_list[0:5]:
+                up_text += f"- **{train['dest']}**: #{train['train']} {train['time']} 후 {train['status']} 예정\n"
+        else : 
+            for train in up_list:
+                up_text += f"- **{train['dest']}**: #{train['train']} {train['time']} 후 {train['status']} 예정\n"
+        
+        if len(down_list) >= 5: 
+            for train in down_list[0:5]:
+                down_text += f"- **{train['dest']}**: #{train['train']} {train['time']} 후 {train['status']} 예정\n"
+        else : 
+            for train in down_list:
+                down_text += f"- **{train['dest']}**: #{train['train']} {train['time']} 후 {train['status']} 예정\n"
+
+        embed = discord.Embed(
+            title = f"{역명} 도착 정보",
+            description = des,
+            color = int("a5f0ff", 16),
+        )
+        embed.add_field(name = "상행", value = up_text, inline = False)
+        embed.add_field(name = "하행", value = down_text, inline = False)
+        embed.set_footer(text=f"정보 업데이트 시각: {기준시각}")
+        await interaction.followup.send(embed = embed)
+        return
+    
     @app_commands.command(name = "열차정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
     @app_commands.choices(머리글자 = [
         app_commands.Choice(name = "직접 입력", value = "직접 입력"),
@@ -363,7 +484,7 @@ class train_command(app_commands.Group) :
             if time.seconds < 45 and interaction.user.id != developer : 
                 embed = discord.Embed(
                     title = "오류",
-                    description = f"이 명령어는 45초에 한 번만 사용할 수 있습니다. 시간: {45 - time.seconds}초 후에 다시 시도하세요.",
+                    description = f"레일블루 사이트 관련 명령어는 45초에 한 번만 사용할 수 있습니다. 시간: {45 - time.seconds}초 후에 다시 시도하세요.",
                     color = discord.Color.red()
                 )
                 await interaction.followup.send(embed = embed)
@@ -1101,3 +1222,84 @@ async def train_number_line(train_num, line) :
     elif line == "대경선" : return "K" + train_num
     elif line == "대전 1호선" : return "DJET" + train_num
     elif line == "광주 1호선" : return "GWJ" + train_num
+
+async def encode_railblue_station(station_name: str) -> str:
+    # 1. 한글 -> UTF-8 바이트 -> Base64 문자열
+    standard_b64 = base64.b64encode(station_name.encode("utf-8")).decode("ascii")
+    
+    # 2. 레일블루 전용 치환 테이블
+    # + -> _
+    # / -> -
+    # = -> (제거)
+    table = str.maketrans({
+        '+': '_',
+        '/': '-',
+        '=': None
+    })
+    
+    return standard_b64.translate(table)
+
+async def parse_arrival_info_railblue(arrival_info): 
+    trains = []
+    # 1. 'tdTrainNo' 클래스를 포함하는 모든 td 요소를 찾습니다.
+    # CSS 선택자 [class*='...']는 해당 문자열이 포함만 되어도 찾습니다.
+    train_cells = arrival_info.find_elements(By.CSS_SELECTOR, "td[class*='tdTrainNo']")
+
+    for cell in train_cells:
+        try:
+            # 부모 tr로 올라가서 해당 행의 전체 정보를 가져옵니다.
+            row = cell.find_element(By.XPATH, "./..")
+            
+            # 열차 번호 추출 (a 태그의 href 활용)
+            link = cell.find_element(By.TAG_NAME, "a")
+            href = link.get_attribute("href")
+            train_no = href.split("train=")[1].split("&")[0]
+
+            # 목적지 (textContent를 사용해 숨겨진 '급행' 텍스트까지 확보)
+            dest_elem = row.find_element(By.CLASS_NAME, "spMetroTrainDestination")
+            dest = dest_elem.get_attribute("textContent").strip().replace('\n', ' ')
+
+            # 상태 (도착, 출발, 통과 등)
+            status_elem = row.find_element(By.CLASS_NAME, "spMAStatus")
+            status = status_elem.get_attribute("textContent").strip()
+
+            # 시간 (지연 또는 도착 예정 시간)
+            time_elem = row.find_element(By.CSS_SELECTOR, "[class*='spMetroArriveDelay']")
+            time = time_elem.get_attribute("textContent").strip()
+
+            if "특별급행" in dest:
+                dest = dest.replace("특별급행", "특급")
+            
+            # 2. '급행'이나 '특급'이라는 글자가 아예 없으면 뒤에 '행'을 붙임
+            # (이미 '인천행'처럼 되어 있을 수도 있으니 '행'이 없을 때만 붙이는 로직 추천)
+            elif "급행" not in dest and "특급" not in dest and "내선순환" not in dest and "외선순환" not in dest:
+                if not dest.endswith("행"):
+                    dest += "행"
+
+            trains.append({
+                "train": train_no,
+                "dest": dest,
+                "status": status,
+                "time": time
+            })
+        except Exception:
+            continue
+            
+    return trains
+
+async def get_arrival_info_railblue(station_name, line, pass_train: bool, user_id) : 
+    station_name_base64 = await encode_railblue_station(station_name)
+    options = webdriver.FirefoxOptions()
+    options.add_argument("--headless")
+    driver = webdriver.Firefox(options=options)
+    railblue_last_time[user_id] = datetime.datetime.now()
+    link = f"https://rail.blue/railroad/logis/metroarriveinfo.aspx?q={station_name_base64}&c={line}&base=1#!"
+    driver.get(link)
+    await asyncio.sleep(2.5)
+    arrival_info_up = driver.find_element(by = By.ID, value = "tblTrainListU")
+    arrival_info_down = driver.find_element(by = By.ID, value = "tblTrainListD")
+    arrival_info_up = await parse_arrival_info_railblue(arrival_info_up)
+    arrival_info_down = await parse_arrival_info_railblue(arrival_info_down)
+    arrival_info = [arrival_info_up, arrival_info_down, link]
+    driver.quit()
+    return arrival_info
