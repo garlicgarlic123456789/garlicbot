@@ -313,7 +313,6 @@ class train_command(app_commands.Group) :
     
     @app_commands.command(name = "도착정보", description = "열차번호를 입력하고 열차에 대한 정보를 확인합니다.")
     @app_commands.choices(노선 = [
-        app_commands.Choice(name = "기차 (KTX, SRT, 무궁화, 새마을, ITX 등)", value = "train"),
         app_commands.Choice(name = "수도권 1호선, 경춘선, 수인분당선, 경의중앙선, 경강선, 서해선", value = "Korail"),
         app_commands.Choice(name = "수도권 2호선", value = "Seoul_Line_2"),
         app_commands.Choice(name = "수도권 3호선", value = "Seoul_Line_3"),
@@ -425,6 +424,7 @@ class train_command(app_commands.Group) :
         )
         embed.add_field(name = "상행", value = up_text, inline = False)
         embed.add_field(name = "하행", value = down_text, inline = False)
+        embed.add_field(name = "팁", value = "위 열차들의 운행 시각표를 조회하려면, `/철도 열차정보` 명령어를 사용해 보세요!", inline = False)
         embed.set_footer(text=f"정보 업데이트 시각: {기준시각}")
         await interaction.followup.send(embed = embed)
         return
