@@ -593,9 +593,9 @@ status_id = 0
 
 kst = pytz.timezone('Asia/Seoul')
 
-using_server = 1451611319936614616
-record_channel = 1451611321932972101 # 제재 내역 채널 ID
-message_log = 1451611324915122331  # 여기에 기록할 채널의 ID를 입력하세요
+using_server = 1483037561625772150
+record_channel = 1483037563789770897 # 제재 내역 채널 ID
+message_log = 1483037567526899890  # 여기에 기록할 채널의 ID를 입력하세요
 
 # 차단 정보를 저장할 JSON 파일 경로
 BLOCKED_USERS_FILE = "command_blocked_user.json"
