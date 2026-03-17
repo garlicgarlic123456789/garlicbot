@@ -96,7 +96,7 @@ from commands import compatibility
 
 from zoneinfo import ZoneInfo
 
-ticket_channel_id = 1451611322113462429
+ticket_channel_id = 1483037563991232548
 
 client = AsyncOpenAI()
 
@@ -8051,7 +8051,7 @@ async def message_info(interaction: discord.Interaction, message: discord.Messag
             return
     ticket_last_time[interaction.user.id] = datetime.now()
 
-    verify_role_variable = interaction.guild.get_role(1451611320490393697)
+    verify_role_variable = interaction.guild.get_role(1483037561810063366)
     if verify_role_variable not in interaction.user.roles:
         embed = discord.Embed(
             title="오류",
@@ -8082,7 +8082,7 @@ async def message_info(interaction: discord.Interaction, message: discord.Messag
     )
     await thread.send(embed = embed)
     await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-    channel = bot.get_channel(1451611324915122333)
+    channel = bot.get_channel(1483037567526899893)
     embed = discord.Embed(
         title = "티켓 생성됨",
         description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}",
@@ -8112,7 +8112,7 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
 
         await interaction.response.defer(ephemeral=True)
 
-        verify_role_variable = interaction.guild.get_role(1451611320490393697)
+        verify_role_variable = interaction.guild.get_role(1483037561810063366)
         if verify_role_variable not in interaction.user.roles:
             embed = discord.Embed(
                 title="오류",
@@ -8145,7 +8145,7 @@ class TicketModal(discord.ui.Modal, title="티켓 생성"):
         )
         await thread.send(embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1451611324915122333)
+        channel = bot.get_channel(1483037567526899893)
         embed = discord.Embed(
             title = "티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: {message_link}",
@@ -8189,7 +8189,7 @@ class TicketButton(discord.ui.Button):
 
         await interaction.response.defer(ephemeral=True)
 
-        verify_role_variable = interaction.guild.get_role(1451611320490393697)
+        verify_role_variable = interaction.guild.get_role(1483037561810063366)
         if verify_role_variable not in interaction.user.roles:
             embed = discord.Embed(
                 title="오류",
@@ -8218,7 +8218,7 @@ class TicketButton(discord.ui.Button):
         )
         await thread.send(embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1451611324915122333)
+        channel = bot.get_channel(1483037567526899893)
         embed = discord.Embed(
             title = "티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
@@ -8243,7 +8243,7 @@ class TicketButtonEmergency(discord.ui.Button):
         ticket_last_time[interaction.user.id] = datetime.now()
         await interaction.response.defer(ephemeral=True)
 
-        verify_role_variable = interaction.guild.get_role(1451611320490393697)
+        verify_role_variable = interaction.guild.get_role(1483037561810063366)
         if verify_role_variable not in interaction.user.roles:
             embed = discord.Embed(
                 title="오류",
@@ -8270,9 +8270,9 @@ class TicketButtonEmergency(discord.ui.Button):
             description = f"{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*\n\n환영합니다. 관리자에게 문의/신고할 내용을 작성해주세요. 잘못 여신 경우 잘못 여셨다고 남겨주시기 바랍니다.\n\n**__관리자 멘션으로 업무 처리 재촉 시 제재될 수 있습니다.__**",
             color = discord.Color.red()
         )
-        await thread.send("<@&1451611320586731851> <@&1451611320574021839> <@&1451611320574021835> <@&1451611320557375765> <@&1451611320557375762> <@&1451611320557375761>", embed = embed)
+        await thread.send("<@&1483037561952931882> <@&1483037561889751058> <@&1483037561889751054> <@&1483037561856458883>", embed = embed)
         await interaction.followup.send(f"비공개 티켓 스레드를 생성했습니다: {thread.mention}", ephemeral=True)
-        channel = bot.get_channel(1451611324915122333)
+        channel = bot.get_channel(1483037567526899893)
         embed = discord.Embed(
             title = "긴급 티켓 생성됨",
             description = f"{thread.mention}\n\n{interaction.user.mention}님이 긴급 티켓을 생성하였습니다.\n\n- 관련 메시지: *(알 수 없음)*",
@@ -8300,7 +8300,7 @@ class TicketButtonOwner(discord.ui.Button):
         now = datetime.now(kst).strftime("%Y-%m-%d %H:%M:%S")
         thread_name = f"{interaction.user.display_name} ({now})"
 
-        channel = bot.get_channel(1451611322113462430)
+        channel = bot.get_channel(1483037563991232549)
 
         # 비공개 스레드 생성
         thread = await channel.create_thread(
@@ -9711,6 +9711,7 @@ async def help(interaction: discord.Interaction) :
     )
     await interaction.response.send_message(embed = embed)
 
+'''
 # /권한회수 명령어 정의
 @bot.tree.command(name="권한회수", description="권한 남용 사태가 발생한 경우 특정 사용자의 관리자 권한을 회수합니다.")
 @app_commands.describe(member = "권한을 회수할 사용자")
@@ -9777,6 +9778,8 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
             color=discord.Color.red()
         )
         await interaction.followup.send(embed = embed)
+'''
+# 구분     
 '''
 @bot.tree.command(name="채널백업", description="현재 채널을 백업합니다.")
 @app_commands.describe(백업이름="백업 파일 이름", 개수="백업할 메시지 개수")
