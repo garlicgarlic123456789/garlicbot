@@ -9742,7 +9742,6 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
             )
             await interaction.response.send_message(embed = embed, ephemeral=False)
             return
-        '''
         if interaction.user.id not in super_admin and member.id in super_admin :
             embed = discord.Embed(
                 title=f"오류", # name
@@ -9751,7 +9750,6 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
             )
             await interaction.response.send_message(embed = embed, ephemeral=False)
             return
-        '''
     await interaction.response.defer()
 
     # 역할 제거
