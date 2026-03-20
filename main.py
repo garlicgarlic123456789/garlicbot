@@ -337,7 +337,7 @@ greeting_channel = 1483037563789770896 # 가입 시 환영 채널
 byebye_channel = 1483037563789770896 # 탈퇴 시 메시지 보낼 채널
 get_exp_notify = 1483037564159131762
 
-verify_role = 1451611320490393697 # 인증된 사용자 역할 ID
+verify_role = 1483037561810063366 # 인증된 사용자 역할 ID
 
 slowmode_users = {}
 last_message_times = {}
