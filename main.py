@@ -332,10 +332,10 @@ raid_keyword1 = []
 xp_log_channel = 1325006023064293417 # 추첨 로그 채널 ID
 
 FORUM_CHANNEL_ID = 0  # 차소게 포럼 채널 ID를 정의
-normal_channel = 1451611322364989533 # 일반 채널
-greeting_channel = 1451611321932972099 # 가입 시 환영 채널
-byebye_channel = 1451611321932972099 # 탈퇴 시 메시지 보낼 채널
-get_exp_notify = 1451611322364989533
+normal_channel = 1483037564159131762 # 일반 채널
+greeting_channel = 1483037563789770896 # 가입 시 환영 채널
+byebye_channel = 1483037563789770896 # 탈퇴 시 메시지 보낼 채널
+get_exp_notify = 1483037564159131762
 
 verify_role = 1451611320490393697 # 인증된 사용자 역할 ID
 
@@ -3345,37 +3345,40 @@ async def on_member_update(before, after):
         added_roles = [role for role in after.roles if role not in before.roles]
         for role in added_roles:
             if role.id == verify_role:  # verify_role에 해당되는 역할인지 확인
+                time = datetime.now().strftime("%H시 %M분")
+                number = random.randint(1, 9999)
+                number2 = random.randint(1, 14)
                 channel = after.guild.get_channel(greeting_channel)
                 if channel:
                     embed = discord.Embed(
                         title=f"환영합니다!", # name
-                        description=f"{after.mention}님이 휴게소로 진입하셨습니다.",
+                        description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다.",
                         color=int("a5f0ff", 16)
                     )
                     await channel.send(embed=embed)
                 global last_member_join_mention
-                channel = after.guild.get_channel(1451611322364989533)
+                channel = after.guild.get_channel(1483037564159131762)
                 if channel:
                     if last_member_join_mention is None : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다. \n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1483037563383185461>을 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1483037563991232548>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1483037563991232548>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}> <@&1451611320427216991>", embed=embed)
+                        message = await channel.send(f"<@{after.id}>", embed=embed)
                     elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다. \n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1483037563383185461>을 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1483037563991232548>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1483037563991232548>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}> <@&1451611320427216991>", embed=embed)
+                        message = await channel.send(f"<@{after.id}>", embed=embed)
                     else : 
                         embed = discord.Embed(
                             title=f"환영합니다!", # name
-                            description=f"{after.mention}님이 휴게소로 진입하셨습니다.\n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1451611321522065547>을 확인해 주세요.\n- 적응에 도움이 필요한 경우 <@&1451611320427216991>를 멘션해 주세요.\n- <#1453654763043295457>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1451611322113462429>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1451611322113462429>을 이용해 주시기 바랍니다.",
+                            description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다. \n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1483037563383185461>을 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1483037563991232548>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1483037563991232548>을 이용해 주시기 바랍니다.",
                             color=int("a5f0ff", 16)
                         )
                         last_member_join_mention = datetime.now()
