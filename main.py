@@ -2954,7 +2954,7 @@ async def on_member_remove(member):
         if channel:
             embed = discord.Embed(
                 title="회원 탈퇴 알림",
-                description=f"{member.mention}님이 휴게소에서 진출하셨습니다.",
+                description=f"{member.mention}님이 철도역에서 떠나셨습니다.",
                 color=discord.Color.red()
             )
             await channel.send(embed=embed)
