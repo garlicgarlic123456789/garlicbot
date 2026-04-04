@@ -97,6 +97,7 @@ from commands import anti_raid_command
 from commands import compatibility
 
 from bot_app.commands.registry import register_known_commands
+from bot_app.events import register_log_events
 
 from zoneinfo import ZoneInfo
 
@@ -902,309 +903,6 @@ async def handle_spamming(message, reason, timeout_d, whitelist_apply, keyword, 
     if message.guild.id == using_server :
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
-
-@bot.event
-async def on_raw_message_delete(payload) : 
-    if not payload.guild_id : 
-        return
-
-    cached_message = payload.cached_message
-    channel = bot.get_channel(payload.channel_id)
-    if channel.id in no_log_channel : 
-        return
-    
-    log_id = get_log_channel(payload.guild_id)["editdelete"]
-    if log_id is None : 
-        return
-    
-    if cached_message is None : 
-        log_channel = bot.get_channel(log_id)
-        if log_channel:
-            content = "*(알 수 없음)*"
-            author = "*(알 수 없음)*"
-
-            embed = discord.Embed(
-                title="메시지 삭제 로그",
-                description=f"{channel.mention}에서 {author}님의 메시지가 삭제되었습니다.",
-                color=discord.Color.red(),
-                timestamp=discord.utils.utcnow()
-            )
-            embed.add_field(name="메시지 내용", value=content, inline=False)
-            embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
-            embed.add_field(name="답장 대상 메시지", value="*(알 수 없음)*", inline=False)
-            await log_channel.send(embed=embed)
-    else : 
-        log_channel = bot.get_channel(log_id)
-        if log_channel : 
-            content = cached_message.content or "*(메시지 내용 없음)*"
-            author = cached_message.author.mention
-            message_type = cached_message.type
-            if message_type == discord.MessageType.reply : 
-                reply_to = f"{cached_message.reference.jump_url} ({cached_message.reference.message_id})"
-            else : 
-                reply_to = "*(답장 아님)*"
-
-            if len(content) > 1000 : 
-                content = content[:1000] + "\n\n(이후 생략)"
-            
-            embed = discord.Embed(
-                title="메시지 삭제 로그",
-                description=f"{channel.mention}에서 {author}님의 메시지가 삭제되었습니다.",
-                color=discord.Color.red(),
-                timestamp=discord.utils.utcnow()
-            )
-            embed.add_field(name="메시지 내용", value=content, inline=False)
-            embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
-            embed.add_field(name="답장 대상 메시지", value=reply_to, inline=False)
-            await log_channel.send(embed=embed)
-
-@bot.event
-async def on_message_delete(message):
-    if message.guild:
-        pass
-    else :
-        return
-    
-    message_log = True
-    image_log = True
-    log_id = get_log_channel(message.guild.id)["editdelete"]
-    image_id = get_log_channel(message.guild.id)["image"]
-    if log_id is None : 
-        message_log = False
-    if image_id is None : 
-        image_log = False
-    
-    if message.channel.id in no_log_channel :
-        return
-    
-    if image_log : 
-        attachments = []
-        if message.attachments:
-            for attachment in message.attachments:
-                if attachment.content_type and attachment.content_type.startswith('image/'):
-                    attachments.append(attachment.url)
-        
-        log_channel = bot.get_channel(image_id)
-        if log_channel:
-            for attachment in attachments : 
-                author = message.author.mention  # 메시지 작성자 멘션
-                deleted_by = "*(알 수 없음)*"
-                found_audit_log_entry = False
-
-                embed = discord.Embed(
-                    title="메시지 삭제 로그",
-                    description=f"<#{message.channel.id}>에서 <@{message.author.id}>님의 메시지가 삭제되었습니다.",
-                    color=discord.Color.red(),
-                    timestamp=discord.utils.utcnow()
-                )
-                embed.set_image(url=attachment)
-                await log_channel.send(embed=embed)
-
-@bot.event
-async def on_raw_message_edit(payload) : 
-    if not payload.guild_id : 
-        return
-    
-    cached_message = payload.cached_message
-    channel = bot.get_channel(payload.channel_id)
-    if channel.id in no_log_channel : 
-        return
-    
-    log_id = get_log_channel(payload.guild_id)["editdelete"]
-    if log_id is None : 
-        return
-    
-    log_channel = bot.get_channel(log_id)
-    if not log_channel : 
-        return
-    
-    if cached_message is None : 
-        before_content = "*(알 수 없음)*"
-        after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
-
-        if len(before_content) > 1000 : 
-            before_content = before_content[:1000] + "\n\n(이후 생략)"
-        if len(after_content) > 1000 : 
-            after_content = after_content[:1000] + "\n\n(이후 생략)"
-
-        if payload.message.author.bot : 
-            return
-        
-        message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
-        
-        embed = discord.Embed(
-            title="메시지 수정 로그",
-            description=f"{channel.mention}에서 <@{payload.message.author.id}>님의 [메시지]({message_link})가 수정되었습니다.",
-            color=discord.Color.blue(),
-            timestamp=discord.utils.utcnow()
-        )
-        embed.add_field(name="수정 전 메시지 내용", value=before_content, inline=False)
-        embed.add_field(name="수정 후 메시지 내용", value=after_content, inline=False)
-        embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
-        await log_channel.send(embed=embed)
-
-    else : 
-        before_content = cached_message.content or "*(수정 전 메시지 내용 없음)*"
-        after_content = payload.message.content or "*(수정 후 메시지 내용 없음)*"
-        message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
-
-        if len(before_content) > 1000 : 
-            before_content = before_content[:1000] + "\n\n(이후 생략)"
-        if len(after_content) > 1000 : 
-            after_content = after_content[:1000] + "\n\n(이후 생략)"
-
-        if payload.message.author.bot : 
-            return
-        
-        if before_content == after_content : 
-            return
-        
-        embed = discord.Embed(
-            title="메시지 수정 로그",
-            description=f"<#{payload.channel_id}>에서 <@{payload.message.author.id}>님의 [메시지]({message_link})가 수정되었습니다.",
-            color=discord.Color.blue(),
-            timestamp=discord.utils.utcnow()
-        )
-        embed.add_field(name="수정 전 메시지 내용", value=before_content, inline=False)
-        embed.add_field(name="수정 후 메시지 내용", value=after_content, inline=False)
-        embed.add_field(name="메시지 ID", value=f"{payload.message_id}", inline=False)
-        await log_channel.send(embed=embed)
-    
-    after = payload.message
-
-    if after.guild.id == using_server : 
-        author_id = after.author.id
-
-        pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-        if isinstance(after.channel, discord.Thread) : 
-            if after.channel.parent.id == 1394966782426484796 : 
-                return
-        else : 
-            if re.search(pattern1, after.content) :
-                await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
-                return
-            elif "discord://-/invite/" in after.content : 
-                await handle_spamming(after, "디스코드 서버 초대 링크 (메시지 수정)", 15 * 60 * 60, True, None)
-                return
-        
-        message_content = re.sub(r"[^가-힣a-zA-Z]", "", after.content)
-        
-        if after.channel.id != 1344617642312597585 : 
-            for i in automod_keyword :
-                if i in message_content :
-                    await handle_spamming(after, f"{automod_reason} (메시지 수정)", 20 * 60, True, i, True)
-                    return
-
-        for i in automod_keyword2 :
-            if i in message_content :
-                await handle_spamming(after, f"{automod_reason2} (메시지 수정)", 5 * 60 * 60, True, i)
-                return
-
-        for i in automod_keyword3 :
-            if i in after.content.replace("\\", "") :
-                await handle_spamming(after, f"{automod_reason3} (메시지 수정)", 24 * 60 * 60, False, i)
-                return
-
-        for i in automod_keyword4 :
-            if i in after.content and after.content.startswith("!번역 ") :
-                await handle_spamming(after, f"{automod_reason4} (메시지 수정)", 15 * 60 * 60, True, i)
-                return
-
-        if after.channel.id != 1344617642312597585 : 
-            for i in automod_keyword5 :
-                if i in message_content :
-                    await handle_spamming(after, f"{automod_reason5} (메시지 수정)", 10 * 60, True, i, True)
-                    return
-
-        for i in automod_keyword7 :
-            if i in after.content :
-                await handle_spamming(after, f"{automod_reason7} (메시지 수정)", 48 * 60 * 60, True, i)
-                return
-
-        if after.channel.id != 1322203223028793396 : 
-            for i in automod_keyword8 :
-                if i in message_content :
-                    await handle_spamming(after, f"{automod_reason8} (메시지 수정)", 10 * 60, True, i)
-                    return
-        
-        for i in automod_keyword9 :
-            if i in message_content :
-                await handle_spamming(after, f"{automod_reason9} (메시지 수정)", 20 * 60, True, i)
-                return
-
-        for i in automod_keyword10 :
-            if i in message_content :
-                await handle_spamming(after, f"{automod_reason10} (메시지 수정)", 3 * 60 * 60, True, i)
-                return
-
-        for i in automod_keyword11 :
-            if i in after.content :
-                await handle_spamming(after, f"{automod_reason11} (메시지 수정)", 24 * 60 * 60, True, i)
-                return
-        
-        for i in raid_keyword1 :
-            if i in after.content :
-                await handle_spamming(after, f"테러로 의심되는 활동 (메시지 수정)", 72 * 60 * 60, True, i)
-                await after.guild.edit(invites_disabled = True, invites_disabled_until = discord.utils.utcnow() + timedelta(days=1), reason = "레이드 감지")
-                await after.guild.edit(dms_disabled_until = discord.utils.utcnow() + timedelta(days=1), reason = "레이드 감지")
-                return
-
-@bot.event
-async def on_raw_reaction_add(payload) : 
-    if payload.channel_id in no_log_channel : 
-        return
-    
-    log_id = get_log_channel(payload.guild_id)["reaction"]
-    if log_id is None :
-        return
-    
-    channel = bot.get_channel(log_id)
-    if not channel : 
-        return
-    
-    message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
-
-    embed = discord.Embed(title="반응 추가됨", color=discord.Color.blue())
-    embed.add_field(name="사용자", value=f"<@{payload.user_id}>", inline=True)
-    if payload.emoji.is_custom_emoji() : 
-        if payload.emoji.animated : 
-            embed.add_field(name="반응", value=f"<a:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
-        else : 
-            embed.add_field(name="반응", value=f"<:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
-    else : 
-        embed.add_field(name="반응", value=f"{payload.emoji.name}", inline=True)
-    embed.add_field(name="메시지 링크", value=message_link, inline=False)
-    
-    await channel.send(embed=embed)
-
-
-@bot.event
-async def on_raw_reaction_remove(payload) : 
-    if payload.channel_id in no_log_channel : 
-        return
-    
-    log_id = get_log_channel(payload.guild_id)["reaction"]
-    if log_id is None :
-        return
-    
-    channel = bot.get_channel(log_id)
-    if not channel : 
-        return
-    
-    message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
-
-    embed = discord.Embed(title="반응 제거됨", color=discord.Color.red())
-    embed.add_field(name="사용자", value=f"<@{payload.user_id}>", inline=True)
-    if payload.emoji.is_custom_emoji() : 
-        if payload.emoji.animated : 
-            embed.add_field(name="반응", value=f"<a:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
-        else : 
-            embed.add_field(name="반응", value=f"<:{payload.emoji.name}:{payload.emoji.id}>", inline=True)
-    else : 
-        embed.add_field(name="반응", value=f"{payload.emoji.name}", inline=True)
-    embed.add_field(name="메시지 링크", value=message_link, inline=False)
-    
-    await channel.send(embed=embed)
 
 @tasks.loop(minutes = 150)
 async def legacy_disable():
@@ -10462,6 +10160,36 @@ async def info(interaction: discord.Interaction, 사용자: discord.Member):
     except Exception as e:
         await interaction.response.send_message(f"**[오류!]** 알 수 없는 오류가 발생했습니다.")
 '''
+register_log_events(
+    bot,
+    {
+        "no_log_channel": no_log_channel,
+        "get_log_channel": get_log_channel,
+        "handle_spamming": handle_spamming,
+        "using_server": using_server,
+        "automod_keyword": automod_keyword,
+        "automod_keyword2": automod_keyword2,
+        "automod_keyword3": automod_keyword3,
+        "automod_keyword4": automod_keyword4,
+        "automod_keyword5": automod_keyword5,
+        "automod_keyword7": automod_keyword7,
+        "automod_keyword8": automod_keyword8,
+        "automod_keyword9": automod_keyword9,
+        "automod_keyword10": automod_keyword10,
+        "automod_keyword11": automod_keyword11,
+        "raid_keyword1": raid_keyword1,
+        "automod_reason": automod_reason,
+        "automod_reason2": automod_reason2,
+        "automod_reason3": automod_reason3,
+        "automod_reason4": automod_reason4,
+        "automod_reason5": automod_reason5,
+        "automod_reason7": automod_reason7,
+        "automod_reason8": automod_reason8,
+        "automod_reason9": automod_reason9,
+        "automod_reason10": automod_reason10,
+        "automod_reason11": automod_reason11,
+    },
+)
 register_known_commands(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")

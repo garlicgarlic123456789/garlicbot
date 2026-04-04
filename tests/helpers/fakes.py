@@ -23,3 +23,8 @@ class FakeTree:
 class FakeBot:
     def __init__(self):
         self.tree = FakeTree()
+        self.registered_events = {}
+
+    def event(self, func):
+        self.registered_events[func.__name__] = func
+        return func
