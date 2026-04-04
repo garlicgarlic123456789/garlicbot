@@ -96,6 +96,8 @@ from commands.chat_analyze import *
 from commands import anti_raid_command
 from commands import compatibility
 
+from bot_app.commands.registry import register_setup_commands
+
 from zoneinfo import ZoneInfo
 
 parser = argparse.ArgumentParser()
@@ -10496,23 +10498,7 @@ async def info(interaction: discord.Interaction, 사용자: discord.Member):
     except Exception as e:
         await interaction.response.send_message(f"**[오류!]** 알 수 없는 오류가 발생했습니다.")
 '''
-encode.setup(bot)
-bulk_cancel.setup(bot)
-turn_off.setup(bot)
-suggest_random.setup(bot)
-chat_time.setup(bot)
-timestamp.setup(bot)
-ping.setup(bot)
-close_threads.setup(bot)
-remove_all_roles.setup(bot)
-security_check.setup(bot)
-weather.setup(bot)
-xp_setup.setup(bot)
-slowmode.setup(bot)
-server_info.setup(bot)
-rules.setup(bot)
-anti_raid_command.setup(bot)
-compatibility.setup(bot)
+register_setup_commands(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
