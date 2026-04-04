@@ -3650,13 +3650,13 @@ async def check_exp(interaction: discord.Interaction, 사용자: discord.User = 
         embed = discord.Embed(
             title="경험치 확인",
             color=int("a5f0ff", 16),
-            description = f"{member.mention}님의 경험치 보유 현황: \n- 전체 기간: {exp} {unit} ({lvl} 레벨)\n- 이번 달: {month_exp} {unit} ({lvl} 레벨)\n-# [경험치 초기화](https://discord.com/channels/1320303102703702037/1423235138950529085/1435640425703538768) 전: {old_exp} {unit}"
+            description = f"{member.mention}님의 경험치 보유 현황: \n- 전체 기간: {exp} {unit} ({lvl} 레벨)\n- 이번 달: {month_exp} {unit} ({month_lvl} 레벨)\n-# [경험치 초기화](https://discord.com/channels/1320303102703702037/1423235138950529085/1435640425703538768) 전: {old_exp} {unit}"
         )
     else : 
         embed = discord.Embed(
             title="경험치 확인",
             color=int("a5f0ff", 16),
-            description = f"{member.mention}님의 경험치 보유 현황: \n- 전체 기간: {exp} {unit} ({lvl} 레벨)\n- 이번 달: {month_exp} {unit} ({lvl} 레벨)"
+            description = f"{member.mention}님의 경험치 보유 현황: \n- 전체 기간: {exp} {unit} ({lvl} 레벨)\n- 이번 달: {month_exp} {unit} ({month_lvl} 레벨)"
         )
         
     await interaction.followup.send(embed = embed)
@@ -7631,15 +7631,11 @@ def split_text(text, chunk_size=3000):
 
 @bot.tree.command(name="일괄삭제", description = "범위를 지정하여 메시지를 일괄적으로 삭제합니다. 필요한 경우 특정 사용자의 메시지만 삭제할 수도 있습니다.")
 @app_commands.describe(시작 = "시작 메시지 링크", 끝 = "끝 메시지 링크 (선택사항)", 유저 = "특정 유저의 메시지만 삭제하려는 경우 해당되는 유저 (선택사항)", 사유 = "삭제 사유 (선택사항)")
+@app_commands.default_permissions(manage_messages=True)
 async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = None, 유저: discord.User = None, 사유: str = "*(사유 입력되지 않음)*"):
-    if not interaction.user.guild_permissions.manage_messages:
-        return await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `메시지 관리하기`", ephemeral=False)
-
-    # 2. <시작> 값 확인
     if not 시작:
         return await interaction.response.send_message("**[오류!]** 시작의 값은 필수입니다.", ephemeral=False)
 
-    # 3. 메시지 링크 확인
     try:
         start_message_id = int(시작.split("/")[-1])
         start_message = await interaction.channel.fetch_message(start_message_id)
@@ -7659,7 +7655,6 @@ async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = 
 
     status, until, reason = is_blocked(interaction.user)
     
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
     if status:
         msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
         await interaction.followup.send(msg)
@@ -7736,6 +7731,7 @@ async def bulk_delete(interaction: discord.Interaction, 시작: str, 끝: str = 
 
 @bot.tree.command(name="초대링크삭제", description="특정 유저가 만든 초대 링크를 삭제합니다.")
 @app_commands.describe(user="초대 링크를 만든 유저")
+@app_commands.default_permissions(manage_guild=True)
 async def delete_invites(interaction: discord.Interaction, user: discord.User):
     guild = interaction.guild
     if not guild:
@@ -7743,15 +7739,6 @@ async def delete_invites(interaction: discord.Interaction, user: discord.User):
         return
 
     await interaction.response.defer(thinking=True)
-
-    if interaction.user.id != guild.owner_id :
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"권한이 부족합니다. 다음 권한이 필요합니다: `서버 주인`",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed = embed)
-        return
 
     invites = await guild.invites()
     user_invites = [invite for invite in invites if invite.inviter and invite.inviter.id == user.id]

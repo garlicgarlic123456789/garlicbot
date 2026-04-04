@@ -41,6 +41,8 @@ Notwithstanding the 'No Modification' clause mentioned above, code modification 
 
 Submitted PRs will be reviewed for potential integration into the main codebase. Once merged, the contributed code will also be governed by this license policy.
 
+Pull Request는 가급적 `develop` 브랜치로 merge하도록 열어주세요.
+
 # 마늘봇 소개
 마늘봇으로 서버를 더 편하게 관리하고, 더 편하게 채팅해보세요.
 
