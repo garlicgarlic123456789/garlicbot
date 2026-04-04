@@ -52,23 +52,8 @@ KST = pytz.timezone('Asia/Seoul')
 warn_law = WARN_LAW
 warn_secret = WARN_SECRET
 
+# Legacy-compatible scalar state that still relies on module-level rebinding.
 railblue_onoff = False
-
-chat_analyze_onoff_cache = {}
-
-chat_analyze_count = {}
-
-chat_analyze_count_channel = {}
-
-xp_setting = {}
-
-railblue_last_time = {}
-
-gpt_chat_threads = {}
-
-railblue_accept_ready = []
-
-ticket_last_time = {}
 
 train_timetable_api_key = get_train_timetable_api_key()
 train_arrivals_api_key = get_train_arrivals_api_key()
@@ -96,9 +81,18 @@ from bot_app.ai.gemini_runtime import (
     types,
 )
 from bot_app.core.bot_factory import build_bot, build_intents
-anti_raid_settings_cache = {}
-
-last_auto_respond_time = {}
+from bot_app.core.runtime_state import (
+    anti_raid_settings_cache,
+    chat_analyze_count,
+    chat_analyze_count_channel,
+    chat_analyze_onoff_cache,
+    gpt_chat_threads,
+    last_auto_respond_time,
+    railblue_accept_ready,
+    railblue_last_time,
+    ticket_last_time,
+    xp_setting,
+)
 
 developer = DEVELOPER_USER_ID
 
