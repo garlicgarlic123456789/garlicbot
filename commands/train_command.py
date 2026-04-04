@@ -3,6 +3,7 @@ import re
 from discord import app_commands
 from commands.database import *
 from commands.define import *
+from commands import define
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import requests
@@ -267,6 +268,14 @@ class train_command(app_commands.Group) :
     @app_commands.command(name = "레일블루정책확인", description = "철도 관련 명령어 중 레일블루 사이트에서 정보를 가져와서 제공되는 기능들에 대해 관련 정책을 확인합니다.")
     async def railblue_accept_command(self, interaction: discord.Interaction) : 
         await interaction.response.defer()
+        if not define.railblue_onoff : 
+            embed = discord.Embed(
+                title = "기능 비활성화됨", 
+                description = "해당 기능이 비활성화되어 있습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
         embed = discord.Embed(
             title = "레일블루에서 제공되는 정보에 대한 정책",
             description = "마늘이 봇의 철도 관련 기능 중 열차정보를 포함한 일부 기능은 레일블루 사이트의 허가 하에 레일블루 사이트의 정보를 가져오는 방식으로 제공되고 있습니다.\n\n레일블루 사이트 링크: <https://rail.blue/>\n\n1. 레일블루 사이트를 통해 마늘봇에서 출력되는 정보는 __실시간 정보가 아니며, 참고용으로만 사용하시기 바랍니다.__\n2. 제공되는 정보는 정보의 정확성, 신뢰성, 최신성을 보장하지 않습니다. 이 정보를 근거로 또는 이 정도에 관하여 철도 운영기관에 민원을 접수하지 마시기 바랍니다.\n3. 이 기능의 지원은 레일블루 사이트의 사정 등으로 인해 예고없이 중단될 수 있습니다.\n\n귀하께서는 이 동의를 거부할 권리가 있으나, 거부 시 관련 기능 이용이 제한될 수 있습니다. 이 사항에 동의하시는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의 의사를 표시할 수 있으며, 추후 동의를 철회하려는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의를 철회할 수 있습니다.",
@@ -284,6 +293,16 @@ class train_command(app_commands.Group) :
     ])
     async def railblue_accept_command2(self, interaction: discord.Interaction, 동의여부: str) : 
         await interaction.response.defer()
+
+        if not define.railblue_onoff : 
+            embed = discord.Embed(
+                title = "기능 비활성화됨", 
+                description = "해당 기능이 비활성화되어 있습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+
         status, until, reason = is_blocked(interaction.user)
         
         if status:
@@ -341,6 +360,15 @@ class train_command(app_commands.Group) :
         await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
+
+        if not define.railblue_onoff : 
+            embed = discord.Embed(
+                title = "기능 비활성화됨", 
+                description = "해당 기능이 비활성화되어 있습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
         
         if status:
             msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
@@ -460,6 +488,15 @@ class train_command(app_commands.Group) :
     @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
     async def train_info(self, interaction: discord.Interaction, 열차번호: str, 머리글자: str, 날짜: str = None, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
+
+        if not define.railblue_onoff : 
+            embed = discord.Embed(
+                title = "기능 비활성화됨", 
+                description = "해당 기능이 비활성화되어 있습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
 
         status, until, reason = is_blocked(interaction.user)
         
