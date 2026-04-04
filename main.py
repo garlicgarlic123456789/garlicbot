@@ -97,7 +97,7 @@ from commands import anti_raid_command
 from commands import compatibility
 
 from bot_app.commands.registry import register_known_commands
-from bot_app.events import register_log_events, register_member_events
+from bot_app.events import register_log_events, register_member_events, register_ready_events
 
 from zoneinfo import ZoneInfo
 
@@ -7577,71 +7577,6 @@ async def chat_analyze_save_to_db():
                 await add_chat_analyze_channel_data(server_id, channel_id, formatted_time, chat_count, user_count)
 
 TICKET_MESSAGE_FILE = "ticket_message_id.txt"
-@bot.event
-async def on_ready():
-    aiocron.crontab('* * * * *', func=chat_analyze_save_to_db)
-    await bot.tree.sync()
-    print(f"Logged in as {bot.user}")
-    status_loop.start()
-    exp_event.start()
-    legacy_disable.start()
-    bot.add_view(TicketView())  # persistent view 등록
-
-    channel = bot.get_channel(ticket_channel_id)
-    if not channel:
-        print("티켓 채널을 찾을 수 없습니다.")
-        return
-
-    # 저장된 메시지 ID가 있는지 확인
-    try:
-        with open(TICKET_MESSAGE_FILE, "r") as f:
-            message_id = int(f.read().strip())
-            message = await channel.fetch_message(message_id)
-            await message.edit(view=TicketView())  # View 다시 연결
-            print("기존 티켓 메시지에 View를 다시 연결했습니다.")
-    except (FileNotFoundError, discord.NotFound):
-        # 메시지가 없거나 삭제되었으면 새로 전송
-        embed = discord.Embed(
-            title="문의 및 신고 게시판",
-            description="""아래 버튼을 눌러 티켓을 생성한 후, 문의나 신고를 접수해 주세요.
-
-**장난성 티켓을 생성할 경우 제재됩니다.**
-
-티켓을 열더라도 운영진이 멘션되지 않고 운영진에게 티켓 보기 권한 부여 및 로그 채널에 로그만 전송되므로, 티켓 처리에는 시간이 소요될 수 있으며, 재촉성 멘션을 할 경우 제재될 수 있습니다.
-
-티켓 유형 안내: 
-
-- 간편 티켓: 관련한 정보 첨부 없이 바로 문의/신고가 가능한 티켓입니다.
-- 티켓: 관련 메시지 링크 첨부 후 문의/신고가 가능한 티켓입니다.
-- 긴급 티켓: 테러 등 긴급 상황에 모든 운영진은 멘션할 수 있는 티켓입니다. **테러, 레이드 이외에는 사용해서는 안 되며, 사용 시 제재될 수 있습니다.**
-- 소유자 티켓: 소유자 (서버 주인) 만 볼 수 있는 티켓입니다. <#1483037563991232549>에 스레드가 생성됩니다.
-
-이 티켓이 제대로 동작하지 않는 경우 직접 스레드를 생성해 주세요.""",
-            color=int("a5f0ff", 16)
-        )
-        message = await channel.send(embed=embed, view=TicketView())
-        with open(TICKET_MESSAGE_FILE, "w") as f:
-            f.write(str(message.id))
-        print("새 티켓 메시지를 전송하고 ID를 저장했습니다.")
-    
-    guild = bot.get_guild(using_server)
-    if guild:
-        invite_cache[guild.id] = await guild.invites()
-        print(f"{guild.name} 서버의 초대 캐시 초기화 완료")
-    else:
-        print("사용 중인 서버를 찾을 수 없습니다.")
-    
-    for guild in bot.guilds:
-        try:
-            invite_cache[guild.id] = await guild.invites()
-            print(f"{guild.name} 서버의 초대 캐시 초기화 완료")
-        except discord.Forbidden:
-            invite_cache[guild.id] = []
-            print(f"{guild.name} 서버의 초대 링크에 접근할 수 없습니다.")
-        except Exception as e:
-            invite_cache[guild.id] = []
-            print(f"{guild.name} 서버의 초대 링크 캐싱 중 오류 발생: {e}")
-
 async def get_total_member_count():
     total_members = 0
     for guild in bot.guilds:
@@ -9753,6 +9688,21 @@ register_member_events(
         "get_log_channel": get_log_channel,
         "add_mention_delay_user": add_mention_delay_user,
         "format_duration": format_duration,
+    },
+)
+register_ready_events(
+    bot,
+    {
+        "schedule_chat_analyze": lambda func: aiocron.crontab('* * * * *', func=func),
+        "chat_analyze_save_to_db": chat_analyze_save_to_db,
+        "status_loop": status_loop,
+        "exp_event": exp_event,
+        "legacy_disable": legacy_disable,
+        "ticket_view_factory": TicketView,
+        "ticket_channel_id": ticket_channel_id,
+        "ticket_message_file": TICKET_MESSAGE_FILE,
+        "invite_cache": invite_cache,
+        "using_server": using_server,
     },
 )
 register_known_commands(bot)
