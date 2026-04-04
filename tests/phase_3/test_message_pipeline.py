@@ -300,6 +300,43 @@ async def test_run_message_preprocessing_stops_when_delete_command_is_handled():
     assert message.replies[0]["content"] == "처리되었습니다."
 
 
+@pytest.mark.asyncio
+async def test_run_message_preprocessing_returns_early_for_dm_before_chat_analyze():
+    calls = []
+    author = FakePipelineAuthor(50)
+    message = FakePipelineMessage(
+        content="DM 테스트",
+        author=author,
+        guild=None,
+        channel=FakePipelineChannel(channel_id=20),
+    )
+
+    async def fake_get_chat_analyze_onoff(guild_id):
+        calls.append(guild_id)
+        return True
+
+    should_stop = await run_message_preprocessing(
+        message,
+        get_chat_analyze_onoff=fake_get_chat_analyze_onoff,
+        chat_analyze_count={},
+        chat_analyze_count_channel={},
+        developer=99,
+        add_account_relation=lambda *args: None,
+        remove_account_relation=lambda *args: None,
+        get_related_accounts=lambda user_id: [],
+        add_blacklist=lambda *args: None,
+        check_blacklist=lambda user_id: (False,),
+        delete_blacklist=lambda *args: None,
+        update_premium=lambda *args: None,
+        bot=FakeBot(),
+        using_server=1,
+        message_log=100,
+    )
+
+    assert should_stop is True
+    assert calls == []
+
+
 def test_should_ignore_direct_message_checks_guild_presence():
     dm_message = type("Message", (), {"guild": None})()
     guild_message = type("Message", (), {"guild": object()})()

@@ -217,6 +217,9 @@ async def run_message_preprocessing(
     using_server: int,
     message_log: int,
 ) -> bool:
+    if should_ignore_direct_message(message):
+        return True
+
     await record_chat_analyze_message(
         message,
         get_chat_analyze_onoff=get_chat_analyze_onoff,
@@ -235,9 +238,6 @@ async def run_message_preprocessing(
         delete_blacklist=delete_blacklist,
         update_premium=update_premium,
     )
-
-    if should_ignore_direct_message(message):
-        return True
 
     return await handle_message_delete_command(
         message,
