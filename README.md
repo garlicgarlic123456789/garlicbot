@@ -46,5 +46,14 @@ Submitted PRs will be reviewed for potential integration into the main codebase.
 
 자세한 사항은 [여기](https://asdfasdfqwer.notion.site/1aa4a653ce018010ba92e5741e6ac72a?source=copy_link)를 참고해 주세요.
 
-# 중요!
-google-genai 라이브러리로 개발한 코드와 google-generativeai 라이브러리로 개발한 코드가 혼용되어 있습니다. 두 라이브러리를 requirements.txt를 통해 한번에 설치하였는데 `GenerativeModel.__init__() got an unexpected keyword argument 'system_instruction'`와 같은 오류가 발생한다면, 두 라이브러리 모두 pip uninstall 후, google-generativeai 라이브러리 설치 -> google-genai 라이브러리 설치 순서로 다시 설치해주세요.
+# 실행 환경
+
+Python 3.11 버전 사용을 권장합니다.
+
+# 실행 방법
+
+[Releases](https://github.com/garlicfood1234/garlicbot/releases) 페이지에서 최신 버전의 Source Code를 다운로드 받습니다.
+
+requirements.txt의 모든 라이브러리를 pip를 통해 설치하고 main.py를 실행합니다.
+
+라이브러리 설치 시 주의사항: google-genai 라이브러리로 개발한 코드와 google-generativeai 라이브러리로 개발한 코드가 혼용되어 있습니다. 두 라이브러리를 requirements.txt를 통해 한번에 설치하였는데 `GenerativeModel.__init__() got an unexpected keyword argument 'system_instruction'`와 같은 오류가 발생한다면, 두 라이브러리 모두 pip uninstall (설치 제거) 후, google-generativeai 라이브러리 설치 -> google-genai 라이브러리 설치 순서로 다시 설치해주세요.
