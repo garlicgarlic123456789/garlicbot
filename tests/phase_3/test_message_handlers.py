@@ -276,6 +276,52 @@ async def test_handle_automod_message_handles_invite_link():
     assert spamming_calls
 
 
+@pytest.mark.asyncio
+async def test_handle_automod_message_stops_for_allowed_role_mention_exception():
+    message = FakeMessage(
+        content="<@&12345> 허용 멘션",
+        author=FakeAuthor(1),
+        guild=FakeGuild(1),
+        channel=FakeChannel(channel_id=20),
+    )
+
+    handled = await handle_automod_message(
+        message,
+        context={
+            "get_automod_exception_channel": lambda guild_id, channel_id: False,
+            "get_automod": lambda guild_id: {"invite_link": [False, 0], "political": [False, 0], "sexual": [False, 0], "mention": [True, 60]},
+            "handle_spamming": lambda *args, **kwargs: None,
+            "using_server": 1,
+            "automod_keyword": [],
+            "automod_keyword2": [],
+            "automod_keyword3": [],
+            "automod_keyword4": [],
+            "automod_keyword5": [],
+            "automod_keyword6": [],
+            "automod_keyword7": [],
+            "automod_keyword8": [],
+            "automod_keyword9": [],
+            "automod_keyword10": [],
+            "automod_keyword11": [],
+            "automod_reason": "",
+            "automod_reason2": "",
+            "automod_reason3": "",
+            "automod_reason4": "",
+            "automod_reason5": "",
+            "automod_reason6": "",
+            "automod_reason7": "",
+            "automod_reason8": "",
+            "automod_reason9": "",
+            "automod_reason10": "",
+            "automod_reason11": "",
+            "raid_keyword1": [],
+            "do_mention_role2": ["<@&12345>"],
+        },
+    )
+
+    assert handled is True
+
+
 def test_main_keeps_message_handler_boundary():
     source = Path("main.py").read_text(encoding="utf-8")
 

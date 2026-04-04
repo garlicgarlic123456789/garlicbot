@@ -467,7 +467,7 @@ async def handle_automod_message(message, *, context: Mapping[str, Any]) -> bool
             if message.guild.id == context["using_server"]:
                 for role_mention in context["do_mention_role2"]:
                     if role_mention in message.content:
-                        return False
+                        return True
             for keyword in context["automod_keyword6"]:
                 if keyword in message.content:
                     await context["handle_spamming"](message, context["automod_reason6"], automod_setting["mention"][1], True, keyword)
