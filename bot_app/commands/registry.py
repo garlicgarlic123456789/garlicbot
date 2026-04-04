@@ -87,6 +87,11 @@ def register_group_commands(bot: commands.Bot) -> None:
     bot._phase2_group_commands_registered = True
 
 
+def register_known_commands(bot: commands.Bot) -> None:
+    register_setup_commands(bot)
+    register_group_commands(bot)
+
+
 def get_registration_summary() -> dict[str, tuple[str, ...]]:
     return {
         "setup_modules": tuple(module.__name__ for module in SETUP_COMMAND_MODULES),

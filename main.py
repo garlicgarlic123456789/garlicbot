@@ -96,7 +96,7 @@ from commands.chat_analyze import *
 from commands import anti_raid_command
 from commands import compatibility
 
-from bot_app.commands.registry import register_group_commands, register_setup_commands
+from bot_app.commands.registry import register_known_commands
 
 from zoneinfo import ZoneInfo
 
@@ -10462,8 +10462,7 @@ async def info(interaction: discord.Interaction, 사용자: discord.Member):
     except Exception as e:
         await interaction.response.send_message(f"**[오류!]** 알 수 없는 오류가 발생했습니다.")
 '''
-register_setup_commands(bot)
-register_group_commands(bot)
+register_known_commands(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
