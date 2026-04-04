@@ -1,3 +1,4 @@
+import argparse
 import discord
 import subprocess
 import statistics
@@ -66,6 +67,7 @@ from commands import encode
 from commands import manage_timeout
 from commands import bulk_cancel
 from commands.define import *
+from commands import define
 from commands.fuction_collect_message import *
 from commands.return_level import *
 from commands import turn_off
@@ -95,6 +97,21 @@ from commands import anti_raid_command
 from commands import compatibility
 
 from zoneinfo import ZoneInfo
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--railblue", 
+    choices=["enable", "disable"], 
+    default="disable",
+    help="railblue 기능 활성화 여부 (활성화 전에 리드미 파일을 확인하십시오)"
+)
+args = parser.parse_args()
+
+if args.railblue == "enable" : 
+    define.railblue_onoff = True
+else : 
+    define.railblue_onoff = False
 
 ticket_channel_id = 1483037563991232548
 
