@@ -159,8 +159,9 @@ def register_log_events(bot, context: Mapping[str, Any]) -> None:
 
         cached_message = payload.cached_message
         channel = bot.get_channel(payload.channel_id)
-        if should_skip_log_channel(channel.id, no_log_channel):
+        if should_skip_log_channel(payload.channel_id, no_log_channel):
             return
+        channel_mention = channel.mention if channel else f"<#{payload.channel_id}>"
 
         log_id = get_log_channel(payload.guild_id)["editdelete"]
         if log_id is None:
@@ -184,7 +185,7 @@ def register_log_events(bot, context: Mapping[str, Any]) -> None:
 
         embed = discord.Embed(
             title="메시지 삭제 로그",
-            description=f"{channel.mention}에서 {author}님의 메시지가 삭제되었습니다.",
+            description=f"{channel_mention}에서 {author}님의 메시지가 삭제되었습니다.",
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
         )
@@ -233,8 +234,9 @@ def register_log_events(bot, context: Mapping[str, Any]) -> None:
 
         cached_message = payload.cached_message
         channel = bot.get_channel(payload.channel_id)
-        if should_skip_log_channel(channel.id, no_log_channel):
+        if should_skip_log_channel(payload.channel_id, no_log_channel):
             return
+        channel_mention = channel.mention if channel else f"<#{payload.channel_id}>"
 
         log_id = get_log_channel(payload.guild_id)["editdelete"]
         if log_id is None:
@@ -250,13 +252,11 @@ def register_log_events(bot, context: Mapping[str, Any]) -> None:
         if cached_message is None:
             before_content = "*(알 수 없음)*"
             after_content = truncate_log_content(payload.message.content, fallback="*(수정 후 메시지 내용 없음)*")
-            channel_mention = channel.mention
         else:
             before_content = truncate_log_content(cached_message.content, fallback="*(수정 전 메시지 내용 없음)*")
             after_content = truncate_log_content(payload.message.content, fallback="*(수정 후 메시지 내용 없음)*")
             if before_content == after_content:
                 return
-            channel_mention = f"<#{payload.channel_id}>"
 
         message_link = f"https://discord.com/channels/{payload.guild_id}/{payload.channel_id}/{payload.message_id}"
         embed = discord.Embed(
