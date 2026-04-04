@@ -18,6 +18,11 @@ TRANSFER_WARN = (
     "계단이 많은 등 환승이 불편한 역입니다.\n\n"
 )
 
+BOT_COMMAND_PREFIX = "마늘아마늘아마늘아 "
+BOT_MAX_MESSAGES = 10000
+BOT_HEARTBEAT_TIMEOUT = 180
+BOT_SHARD_COUNT = 5
+
 
 def build_allowed_mentions() -> discord.AllowedMentions:
     return discord.AllowedMentions(

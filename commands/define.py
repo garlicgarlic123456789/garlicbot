@@ -95,26 +95,21 @@ from bot_app.ai.gemini_runtime import (
     two_model,
     types,
 )
+from bot_app.core.bot_factory import build_bot, build_intents
 anti_raid_settings_cache = {}
 
 last_auto_respond_time = {}
 
 developer = DEVELOPER_USER_ID
 
-intents = discord.Intents.all()
-intents.presences = False  # Presence Intent 비활성화
+intents = build_intents()
 
 mention_setting = build_allowed_mentions()
 
-bot = commands.Bot(
-    command_prefix="마늘아마늘아마늘아 ",
-    max_messages=10000,
+bot = build_bot(
     intents=intents,
-    heartbeat_timeout=180,
-    shard_count=5,
-    allowed_mentions=mention_setting
+    allowed_mentions=mention_setting,
 )
-bot.cooldowns = {}
 
 import pytz
 
