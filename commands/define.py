@@ -20,7 +20,6 @@ from discord import Colour
 import pytz
 
 import google.generativeai as genai
-from dotenv import load_dotenv
 
 import asyncio
 
@@ -31,6 +30,12 @@ from bot_app.config.constants import (
     WARN_SECRET,
     build_allowed_mentions,
 )
+from bot_app.config.env import (
+    get_gemini_api_key,
+    get_train_arrivals_api_key,
+    get_train_timetable_api_key,
+    load_environment,
+)
 from bot_app.config.ids import (
     DEVELOPER_USER_ID,
     MESSAGE_LOG_CHANNEL_ID,
@@ -39,7 +44,7 @@ from bot_app.config.ids import (
 )
 
 # API KEY 정보로드
-load_dotenv()
+load_environment()
 
 class ObsoleteFunctionError(Exception): # 오래되었고, 더 이상 현재 버전에서 사용되지 않는 기능
     pass
@@ -67,13 +72,13 @@ railblue_accept_ready = []
 
 ticket_last_time = {}
 
-train_timetable_api_key = os.getenv("train_timetable_api")
-train_arrivals_api_key = os.getenv("train_arrivals_api")
+train_timetable_api_key = get_train_timetable_api_key()
+train_arrivals_api_key = get_train_arrivals_api_key()
 
 from google.genai import Client
 from google.genai import types
 
-gemini_api_key = os.getenv("GEMENI_API_KEY")
+gemini_api_key = get_gemini_api_key()
 # from IPython.display import display
 # from IPython.display import Markdown
 # from transformers import AutoTokenizer, AutoModelForCausalLM
