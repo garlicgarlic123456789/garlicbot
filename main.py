@@ -97,7 +97,7 @@ from commands import anti_raid_command
 from commands import compatibility
 
 from bot_app.commands.registry import register_known_commands
-from bot_app.events import register_log_events
+from bot_app.events import register_log_events, register_member_events
 
 from zoneinfo import ZoneInfo
 
@@ -307,6 +307,11 @@ type_mapping = {
 }
 
 recent_joins = {}  # 최근 가입한 계정들을 저장하는 리스트
+member_event_state = {
+    "recent_joins": recent_joins,
+    "invite_cache": invite_cache,
+    "last_member_join_mention": None,
+}
 
 friendly_list = []
 friendly_list2 = [] # 마늘아 사귀자에서 확률 좀 더 높음
@@ -2662,112 +2667,6 @@ def format_duration(duration):
         
     return " ".join(duration_parts) if duration_parts else "0초"
 
-@bot.event
-async def on_member_remove(member):
-    guild = member.guild
-    if guild.id == using_server :
-        # 로그 채널 가져오기
-        channel = member.guild.get_channel(byebye_channel)
-        if channel:
-            embed = discord.Embed(
-                title="회원 탈퇴 알림",
-                description=f"{member.mention}님이 철도역에서 떠나셨습니다.",
-                color=discord.Color.red()
-            )
-            await channel.send(embed=embed)
-    async for entry in member.guild.audit_logs(limit=1, action=discord.AuditLogAction.kick):
-        if entry.target.id == member.id:
-            사용자 = member
-            관리자 = entry.user
-            사유 = entry.reason
-            if 관리자.id == 1316579106749681664 :
-                return
-            if 사유 == None or 사유 == "None" :
-                사유= "*(사유 입력되지 않음)*"
-            # Send embed to record channel
-            embed = discord.Embed(
-                title="추방",
-                color=discord.Color.red(),
-                timestamp=discord.utils.utcnow()
-            )
-            embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-            embed.add_field(name="관리자", value=f"{관리자.mention}", inline=False)
-            embed.add_field(name="사유", value=사유, inline=False)
-
-            channel = bot.get_channel(get_block_log_channel(guild.id))
-            if channel:
-                await channel.send(embed=embed)
-            
-            if guild.id == using_server :
-                log_channel = bot.get_channel(message_log)
-                await log_channel.send(embed=embed)
-
-            add_blockhistory(사용자.id, 관리자.id, 사유, "kick", 0, guild.id)
-            
-            await process_anti_nuke_ban(guild.id, 관리자.id, guild)
-
-@bot.event
-async def on_member_ban(guild, user):
-    async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
-        사용자 = user
-        관리자 = entry.user
-        사유 = entry.reason
-        if 관리자.id ==1316579106749681664 :
-            return
-        if 사유 is None :
-            사유= "*(사유 입력되지 않음)*"
-        add_blockhistory(사용자.id, 관리자.id, 사유, "ban", 0, guild.id)
-        # Send embed to record channel
-        embed = discord.Embed(
-            title="차단",
-            color=discord.Color.red(),
-            timestamp=discord.utils.utcnow()
-        )
-        embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-        embed.add_field(name="관리자", value=f"{관리자.mention}", inline=False)
-        embed.add_field(name="사유", value=사유, inline=False)
-
-        channel = bot.get_channel(get_block_log_channel(guild.id))
-        if channel:
-            await channel.send(embed=embed)
-        
-        if guild.id == using_server :
-            log_channel = bot.get_channel(message_log)
-            await log_channel.send(embed=embed)
-
-        await process_anti_nuke_ban(guild.id, 관리자.id, guild)
-
-        
-# 멤버가 차단 해제되었을 때 (Unban)
-@bot.event
-async def on_member_unban(guild, user):
-    async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.unban):
-        if True : 
-            사용자 = user
-            관리자 = entry.user
-            사유 = entry.reason
-            if 관리자.id ==1316579106749681664 :
-                return
-            if 사유 is None :
-                사유== "*(사유 입력되지 않음)*"
-            add_blockhistory(사용자.id, 관리자.id, 사유, "unban", 0, guild.id)
-            # Send embed to record channel
-            embed = discord.Embed(
-                title="차단 해제",
-                color = int("a5f0ff", 16),
-                timestamp=discord.utils.utcnow()
-            )
-            embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-            embed.add_field(name="관리자", value=f"{관리자.mention}", inline=False)
-            embed.add_field(name="사유", value=사유, inline=False)
-
-            channel = bot.get_channel(get_block_log_channel(guild.id))
-            if channel:
-                await channel.send(embed=embed)
-            if guild.id == using_server :
-                log_channel = bot.get_channel(message_log)
-                await log_channel.send(embed=embed)
-
 @tasks.loop(minutes=50)
 async def refresh_invite_cache():
     guild = bot.get_guild(using_server)
@@ -2847,361 +2746,6 @@ async def check_account(user_id):
         await channel.send(embed=embed)
         return
         
-
-@bot.event
-async def on_member_join(member):
-    guild = member.guild
-    guild_id = guild.id
-
-    servers_anti_raid_settings = await get_anti_raid_settings(guild.id)
-
-    if servers_anti_raid_settings["on_off"] : 
-        JOIN_CHECK_INTERVAL = servers_anti_raid_settings["duration"]
-        join_count = servers_anti_raid_settings["join_time"]
-
-        global recent_joins
-        now = datetime.now(timezone.utc)
-
-        if guild_id not in recent_joins : 
-            recent_joins[guild_id] = []
-        
-        recent_joins[guild_id].append(member)
-
-        recent_joins[guild.id] = [m for m in recent_joins[guild.id] if (now - m.joined_at).total_seconds() <= JOIN_CHECK_INTERVAL]
-        
-        if len(recent_joins[guild.id]) > join_count:
-            raid_detect_time = int(time.time())
-            action = servers_anti_raid_settings["action"]
-            if action == "pause_invite" or action == "timeout" or action == "ban" or action == "isolate" : 
-                try : 
-                    await guild.edit(invites_disabled_until = discord.utils.utcnow() + timedelta(seconds = 86397), reason = "레이드 감지")
-                    pause_invite_success = True
-                except Exception as e : 
-                    pause_invite_success = False
-            
-            punished_user = []
-            
-            if action == "ban" : 
-                punish_failed = 0
-                for m in recent_joins[guild.id]:
-                    try : 
-                        await guild.ban(m, reason = "레이드 감지", delete_message_seconds = 0)
-                        punished_user.append(m)
-                    except : 
-                        punish_failed += 1
-            elif action == "timeout" : 
-                punish_failed = 0
-                for m in recent_joins[guild.id]:
-                    try : 
-                        await m.edit(timed_out_until = discord.utils.utcnow() + timedelta(seconds=2419197), reason = "레이드 감지")
-                        punished_user.append(m)
-                    except : 
-                        punish_failed += 1
-            elif action == "isolate" : 
-                punish_failed = 0
-                try : 
-                    isolate_role = guild.get_role(get_quarantine_role(guild.id))
-                except Exception as e : 
-                    isolate_role = None
-                for m in recent_joins[guild.id]:
-                    roles_to_remove = [role for role in m.roles if role != guild.default_role]
-                    try:
-                        await m.remove_roles(*roles_to_remove)
-                        if isolate_role is None : 
-                            raise ValueError("isolate_role이 None입니다.")
-                        await m.add_roles(isolate_role)
-                    except : 
-                        punish_failed += 1
-            
-            if action == "ban" : 
-                for i in punished_user : 
-                    add_blockhistory(i.id, 1316579106749681664, "레이드 감지", "ban", 0, guild_id)
-            elif action == "timeout" : 
-                for i in punished_user : 
-                    add_blockhistory(i.id, 1316579106749681664, "레이드 감지", "timeout", 2419200, guild_id)
-
-            alert_channel_id = servers_anti_raid_settings["alert_channel_id"]
-
-            raid_action_done_time = int(time.time())
-            
-            raid_account_text = ", ".join([f"<@{member.id}>" for member in recent_joins[guild_id]])
-
-            recent_joins[guild_id].clear()
-            
-            if True : 
-                if action == "ban" : 
-                    embed = discord.Embed(
-                        title = "레이드 감지",
-                        description = f"레이드가 감지되어 조치했습니다.\n\n- 레이드 관련 계정: {raid_account_text}\n- 레이드 감지 시각: <t:{raid_detect_time}> (<t:{raid_detect_time}:R>)\n- 레이드 조치 완료 시각: <t:{raid_action_done_time}> (<t:{raid_action_done_time}:R>)",
-                        color = discord.Color.red()
-                    )
-                    if punish_failed > 0 :
-                        embed.description += f"\n- 레이드 조치 결과: 계정 {punish_failed}개에 대해 차단 실패"
-                    else : 
-                        embed.description += f"\n- 레이드 조치 결과: 모든 계정 차단 성공"
-                    
-                    if pause_invite_success : 
-                        embed.description += " 및 초대 일시정지 성공"
-                    else : 
-                        embed.description += " 및 초대 일시정지 실패"
-                elif action == "timeout" : 
-                    embed = discord.Embed(
-                        title = "레이드 감지",
-                        description = f"레이드가 감지되어 조치했습니다.\n\n- 레이드 관련 계정: {raid_account_text}\n- 레이드 감지 시각: <t:{raid_detect_time}> (<t:{raid_detect_time}:R>)\n- 레이드 조치 완료 시각: <t:{raid_action_done_time}> (<t:{raid_action_done_time}:R>)",
-                        color = discord.Color.red()
-                    )
-                    if punish_failed > 0 :
-                        embed.description += f"\n- 레이드 조치 결과: 계정 {punish_failed}개에 대해 타임아웃 실패"
-                    else : 
-                        embed.description += f"\n- 레이드 조치 결과: 모든 계정 타임아웃 성공"
-                    
-                    if pause_invite_success : 
-                        embed.description += " 및 초대 일시정지 성공"
-                    else : 
-                        embed.description += " 및 초대 일시정지 실패"
-                elif action == "isolate" : 
-                    embed = discord.Embed(
-                        title = "레이드 감지",
-                        description = f"레이드가 감지되어 조치했습니다.\n\n- 레이드 관련 계정: {raid_account_text}\n- 레이드 감지 시각: <t:{raid_detect_time}> (<t:{raid_detect_time}:R>)\n- 레이드 조치 완료 시각: <t:{raid_action_done_time}> (<t:{raid_action_done_time}:R>)",
-                        color = discord.Color.red()
-                    )
-                    if punish_failed > 0 :
-                        embed.description += f"\n- 레이드 조치 결과: 계정 {punish_failed}개에 대해 격리 실패"
-                    else : 
-                        embed.description += f"\n- 레이드 조치 결과: 모든 계정 격리 성공"
-                    
-                    if pause_invite_success : 
-                        embed.description += " 및 초대 일시정지 성공"
-                    else : 
-                        embed.description += " 및 초대 일시정지 실패"
-                elif action == "pause_invite" : 
-                    embed = discord.Embed(
-                        title = "레이드 감지",
-                        description = f"레이드가 감지되어 조치했습니다.\n\n- 레이드 관련 계정: {raid_account_text}\n- 레이드 감지 시각: <t:{raid_detect_time}> (<t:{raid_detect_time}:R>)\n- 레이드 조치 완료 시각: <t:{raid_action_done_time}> (<t:{raid_action_done_time}:R>)",
-                        color = discord.Color.red()
-                    )
-                    if pause_invite_success :
-                        embed.description += f"\n- 레이드 조치 결과: 초대 일시정지 성공"
-                    else : 
-                        embed.description += f"\n- 레이드 조치 결과: 초대 일시정지 실패"
-                elif action == "alert" : 
-                    embed = discord.Embed(
-                        title = "레이드 감지",
-                        description = f"레이드가 감지되었습니다.\n\n- 레이드 관련 계정: {raid_account_text}\n- 레이드 감지 시각: <t:{raid_detect_time}> (<t:{raid_detect_time}:R>)",
-                        color = discord.Color.red()
-                    )
-            
-            try : 
-                alert_channel = guild.get_channel(alert_channel_id)
-            except Exception as e : 
-                alert_channel = None
-            
-            if alert_channel is not None : 
-                try : 
-                    await alert_channel.send(f"<@{guild.owner.id}>", embed = embed)
-                except : 
-                    try : 
-                        await guild.owner.send(embed = embed)
-                    except : 
-                        add_mention_delay_user(user.id, 1316579106749681664, embed.description, 0, guild_id, "reply")
-            else : 
-                try : 
-                    await guild.owner.send(embed = embed)
-                except : 
-                    add_mention_delay_user(user.id, 1316579106749681664, embed.description, 0, guild_id, "reply")
-
-    try:
-        # 새로운 초대 리스트 받아오기
-        new_invites = await member.guild.invites()
-        old_invites = invite_cache.get(member.guild.id, [])
-
-        # 가장 사용 횟수가 증가한 초대코드 찾기
-        used_invite = None
-        for invite in new_invites:
-            for old in old_invites:
-                if invite.code == old.code and invite.uses > old.uses:
-                    used_invite = invite
-                    break
-            if used_invite:
-                break
-
-        # 캐시 업데이트
-        invite_cache[member.guild.id] = new_invites
-
-        # DB에 저장
-        if used_invite:
-            save_invite_log(member.id, used_invite.code, member.guild.id)
-        else:
-            save_invite_log(member.id, None, member.guild.id)  # 초대코드 알 수 없음
-
-    except Exception as e:
-        print(f"Error on member join: {e}")
-        save_invite_log(member.id, None, member.guild.id)  # 에러 발생 시에도 NULL로 저장
-    '''
-    if member.guild.id == using_server : 
-        await check_account(member.id)
-    '''
-
-    autoroles = await get_autorole(member.guild.id)
-    for autorole in autoroles:
-        if autorole["bot_user"] == "all":
-            await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
-        elif autorole["bot_user"] == "user" :
-            if not member.bot :
-                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
-        elif autorole["bot_user"] == "bot":
-            if member.bot :
-                await member.add_roles(member.guild.get_role(autorole["role_id"]), reason = "자동 역할 설정에 의한 역할 부여")
-
-last_member_join_mention = None
-
-@bot.event
-async def on_member_update(before, after):
-    if before.guild.id == using_server :
-        # 역할이 변경된 경우 확인
-        added_roles = [role for role in after.roles if role not in before.roles]
-        for role in added_roles:
-            if role.id == verify_role:  # verify_role에 해당되는 역할인지 확인
-                time = datetime.now().strftime("%H시 %M분")
-                number = random.randint(1, 9999)
-                number2 = random.randint(1, 14)
-                channel = after.guild.get_channel(greeting_channel)
-                if channel:
-                    embed = discord.Embed(
-                        title=f"환영합니다!", # name
-                        description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다.",
-                        color=int("a5f0ff", 16)
-                    )
-                    await channel.send(embed=embed)
-                global last_member_join_mention
-                channel = after.guild.get_channel(1483037564159131762)
-                if channel:
-                    if last_member_join_mention is None : 
-                        embed = discord.Embed(
-                            title=f"환영합니다!", # name
-                            description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다. \n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1483037563383185461>을 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1483037563991232548>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1483037563991232548>을 이용해 주시기 바랍니다.",
-                            color=int("a5f0ff", 16)
-                        )
-                        last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}>", embed=embed)
-                    elif datetime.now() - last_member_join_mention > timedelta(minutes=5) : 
-                        embed = discord.Embed(
-                            title=f"환영합니다!", # name
-                            description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다. \n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1483037563383185461>을 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1483037563991232548>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1483037563991232548>을 이용해 주시기 바랍니다.",
-                            color=int("a5f0ff", 16)
-                        )
-                        last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}>", embed=embed)
-                    else : 
-                        embed = discord.Embed(
-                            title=f"환영합니다!", # name
-                            description=f"{after.mention}님이 철도역에 도착하셨습니다.\n\n{time}에 철도역으로 가는 {after.display_name} #{number} 열차를 이용할 고객께서는 타는 곳 {number2}번으로 가시기 바랍니다. \n\n- 저희 서버는 채팅률이 쩌는 친목 서버입니다!\n- 활동 전 <#1483037563383185461>을 확인해 주세요.\n- <id:customize>에서 원하시는 역할을 받으실 수 있습니다. (저희 서버는 `@everyone`이나 `@here` 멘션을 거의 하지 않습니다.)\n- 서버에 대하여 문의하거나 제안하고 싶으신 사항이 있으신 경우 <#1483037563991232548>을 이용해 주시기 바라며, 규정을 위반하는 사용자를 신고하고 싶으신 경우에도 <#1483037563991232548>을 이용해 주시기 바랍니다.",
-                            color=int("a5f0ff", 16)
-                        )
-                        last_member_join_mention = datetime.now()
-                        message = await channel.send(f"<@{after.id}>", embed=embed)
-    
-    if before.timed_out_until != after.timed_out_until:
-        channel = bot.get_channel(get_block_log_channel(after.guild.id))
-        
-        # 타임아웃 해제된 경우
-        if before.timed_out_until and not after.timed_out_until:
-            async for entry in after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update):
-                moderator = entry.user
-                if entry.user.id == 1316579106749681664 :
-                    return
-                reason = entry.reason or "*(사유 입력되지 않음)*"
-                
-                embed = discord.Embed(
-                    title="타임아웃 해제",
-                    color=int("a5f0ff", 16),
-                    timestamp=discord.utils.utcnow()
-                )
-                embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
-                embed.add_field(name="관리자", value=f"{moderator.mention}", inline=False)
-                embed.add_field(name="사유", value=reason, inline=False)
-                
-                await channel.send(embed=embed)
-                add_blockhistory(after.id, moderator.id, reason, "untimeout", 0, after.guild.id)
-                if after.guild.id == using_server :
-                    log_channel = bot.get_channel(message_log)
-                    await log_channel.send(embed=embed)
-        
-        # 타임아웃된 경우
-        elif not before.timed_out_until and after.timed_out_until:
-            async for entry in after.guild.audit_logs(limit=1, action=discord.AuditLogAction.member_update):
-                if entry.target.id == after.id : 
-                    moderator = entry.user
-                    if entry.user.id == 1316579106749681664 :
-                        return
-                    reason = entry.reason or "*(사유 입력되지 않음)*"
-                    if after.guild.id == using_server and entry.user.id == 218010938807287808 and reason == "by Russian" : 
-                        await after.edit(timed_out_until = None, reason = "러시안 룰렛에 의한 타임아웃 무효화")
-                        return
-                    timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
-                    
-                    embed = discord.Embed(
-                        title="타임아웃",
-                        color=discord.Color.red(),
-                        timestamp=discord.utils.utcnow()
-                    )
-                    embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
-                    embed.add_field(name="관리자", value=f"{moderator.mention}", inline=False)
-                    embed.add_field(name="기간", value=format_duration(timeout_duration), inline=False)
-                    embed.add_field(name="사유", value=reason, inline=False)
-
-                    add_blockhistory(after.id, moderator.id, reason, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
-                    
-                    await channel.send(embed=embed)
-                    if after.guild.id == using_server :
-                        log_channel = bot.get_channel(message_log)
-                        await log_channel.send(embed=embed)
-                else : 
-                    if entry.user.id == 1316579106749681664 :
-                        return
-                    reason = "*(알 수 없음)*"
-                    timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
-                    
-                    embed = discord.Embed(
-                        title="타임아웃",
-                        color=discord.Color.red(),
-                        timestamp=discord.utils.utcnow()
-                    )
-                    embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
-                    embed.add_field(name="관리자", value=f"*(알 수 없음)*", inline=False)
-                    embed.add_field(name="기간", value=format_duration(timeout_duration), inline=False)
-                    embed.add_field(name="사유", value=reason, inline=False)
-
-                    add_blockhistory(after.id, None, reason, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
-                    
-                    await channel.send(embed=embed)
-                    if after.guild.id == using_server :
-                        log_channel = bot.get_channel(message_log)
-                        await log_channel.send(embed=embed)
-    
-    if before.roles != after.roles:
-        channel = get_log_channel(after.guild.id)['role']
-        if channel is not None : 
-            channel = bot.get_channel(channel)
-            if channel : 
-                added_roles = [role for role in after.roles if role not in before.roles]
-                removed_roles = [role for role in before.roles if role not in after.roles]
-                for role in added_roles:
-                    embed = discord.Embed(
-                        title="역할 부여",
-                        color=int("a5f0ff", 16),
-                        timestamp=discord.utils.utcnow())
-                    embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
-                    embed.add_field(name="역할", value=f"{role.mention}", inline=False)
-                    await channel.send(embed=embed)
-                for role in removed_roles:
-                    embed = discord.Embed(
-                        title="역할 회수",
-                        color=discord.Color.red(),
-                        timestamp=discord.utils.utcnow())
-                    embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
-                    embed.add_field(name="역할", value=f"{role.mention}", inline=False)
-                    await channel.send(embed=embed)
 
 @bot.tree.command(name = "대화초기화", description = "마늘아 <할 말> 및 /생성형인공지능으로 대화한 이력을 초기화합니다.")
 async def reset_chat(interaction: discord.Interaction):
@@ -10188,6 +9732,27 @@ register_log_events(
         "automod_reason9": automod_reason9,
         "automod_reason10": automod_reason10,
         "automod_reason11": automod_reason11,
+    },
+)
+register_member_events(
+    bot,
+    {
+        "state": member_event_state,
+        "using_server": using_server,
+        "byebye_channel": byebye_channel,
+        "message_log": message_log,
+        "get_block_log_channel": get_block_log_channel,
+        "add_blockhistory": add_blockhistory,
+        "process_anti_nuke_ban": process_anti_nuke_ban,
+        "get_anti_raid_settings": get_anti_raid_settings,
+        "get_quarantine_role": get_quarantine_role,
+        "save_invite_log": save_invite_log,
+        "get_autorole": get_autorole,
+        "verify_role": verify_role,
+        "greeting_channel": greeting_channel,
+        "get_log_channel": get_log_channel,
+        "add_mention_delay_user": add_mention_delay_user,
+        "format_duration": format_duration,
     },
 )
 register_known_commands(bot)
