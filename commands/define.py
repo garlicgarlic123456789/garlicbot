@@ -24,6 +24,20 @@ from dotenv import load_dotenv
 
 import asyncio
 
+from bot_app.config.constants import (
+    BLOCKED_USERS_FILE,
+    TRANSFER_WARN,
+    WARN_LAW,
+    WARN_SECRET,
+    build_allowed_mentions,
+)
+from bot_app.config.ids import (
+    DEVELOPER_USER_ID,
+    MESSAGE_LOG_CHANNEL_ID,
+    RECORD_CHANNEL_ID,
+    USING_SERVER_ID,
+)
+
 # API KEY 정보로드
 load_dotenv()
 
@@ -32,8 +46,8 @@ class ObsoleteFunctionError(Exception): # 오래되었고, 더 이상 현재 버
 
 KST = pytz.timezone('Asia/Seoul')
 
-warn_law = "**[경고!]** 본 자료는 법적 조언이 아닌 일반적인 정보 제공 목적만을 가지고 있습니다. 특정 상황에 대해 결정하시기 전, 반드시 법률 전문가와 상의하시기 바랍니다. 본 자료를 신뢰하여 생기는 손해나 피해에 대한 책임은 사용자의 판단에 따라 전적으로 사용자에게 있습니다."
-warn_secret = "**[경고!]** 이 문서에는 기밀 정보가 포함되어 있습니다. 다른 사람(사용자)에게 유출되지 않도록 주의가 필요합니다."
+warn_law = WARN_LAW
+warn_secret = WARN_SECRET
 
 railblue_onoff = False
 
@@ -572,12 +586,12 @@ anti_raid_settings_cache = {}
 
 last_auto_respond_time = {}
 
-developer = 1305492487137267722 # 개발자
+developer = DEVELOPER_USER_ID
 
 intents = discord.Intents.all()
 intents.presences = False  # Presence Intent 비활성화
 
-mention_setting = discord.AllowedMentions(everyone=False, users=True, roles=True, replied_user=True)
+mention_setting = build_allowed_mentions()
 
 bot = commands.Bot(
     command_prefix="마늘아마늘아마늘아 ",
@@ -595,14 +609,11 @@ status_id = 0
 
 kst = pytz.timezone('Asia/Seoul')
 
-using_server = 1483037561625772150
-record_channel = 1483037563789770897 # 제재 내역 채널 ID
-message_log = 1483037567526899890  # 여기에 기록할 채널의 ID를 입력하세요
+using_server = USING_SERVER_ID
+record_channel = RECORD_CHANNEL_ID  # 제재 내역 채널 ID
+message_log = MESSAGE_LOG_CHANNEL_ID  # 여기에 기록할 채널의 ID를 입력하세요
 
-# 차단 정보를 저장할 JSON 파일 경로
-BLOCKED_USERS_FILE = "command_blocked_user.json"
-
-transfer_warn = "**[경고!]** 일부 또는 모든 노선 간 환승 시 환승 통로가 길거나, 계단이 많은 등 환승이 불편한 역입니다.\n\n"
+transfer_warn = TRANSFER_WARN
 
 fast_transfer = {
     "1호선": {
