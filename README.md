@@ -57,3 +57,10 @@ Python 3.11 버전 사용을 권장합니다.
 requirements.txt의 모든 라이브러리를 pip를 통해 설치하고 main.py를 실행합니다.
 
 라이브러리 설치 시 주의사항: google-genai 라이브러리로 개발한 코드와 google-generativeai 라이브러리로 개발한 코드가 혼용되어 있습니다. 두 라이브러리를 requirements.txt를 통해 한번에 설치하였는데 `GenerativeModel.__init__() got an unexpected keyword argument 'system_instruction'`와 같은 오류가 발생한다면, 두 라이브러리 모두 pip uninstall (설치 제거) 후, google-generativeai 라이브러리 설치 -> google-genai 라이브러리 설치 순서로 다시 설치해주세요.
+
+# 실행 시 주의 사항
+`/철도 열차정보`, `/철도 도착정보` 기능은 [레일블루](https://rail.blue/) 사이트에서 정보를 가져와서 사용합니다.
+
+개발자가 구동 중인 마늘봇의 경우, 해당 사이트 측의 허가를 별도로 받고 나서 정보를 가져오고 있습니다.
+
+별도로 해당 사이트 측의 허가를 받지 않은 분들께서는 함부로 사용하지 마시기 바랍니다. 해당 기능은 기본적으로 비활성화되어 있으며, `--railblue enable` 인자로 활성화 가능합니다. (기본값은 `disable`입니다.)
