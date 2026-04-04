@@ -6,11 +6,35 @@ from google.genai import Client
 from google.genai import types
 
 gemini_api_key = get_gemini_api_key()
+
+
+class LazyGeminiClient:
+    def __init__(self, api_key: str | None):
+        self._api_key = api_key
+        self._client: Client | None = None
+
+    def _get_client(self) -> Client:
+        if self._client is not None:
+            return self._client
+
+        if not self._api_key:
+            raise ValueError(
+                "No API key was provided. Please pass a valid API key. "
+                "Learn how to create an API key at https://ai.google.dev/gemini-api/docs/api-key."
+            )
+
+        self._client = Client(api_key=self._api_key)
+        return self._client
+
+    def __getattr__(self, name: str):
+        return getattr(self._get_client(), name)
+
+
 # from IPython.display import display
 # from IPython.display import Markdown
 # from transformers import AutoTokenizer, AutoModelForCausalLM
 genai.configure(api_key=gemini_api_key)
-gemini_client = Client(api_key=gemini_api_key)
+gemini_client = LazyGeminiClient(api_key=gemini_api_key)
 model = genai.GenerativeModel('gemini-1.5-flash')
 two_model = genai.GenerativeModel('gemini-2.0-flash')
 two_lite_model = genai.GenerativeModel('gemini-2.0-flash-lite')
@@ -513,4 +537,3 @@ cute_model9 = genai.GenerativeModel('gemini-2.5-flash-lite',
                                         },
                                     ]
 )
-
