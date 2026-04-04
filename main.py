@@ -98,6 +98,11 @@ from commands import compatibility
 
 from bot_app.commands.registry import register_known_commands
 from bot_app.events import register_log_events, register_member_events, register_ready_events
+from bot_app.events.message_handlers import (
+    handle_automod_message,
+    handle_moderation_text_commands,
+    handle_using_server_role_watchers,
+)
 from bot_app.events.message_pipeline import (
     run_message_preprocessing,
 )
@@ -1134,568 +1139,72 @@ async def on_message(message):
         message_log=message_log,
     ):
         return
-    if not message.author.bot : 
-        timeout_pattern = re.match(r"마늘아 타임아웃 <@!?(\d+)> (-?\d+)(초|분|시간|일|주)(?: (.+))?", message.content)
-        remove_timeout_pattern = re.match(r"마늘아 타임아웃해제 <@!?(\d+)>(?: (.+))?", message.content)
-        경고_pattern = re.match(r"마늘아 경고 <@!?(\d+)> (\d+) (.+)", message.content)
-        경고차감_pattern = re.match(r"마늘아 경고차감 <@!?(\d+)> (\d+) (.+)", message.content)
-        
-        if 경고_pattern:
-            user_id, 개수, 사유 = 경고_pattern.groups()
-            개수 = int(개수)
-            guild = message.guild
-            사용자 = guild.get_member(int(user_id))
-            
-            if not message.author.guild_permissions.ban_members:
-                embed = discord.Embed(title="오류", description="권한이 부족합니다. 다음 권한이 필요합니다: `멤버 차단하기`", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-            
-            if 사용자.id == message.guild.owner_id :
-                embed = discord.Embed(title="오류", description="서버 주인을 제재할 수 없습니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
+    handled, error = await handle_moderation_text_commands(
+        message,
+        context={
+            "friendly_list": friendly_list,
+            "get_warn_max": get_warn_max,
+            "add_warning": add_warning,
+            "add_blockhistory": add_blockhistory,
+            "bot": bot,
+            "get_block_log_channel": get_block_log_channel,
+            "using_server": using_server,
+            "message_log": message_log,
+            "set_warning": set_warning,
+            "remove_warning": remove_warning,
+            "print_time": print_time,
+            "process_commands": bot.process_commands,
+            "add_timeout": manage_timeout.add_timeout,
+        },
+        error_count=error,
+    )
+    if handled:
+        return
 
-            if 사용자.id == 1316579106749681664 :
-                if message.author.id in friendly_list :
-                    embed = discord.Embed(
-                        title="오류",
-                        description="잘못했어요.. 한 번만..",
-                        color=discord.Color.red()
-                    )
-                    await message.reply(embed=embed, mention_author=False)
-                    return
-                else :
-                    embed = discord.Embed(
-                        title="오류",
-                        description="마늘이에게 경고를 부여할 수 없습니다.",
-                        color=discord.Color.red()
-                    )
-                    await message.reply(embed=embed, mention_author=False)
-                    return
-            
-            warn_max = get_warn_max(message.guild.id)
+    await handle_using_server_role_watchers(
+        message,
+        context={
+            "using_server": using_server,
+            "do_mention_role": do_mention_role,
+            "mention_timestamps": mention_timestamps,
+            "handle_spamming": handle_spamming,
+        },
+    )
 
-            if 개수 <= 0 :
-                embed = discord.Embed(title="오류", description="개수의 값은 1 이상이여야 합니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-
-            if 개수 > 1000 :
-                embed = discord.Embed(title="오류", description="개수의 값은 1000 이하여야 합니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-
-            if not 사용자:
-                embed = discord.Embed(
-                    title="오류",
-                    description="사용자의 값이 올바르지 않습니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed=embed, mention_author=False)
-                return
-            
-            if message.author.top_role <= 사용자.top_role:
-                embed = discord.Embed(title="오류", description="경고 적용 대상의 최상위 역할이 사용자의 최상위 역할보다 높거나 같습니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-            
-            result = await add_warning(message.guild.id, user_id, 개수)
-
-            if not 사유 :
-                사유 = "*(사유 입력되지 않음)*"
-            
-            add_blockhistory(사용자.id, message.author.id, 사유, "warn", 개수, message.guild.id)
-            
-            embed = discord.Embed(title="경고", color=discord.Color.red(), timestamp=discord.utils.utcnow())
-            embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-            embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            if warn_max is not None : 
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]}) / {warn_max}개", inline=False)
-            else : 
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]})", inline=False)
-            embed.add_field(name="사유", value=사유, inline=False)
-            
-            channel = bot.get_channel(get_block_log_channel(message.guild.id))
-            if channel:
-                await channel.send(embed=embed)
-            
-            if message.guild.id == using_server :
-                log_channel = bot.get_channel(message_log)
-                if log_channel:
-                    await log_channel.send(embed=embed)
-            
-            await message.reply(embed=embed, mention_author=False)
-        
-            if warn_max is not None : 
-                if result[2] >= warn_max : 
-                    try : 
-                        await message.guild.ban(사용자, reason=f"경고 한도 도달", delete_message_days=0)
-                    except discord.Forbidden:
-                        embed = discord.Embed(
-                            title="오류",
-                            description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `멤버 차단하기` 권한이 있는지 확인해 주세요.\n- 차단 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같은지 확인해 주세요.",
-                            color=discord.Color.red()
-                        )
-                        await message.reply(embed=embed, mention_author=False)
-                        return
-                    except Exception as e : 
-                        print(f"오류 #{error}: {e}")
-                        embed = discord.Embed(
-                            title="오류",
-                            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
-                            color=discord.Color.red()
-                        )
-                        error += 1
-                        await message.reply(embed=embed, mention_author=False)
-                        return
-                    add_blockhistory(사용자.id, 1316579106749681664, "경고 한도 도달", "ban", 0, message.guild.id)
-                    embed = discord.Embed(
-                        title="차단",
-                        color=discord.Color.red(),
-                        timestamp=discord.utils.utcnow()
-                    )
-                    embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-                    embed.add_field(name="관리자", value=f"<@1316579106749681664>", inline=False)
-                    embed.add_field(name="사유", value="경고 한도 도달", inline=False)
-
-                    await message.reply(embed=embed, mention_author=False)
-                    channel = bot.get_channel(get_block_log_channel(message.guild.id))
-                    if channel:
-                        await channel.send(embed=embed)
-                    
-                    if message.guild.id == using_server : 
-                        log_channel = bot.get_channel(message_log)
-                        await log_channel.send(embed=embed)
-                    
-                    temp = await set_warning(message.guild.id, user_id, 0)
-            return
-        
-        elif 경고차감_pattern:
-            user_id, 개수, 사유 = 경고차감_pattern.groups()
-            개수 = int(개수)
-            guild = message.guild
-            사용자 = guild.get_member(int(user_id))
-            
-            if not message.author.guild_permissions.ban_members:
-                embed = discord.Embed(title="오류", description="권한이 부족합니다. 다음 권한이 필요합니다: `멤버 차단하기`", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-
-            if 개수 <= 0 :
-                embed = discord.Embed(title="오류", description="개수의 값은 1 이상이여야 합니니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-
-            if 개수 > 1000 :
-                embed = discord.Embed(title="오류", description="개수의 값은 1000 이하여야 합니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-
-            if not 사용자:
-                embed = discord.Embed(
-                    title="오류",
-                    description="사용자의 값이 올바르지 않습니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed=embed, mention_author=False)
-                return
-            
-            if message.author.top_role <= 사용자.top_role:
-                embed = discord.Embed(title="오류", description="경고 차감 대상의 최상위 역할이 사용자의 최상위 역할보다 높거나 같습니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-            
-            result = await remove_warning(message.guild.id, user_id, 개수)
-
-            warn_max = get_warn_max(message.guild.id)
-
-            if not 사유 :
-                사유 = "*(사유 입력되지 않음)*"
-            
-            embed = discord.Embed(title="경고 차감", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
-            embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-            embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            if warn_max is not None :
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]}) / {warn_max}개", inline=False)
-            else : 
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]})", inline=False)
-            embed.add_field(name="사유", value=사유, inline=False)
-            
-            channel = bot.get_channel(get_block_log_channel(message.guild.id))
-            if channel:
-                await channel.send(embed=embed)
-            
-            if message.guild.id == using_server :
-                log_channel = bot.get_channel(message_log)
-                if log_channel:
-                    await log_channel.send(embed=embed)
-
-            add_blockhistory(사용자.id, message.author.id, 사유, "unwarn", 개수, message.guild.id)
-            
-            await message.reply(embed=embed, mention_author=False)
-            return
-        
-        if timeout_pattern:
-            if message.author.bot:
-                return
-            user_id, duration, unit, reason = timeout_pattern.groups()
-            member = message.guild.get_member(int(user_id))
-            if not member:
-                embed = discord.Embed(
-                    title="오류",
-                    description="해당 사용자를 찾을 수 없습니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            
-            if member.id == message.guild.owner_id :
-                embed = discord.Embed(title="오류", description="서버 주인을 제재할 수 없습니다.", color=discord.Color.red())
-                await message.reply(embed=embed, mention_author=False)
-                return
-            
-            if not message.author.guild_permissions.moderate_members:
-                embed = discord.Embed(
-                    title="오류",
-                    description="권한이 부족합니다. 다음 권한이 필요합니다: `타임아웃 멤버`",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            
-            if member.id == 1316579106749681664:
-                if message.author.id in friendly_list:
-                    embed = discord.Embed(
-                        title="오류",
-                        description="잘못했어요.. 한 번만..",
-                        color=discord.Color.red()
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                else:
-                    embed = discord.Embed(
-                        title="오류",
-                        description="마늘이를 타임아웃할 수 없습니다.",
-                        color=discord.Color.red()
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                return
-            
-            if member.top_role >= message.author.top_role:
-                embed = discord.Embed(
-                    title="오류",
-                    description="타임아웃 적용 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            
-            duration = int(duration)
-            if unit == "분":
-                duration *= 60
-            elif unit == "시간":
-                duration *= 3600
-            elif unit == "일":
-                duration *= 86400
-            elif unit == "주" :
-                duration *= 604800
-
-            if duration > 2419200 :
-                embed = discord.Embed(
-                    title="오류",
-                    description="duration의 값은 2419200 이하여야 합니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            
-            reason = reason if reason else None
-
-            try : 
-                await manage_timeout.add_timeout(member, duration, reason = reason)
-            except discord.Forbidden:
-                embed = discord.Embed(
-                    title="오류",
-                    description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `타임아웃 멤버` 권한이 있는지 확인해 주세요.\n- 타임아웃 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같지는 않은지 확인해 주세요.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed=embed, mention_author=False)
-                return
-            except Exception as e : 
-                print(f"오류 #{error}: {e}")
-                embed = discord.Embed(
-                    title="오류",
-                    description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed=embed, mention_author=False)
-                error += 1
-                return
-            
-            if reason == None :
-                reason = "*(사유 입력되지 않음)*"
-            
-            add_blockhistory(member.id, message.author.id, reason, "timeout", duration, message.guild.id)
-
-            if duration > 0 :
-                time = print_time(duration)
-            else :
-                time = str(duration) + "초"
-            
-            embed = discord.Embed(title="타임아웃", color=discord.Color.red(), timestamp=discord.utils.utcnow())
-            embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
-            embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            embed.add_field(name="기간", value=f"{time}", inline=False)
-            embed.add_field(name="사유", value=reason, inline=False)
-
-            channel = bot.get_channel(get_block_log_channel(message.guild.id))
-            if channel:
-                await channel.send(embed=embed)
-            
-            if message.guild.id == using_server :
-                log_channel = bot.get_channel(message_log)
-                if log_channel:
-                    await log_channel.send(embed=embed)
-            
-            await message.reply(embed=embed, mention_author=False)
-            return
-        
-        
-        elif remove_timeout_pattern:
-            if message.author.bot:
-                return
-            user_id, reason = remove_timeout_pattern.groups()
-            member = message.guild.get_member(int(user_id))
-            if not member:
-                embed = discord.Embed(
-                    title="오류",
-                    description="해당 사용자를 찾을 수 없습니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            
-            if not message.author.guild_permissions.moderate_members:
-                embed = discord.Embed(
-                    title="오류",
-                    description="권한이 부족합니다. 다음 권한이 필요합니다: `타임아웃 멤버`",
-                    color=discord.Color.red()
-                )
-                await message.channel.send(embed = embed)
-                return
-            
-            if member.top_role >= message.author.top_role:
-                embed = discord.Embed(
-                    title="오류",
-                    description="타임아웃 해제 대상의 역할이 명령어 사용자의 역할보다 높거나 같습니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            
-            reason = reason if reason else None
-            try : 
-                await member.edit(timed_out_until=None, reason=reason)
-            except discord.Forbidden:
-                embed = discord.Embed(
-                    title="오류",
-                    description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `타임아웃 멤버` 권한이 있는지 확인해 주세요.\n- 타임아웃 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같지는 않은지 확인해 주세요.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed=embed, mention_author=False)
-                return
-            except Exception as e : 
-                print(f"오류 #{error}: {e}")
-                embed = discord.Embed(
-                    title="오류",
-                    description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
-                    color=discord.Color.red()
-                )
-                await message.reply(embed=embed, mention_author=False)
-                error += 1
-                return
-
-            if reason == None :
-                reason = "*(사유 입력되지 않음)*"
-            
-            embed = discord.Embed(title="타임아웃 해제", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
-            embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
-            embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            embed.add_field(name="사유", value=reason, inline=False)
-
-            channel = bot.get_channel(get_block_log_channel(message.guild.id))
-            if channel:
-                await channel.send(embed=embed)
-            
-            if message.guild.id == using_server :
-                log_channel = bot.get_channel(message_log)
-                if log_channel:
-                    await log_channel.send(embed=embed)
-
-            add_blockhistory(member.id, message.author.id, reason, "untimeout", 0, message.guild.id)
-            
-            await message.reply(embed=embed, mention_author=False)
-            return
-        
-        await bot.process_commands(message)
-
-    if message.guild.id == using_server : 
-        mentioned_role_ids = [role.id for role in message.role_mentions]
-
-        if any(role_id in do_mention_role for role_id in mentioned_role_ids):
-            user_id = message.author.id
-            now = datetime.utcnow()
-
-            # 시각 저장
-            mention_timestamps[user_id].append(now)
-
-            # 5분 내의 시각만 필터링
-            five_minutes_ago = now - timedelta(minutes=5)
-            mention_timestamps[user_id] = [
-                t for t in mention_timestamps[user_id] if t > five_minutes_ago
-            ]
-
-            if len(mention_timestamps[user_id]) >= 4:
-                await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 15 * 60 * 60, False, None, False)
-
-        if "<@&1375687128708677682>" in message.content or "<@&1400872501378158764>" in message.content : 
-            embed = discord.Embed(
-                title = "안내", 
-                description = "해당 대화하자! 역할은 더 이상 사용되지 않습니다. 관련 공지사항을 https://discord.com/channels/1320303102703702037/1320304882393153586/1418484921432932402에서 확인하세요.",
-                color = discord.Color.orange()
-            )
-            await message.channel.send(embed = embed)
-    
-    if True : 
-        temp = get_automod_exception_channel(message.guild.id, message.channel.id)
-        if temp == True : 
-            return
-        
-        if isinstance(message.channel, discord.Thread) : 
-            temp = get_automod_exception_channel(message.guild.id, message.channel.parent.id)
-            if temp == True : 
-                return
-            
-            if message.channel.parent.category is not None : 
-                temp = get_automod_exception_channel(message.guild.id, message.channel.parent.category.id)
-                if temp == True : 
-                    return
-        else : 
-            if message.channel.category is not None : 
-                temp = get_automod_exception_channel(message.guild.id, message.channel.category.id)
-                if temp == True : 
-                    return
-
-        automod_setting = get_automod(message.guild.id)
-        author_id = message.author.id
-        guild = message.guild
-        if automod_setting['invite_link'][0] : 
-            if isinstance(message.channel, discord.Thread) and message.channel.parent.id == 1394966782426484796:
-                return
-            pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-            if re.search(pattern1, message.content) :
-                await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
-                return
-            elif "discord://-/invite/" in message.content : 
-                await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
-                return
-            elif message.message_snapshots : 
-                if re.search(pattern1, message.message_snapshots[0].content) : 
-                    await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
-                    return
-                elif "discord://-/invite/" in message.message_snapshots[0].content : 
-                    await handle_spamming(message, "디스코드 서버 초대 링크", automod_setting['invite_link'][1], True, None)
-                    return
-        
-        message_content = re.sub(r"[^가-힣a-zA-Z]", "", message.content)
-        if message.message_snapshots : 
-            message_content2 = re.sub(r"[^가-힣a-zA-Z]", "", message.message_snapshots[0].content)
-        else : 
-            message_content2 = ""
-        if automod_setting['political'][0] : 
-            for i in automod_keyword :
-                if i in message_content or i in message_content2 :
-                    await handle_spamming(message, automod_reason, automod_setting['political'][1], True, i, True)
-                    return
-        if message.guild.id == using_server : 
-            for i in automod_keyword2 :
-                if i in message_content or i in message_content2 :
-                    await handle_spamming(message, automod_reason2, 5 * 60 * 60, True, i)
-                    return
-        if message.guild.id == using_server :
-            for i in automod_keyword3 :
-                if i in message_content.replace("\\", "") or i in message_content2.replace("\\", "") :
-                    await handle_spamming(message, automod_reason3, 24 * 60 * 60, False, i)
-                    return
-        if message.guild.id == using_server :
-            for i in automod_keyword4 :
-                if i in message.content and message.content.startswith("!번역 ") :
-                    await handle_spamming(message, automod_reason4, 15 * 60 * 60, True, i)
-                    return
-                if message.message_snapshots : 
-                    if i in message.message_snapshots[0].content and message.message_snapshots[0].content.startswith("!번역 ") :
-                        await handle_spamming(message, automod_reason4, 15 * 60 * 60, True, i)
-                        return
-        if automod_setting['sexual'][0] : 
-            if message.channel.id != 1344617642312597585 :
-                for i in automod_keyword5 :
-                    if i in message_content or i in message_content2 :
-                        await handle_spamming(message, automod_reason5, automod_setting['sexual'][1], True, i, True)
-                        return
-        if automod_setting['mention'][0] :
-            if message.channel.id != 1320304882393153586: 
-                if message.guild.id == using_server : 
-                    for i in do_mention_role2 :
-                        if i in message.content :
-                            return
-                for i in automod_keyword6 :
-                    if i in message.content :
-                        await handle_spamming(message, automod_reason6, automod_setting['mention'][1], True, i)
-                        return
-
-        if message.guild.id == using_server :
-            for i in automod_keyword7 :
-                if i in message.content or i in message_content2 :
-                    await handle_spamming(message, automod_reason7, 48 * 60 * 60, True, i)
-                    return
-        if message.guild.id == using_server :
-            if message.channel.id != 1322203223028793396 : 
-                for i in automod_keyword8 :
-                    if i in message_content or i in message_content2 :
-                        await handle_spamming(message, automod_reason8, 10 * 60, True, i)
-                        return
-        
-        if message.guild.id == using_server :
-            for i in automod_keyword9 :
-                if i in message_content or i in message_content2 :
-                    await handle_spamming(message, automod_reason9, 20 * 60, True, i)
-                    return
-
-        if message.guild.id == using_server :
-            for i in automod_keyword10 :
-                if i in message_content or i in message_content2 :
-                    await handle_spamming(message, automod_reason10, 3 * 60 * 60, True, i)
-                    return
-
-        if message.guild.id == using_server :
-            for i in automod_keyword11 :
-                if i in message.content or i in message_content2 :
-                    await handle_spamming(message, automod_reason11, 24 * 60 * 60, True, i)
-                    return
-        
-        if message.guild.id == using_server :
-            for i in raid_keyword1 :
-                if i in message_content or i in message_content2 :
-                    await handle_spamming(message, f"테러로 의심되는 활동", 72 * 60 * 60, True, i)
-                    await message.guild.edit(invites_disabled = True, invites_disabled_until = discord.utils.utcnow() + timedelta(days=1), reason = "레이드 감지")
-                    await message.guild.edit(dms_disabled_until = discord.utils.utcnow() + timedelta(days=1), reason = "레이드 감지")
-                    return
-
-        if message.guild.id == using_server  :
-            mention_cnt = message.content.count("<@")
-            if mention_cnt > 7: 
-                await handle_spamming(message, "멘션 스팸으로 의심되는 활동", 7 * 60 * 60, True, None)
-                return
+    if await handle_automod_message(
+        message,
+        context={
+            "get_automod_exception_channel": get_automod_exception_channel,
+            "get_automod": get_automod,
+            "handle_spamming": handle_spamming,
+            "using_server": using_server,
+            "automod_keyword": automod_keyword,
+            "automod_keyword2": automod_keyword2,
+            "automod_keyword3": automod_keyword3,
+            "automod_keyword4": automod_keyword4,
+            "automod_keyword5": automod_keyword5,
+            "automod_keyword6": automod_keyword6,
+            "automod_keyword7": automod_keyword7,
+            "automod_keyword8": automod_keyword8,
+            "automod_keyword9": automod_keyword9,
+            "automod_keyword10": automod_keyword10,
+            "automod_keyword11": automod_keyword11,
+            "automod_reason": automod_reason,
+            "automod_reason2": automod_reason2,
+            "automod_reason3": automod_reason3,
+            "automod_reason4": automod_reason4,
+            "automod_reason5": automod_reason5,
+            "automod_reason6": automod_reason6,
+            "automod_reason7": automod_reason7,
+            "automod_reason8": automod_reason8,
+            "automod_reason9": automod_reason9,
+            "automod_reason10": automod_reason10,
+            "automod_reason11": automod_reason11,
+            "raid_keyword1": raid_keyword1,
+            "do_mention_role2": do_mention_role2,
+        },
+    ):
+        return
     
     if message.guild.id == using_server :
         if message.channel.id == 1320303102703702042 or message.channel.id == 1417447633949163530 : 
