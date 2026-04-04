@@ -35,13 +35,16 @@ class FakeBot:
 
 
 class FakeTextChannel:
-    def __init__(self, *, channel_id: int, mention: str | None = None):
+    def __init__(self, *, channel_id: int, mention: str | None = None, fail_on_send: bool = False):
         self.id = channel_id
         self.mention = mention or f"<#{channel_id}>"
+        self.fail_on_send = fail_on_send
         self.sent_embeds = []
         self.sent_messages = []
 
     async def send(self, content=None, *, embed=None):
+        if self.fail_on_send:
+            raise RuntimeError("send failed")
         if embed is not None:
             self.sent_embeds.append(embed)
         self.sent_messages.append(
@@ -59,22 +62,26 @@ class FakeRole:
 
 
 class FakeOwner:
-    def __init__(self, owner_id: int):
+    def __init__(self, owner_id: int, *, fail_on_send: bool = False):
         self.id = owner_id
+        self.fail_on_send = fail_on_send
         self.sent_embeds = []
 
     async def send(self, content=None, *, embed=None):
+        if self.fail_on_send:
+            raise RuntimeError("owner send failed")
         self.sent_embeds.append(embed)
 
 
 class FakeGuild:
-    def __init__(self, guild_id: int, *, owner_id: int = 1):
+    def __init__(self, guild_id: int, *, owner_id: int = 1, owner_fail_on_send: bool = False):
         self.id = guild_id
         self.channels = {}
         self.roles = {}
         self.default_role = FakeRole(0, mention="@everyone")
-        self.owner = FakeOwner(owner_id)
+        self.owner = FakeOwner(owner_id, fail_on_send=owner_fail_on_send)
         self._invites = []
+        self._audit_logs = {}
 
     def get_channel(self, channel_id):
         return self.channels.get(channel_id)
@@ -84,6 +91,18 @@ class FakeGuild:
 
     async def invites(self):
         return list(self._invites)
+
+    async def audit_logs(self, *, limit=1, action=None):
+        entries = list(self._audit_logs.get(action, []))
+        for entry in entries[:limit]:
+            yield entry
+
+    async def edit(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    async def ban(self, member, *, reason=None, delete_message_seconds=0):
+        return None
 
 
 class FakeMember:

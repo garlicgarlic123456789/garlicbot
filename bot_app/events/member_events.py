@@ -381,14 +381,14 @@ def register_member_events(bot, context: Mapping[str, Any]) -> None:
                             await guild.owner.send(embed=embed)
                         except Exception:
                             context["add_mention_delay_user"](
-                                user.id, 1316579106749681664, embed.description, 0, guild_id, "reply"
+                                member.id, 1316579106749681664, embed.description, 0, guild_id, "reply"
                             )
                 else:
                     try:
                         await guild.owner.send(embed=embed)
                     except Exception:
                         context["add_mention_delay_user"](
-                            user.id, 1316579106749681664, embed.description, 0, guild_id, "reply"
+                            member.id, 1316579106749681664, embed.description, 0, guild_id, "reply"
                         )
 
         try:

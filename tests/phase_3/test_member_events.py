@@ -135,6 +135,11 @@ def test_main_keeps_member_event_registration_boundary():
     assert '"state": member_event_state' in source
     assert '"get_anti_raid_settings": get_anti_raid_settings' in source
     assert '"format_duration": format_duration' in source
+    assert "async def on_member_remove" not in source
+    assert "async def on_member_ban" not in source
+    assert "async def on_member_unban" not in source
+    assert "async def on_member_join" not in source
+    assert "async def on_member_update" not in source
 
 
 @pytest.mark.asyncio
@@ -191,6 +196,62 @@ async def test_on_member_join_updates_invite_cache_and_assigns_matching_autorole
 
     assert saved_logs == [(10, "abc", 100)]
     assert member.added_roles[0]["role"] is role
+
+
+@pytest.mark.asyncio
+async def test_on_member_join_alert_fallback_queues_mention_delay():
+    bot = FakeBot()
+    guild = FakeGuild(101, owner_fail_on_send=True)
+    guild.channels[555] = FakeTextChannel(channel_id=555, fail_on_send=True)
+    mention_delay_calls = []
+    member = FakeMember(
+        33,
+        guild=guild,
+        joined_at=datetime.now(timezone.utc),
+    )
+
+    async def fake_get_anti_raid_settings(guild_id):
+        return {
+            "on_off": True,
+            "duration": 60,
+            "join_time": 0,
+            "action": "alert",
+            "alert_channel_id": 555,
+        }
+
+    async def fake_get_autorole(guild_id):
+        return []
+
+    register_member_events(
+        bot,
+        {
+            "state": {
+                "recent_joins": {},
+                "invite_cache": {},
+                "last_member_join_mention": None,
+            },
+            "using_server": 0,
+            "byebye_channel": 0,
+            "message_log": 0,
+            "get_block_log_channel": lambda guild_id: 0,
+            "add_blockhistory": lambda *args, **kwargs: None,
+            "process_anti_nuke_ban": lambda *args, **kwargs: None,
+            "get_anti_raid_settings": fake_get_anti_raid_settings,
+            "get_quarantine_role": lambda guild_id: 0,
+            "save_invite_log": lambda *args, **kwargs: None,
+            "get_autorole": fake_get_autorole,
+            "verify_role": 0,
+            "greeting_channel": 0,
+            "get_log_channel": lambda guild_id: {"role": None},
+            "add_mention_delay_user": lambda *args: mention_delay_calls.append(args),
+            "format_duration": lambda duration: "0초",
+        },
+    )
+
+    await bot.registered_events["on_member_join"](member)
+
+    assert mention_delay_calls
+    assert mention_delay_calls[0][0] == 33
 
 
 @pytest.mark.asyncio
@@ -281,3 +342,120 @@ async def test_on_member_update_logs_role_changes():
 
     assert len(role_log_channel.sent_embeds) == 1
     assert role_log_channel.sent_embeds[0].title == "역할 부여"
+
+
+@pytest.mark.asyncio
+async def test_on_member_update_logs_timeout_action():
+    bot = FakeBot()
+    guild = FakeGuild(302)
+    block_log_channel = FakeTextChannel(channel_id=888)
+    bot.channels[888] = block_log_channel
+    moderator = type("Moderator", (), {"id": 777, "mention": "<@777>"})()
+    after = FakeMember(
+        13,
+        guild=guild,
+        timed_out_until=datetime.now(timezone.utc) + timedelta(minutes=5),
+    )
+    before = FakeMember(13, guild=guild, timed_out_until=None)
+    guild._audit_logs[discord.AuditLogAction.member_update] = [
+        type(
+            "Entry",
+            (),
+            {
+                "target": type("Target", (), {"id": 13})(),
+                "user": moderator,
+                "reason": "테스트",
+            },
+        )()
+    ]
+    blockhistory_calls = []
+
+    register_member_events(
+        bot,
+        {
+            "state": {
+                "recent_joins": {},
+                "invite_cache": {},
+                "last_member_join_mention": None,
+            },
+            "using_server": 0,
+            "byebye_channel": 0,
+            "message_log": 0,
+            "get_block_log_channel": lambda guild_id: 888,
+            "add_blockhistory": lambda *args: blockhistory_calls.append(args),
+            "process_anti_nuke_ban": lambda *args, **kwargs: None,
+            "get_anti_raid_settings": lambda guild_id: {"on_off": False},
+            "get_quarantine_role": lambda guild_id: 0,
+            "save_invite_log": lambda *args, **kwargs: None,
+            "get_autorole": lambda guild_id: [],
+            "verify_role": 0,
+            "greeting_channel": 0,
+            "get_log_channel": lambda guild_id: {"role": None},
+            "add_mention_delay_user": lambda *args, **kwargs: None,
+            "format_duration": lambda duration: "5분",
+        },
+    )
+
+    await bot.registered_events["on_member_update"](before, after)
+
+    assert len(block_log_channel.sent_embeds) == 1
+    assert block_log_channel.sent_embeds[0].title == "타임아웃"
+    assert blockhistory_calls
+
+
+@pytest.mark.asyncio
+async def test_on_member_update_logs_untimeout_action():
+    bot = FakeBot()
+    guild = FakeGuild(303)
+    block_log_channel = FakeTextChannel(channel_id=889)
+    bot.channels[889] = block_log_channel
+    moderator = type("Moderator", (), {"id": 778, "mention": "<@778>"})()
+    before = FakeMember(
+        14,
+        guild=guild,
+        timed_out_until=datetime.now(timezone.utc) + timedelta(minutes=5),
+    )
+    after = FakeMember(14, guild=guild, timed_out_until=None)
+    guild._audit_logs[discord.AuditLogAction.member_update] = [
+        type(
+            "Entry",
+            (),
+            {
+                "user": moderator,
+                "reason": "해제",
+            },
+        )()
+    ]
+    blockhistory_calls = []
+
+    register_member_events(
+        bot,
+        {
+            "state": {
+                "recent_joins": {},
+                "invite_cache": {},
+                "last_member_join_mention": None,
+            },
+            "using_server": 0,
+            "byebye_channel": 0,
+            "message_log": 0,
+            "get_block_log_channel": lambda guild_id: 889,
+            "add_blockhistory": lambda *args: blockhistory_calls.append(args),
+            "process_anti_nuke_ban": lambda *args, **kwargs: None,
+            "get_anti_raid_settings": lambda guild_id: {"on_off": False},
+            "get_quarantine_role": lambda guild_id: 0,
+            "save_invite_log": lambda *args, **kwargs: None,
+            "get_autorole": lambda guild_id: [],
+            "verify_role": 0,
+            "greeting_channel": 0,
+            "get_log_channel": lambda guild_id: {"role": None},
+            "add_mention_delay_user": lambda *args, **kwargs: None,
+            "format_duration": lambda duration: "0초",
+        },
+    )
+
+    await bot.registered_events["on_member_update"](before, after)
+
+    assert len(block_log_channel.sent_embeds) == 1
+    assert block_log_channel.sent_embeds[0].title == "타임아웃 해제"
+    assert blockhistory_calls
