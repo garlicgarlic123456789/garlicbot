@@ -96,7 +96,7 @@ from commands.chat_analyze import *
 from commands import anti_raid_command
 from commands import compatibility
 
-from bot_app.commands.registry import register_setup_commands
+from bot_app.commands.registry import register_group_commands, register_setup_commands
 
 from zoneinfo import ZoneInfo
 
@@ -8359,12 +8359,6 @@ TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 @bot.event
 async def on_ready():
     aiocron.crontab('* * * * *', func=chat_analyze_save_to_db)
-    bot.tree.add_command(train_command())
-    bot.tree.add_command(summarize_command())
-    bot.tree.add_command(mention_delay())
-    bot.tree.add_command(autorole())
-    bot.tree.add_command(phrase())
-    bot.tree.add_command(chat_analyze())
     await bot.tree.sync()
     print(f"Logged in as {bot.user}")
     status_loop.start()
@@ -10499,6 +10493,7 @@ async def info(interaction: discord.Interaction, 사용자: discord.Member):
         await interaction.response.send_message(f"**[오류!]** 알 수 없는 오류가 발생했습니다.")
 '''
 register_setup_commands(bot)
+register_group_commands(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
