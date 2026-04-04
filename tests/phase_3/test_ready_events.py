@@ -8,6 +8,7 @@ from bot_app.events.ready_events import (
     initialize_invite_cache,
     register_ready_events,
     restore_ticket_message_view,
+    run_ready_initialization,
     start_loop_if_needed,
 )
 from tests.helpers.fakes import FakeBot
@@ -56,8 +57,10 @@ class FakeReadyGuild:
         self.id = guild_id
         self.name = name
         self._invites_result = invites_result
+        self.invite_calls = 0
 
     async def invites(self):
+        self.invite_calls += 1
         if isinstance(self._invites_result, Exception):
             raise self._invites_result
         return self._invites_result
@@ -167,6 +170,71 @@ def test_register_ready_events_registers_on_ready():
     )
 
     assert "on_ready" in bot.registered_events
+
+
+@pytest.mark.asyncio
+async def test_run_ready_initialization_executes_full_orchestration(tmp_path):
+    events = []
+    ticket_file = tmp_path / "ticket_message_id.txt"
+    ticket_file.write_text("123", encoding="utf-8")
+    existing_message = FakeMessage(123)
+    channel = FakeReadyChannel(existing_message=existing_message)
+    main_guild = FakeReadyGuild(1, name="메인", invites_result=["invite"])
+    extra_guild = FakeReadyGuild(2, name="추가", invites_result=["other"])
+
+    class RecordingLoop(FakeLoop):
+        def __init__(self, name: str):
+            super().__init__(running=False)
+            self.name = name
+
+        def start(self):
+            events.append(f"loop:{self.name}")
+            super().start()
+
+    class RecordingTree:
+        async def sync(self):
+            events.append("sync")
+
+    class ReadyBot:
+        def __init__(self):
+            self.tree = RecordingTree()
+            self.user = "garlicbot"
+            self.guilds = [main_guild, extra_guild]
+            self.views = []
+
+        def add_view(self, view):
+            self.views.append(view)
+            events.append("add_view")
+
+        def get_channel(self, channel_id):
+            return channel
+
+        def get_guild(self, guild_id):
+            return main_guild if guild_id == 1 else None
+
+    bot = ReadyBot()
+
+    await run_ready_initialization(
+        bot,
+        {
+            "schedule_chat_analyze": lambda func: events.append("schedule"),
+            "chat_analyze_save_to_db": object(),
+            "status_loop": RecordingLoop("status"),
+            "exp_event": RecordingLoop("exp"),
+            "legacy_disable": RecordingLoop("legacy"),
+            "ticket_view_factory": _ticket_view_factory,
+            "ticket_channel_id": 777,
+            "ticket_message_file": str(ticket_file),
+            "invite_cache": {},
+            "using_server": 1,
+        },
+    )
+
+    assert events[:5] == ["schedule", "sync", "loop:status", "loop:exp", "loop:legacy"]
+    assert "add_view" in events
+    assert existing_message.edited_view == {"view": "ticket"}
+    assert main_guild.invite_calls >= 1
+    assert extra_guild.invite_calls == 1
 
 
 def test_main_keeps_ready_event_registration_boundary():
