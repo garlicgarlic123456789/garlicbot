@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
+from pathlib import Path
+
 import discord
+import pytest
 
 from bot_app.events.member_events import (
     build_block_action_embed,
@@ -12,7 +15,7 @@ from bot_app.events.member_events import (
     resolve_used_invite,
     should_assign_autorole,
 )
-from tests.helpers.fakes import FakeBot
+from tests.helpers.fakes import FakeBot, FakeGuild, FakeMember, FakeRole, FakeTextChannel
 
 
 def test_should_assign_autorole_respects_target_type():
@@ -123,3 +126,158 @@ def test_register_member_events_registers_all_member_handlers():
         "on_member_join",
         "on_member_update",
     }
+
+
+def test_main_keeps_member_event_registration_boundary():
+    source = Path("main.py").read_text(encoding="utf-8")
+
+    assert "register_member_events(" in source
+    assert '"state": member_event_state' in source
+    assert '"get_anti_raid_settings": get_anti_raid_settings' in source
+    assert '"format_duration": format_duration' in source
+
+
+@pytest.mark.asyncio
+async def test_on_member_join_updates_invite_cache_and_assigns_matching_autorole():
+    bot = FakeBot()
+    guild = FakeGuild(100)
+    role = FakeRole(200)
+    guild.roles[200] = role
+
+    old_invite = type("Invite", (), {"code": "abc", "uses": 1})()
+    new_invite = type("Invite", (), {"code": "abc", "uses": 2})()
+    guild._invites = [new_invite]
+
+    saved_logs = []
+    member = FakeMember(
+        10,
+        guild=guild,
+        joined_at=datetime.now(timezone.utc),
+    )
+
+    async def fake_get_anti_raid_settings(guild_id):
+        return {"on_off": False}
+
+    async def fake_get_autorole(guild_id):
+        return [{"bot_user": "user", "role_id": 200}]
+
+    register_member_events(
+        bot,
+        {
+            "state": {
+                "recent_joins": {},
+                "invite_cache": {100: [old_invite]},
+                "last_member_join_mention": None,
+            },
+            "using_server": 0,
+            "byebye_channel": 0,
+            "message_log": 0,
+            "get_block_log_channel": lambda guild_id: 0,
+            "add_blockhistory": lambda *args, **kwargs: None,
+            "process_anti_nuke_ban": lambda *args, **kwargs: None,
+            "get_anti_raid_settings": fake_get_anti_raid_settings,
+            "get_quarantine_role": lambda guild_id: 0,
+            "save_invite_log": lambda *args: saved_logs.append(args),
+            "get_autorole": fake_get_autorole,
+            "verify_role": 0,
+            "greeting_channel": 0,
+            "get_log_channel": lambda guild_id: {"role": None},
+            "add_mention_delay_user": lambda *args, **kwargs: None,
+            "format_duration": lambda duration: "0초",
+        },
+    )
+
+    await bot.registered_events["on_member_join"](member)
+
+    assert saved_logs == [(10, "abc", 100)]
+    assert member.added_roles[0]["role"] is role
+
+
+@pytest.mark.asyncio
+async def test_on_member_update_sends_welcome_embeds_for_verify_role():
+    bot = FakeBot()
+    guild = FakeGuild(300)
+    greeting_channel = FakeTextChannel(channel_id=400)
+    mention_channel = FakeTextChannel(channel_id=1483037564159131762)
+    verify_role = FakeRole(500)
+    guild.channels[400] = greeting_channel
+    guild.channels[1483037564159131762] = mention_channel
+
+    before = FakeMember(11, guild=guild, roles=[guild.default_role])
+    after = FakeMember(11, guild=guild, roles=[guild.default_role, verify_role])
+
+    register_member_events(
+        bot,
+        {
+            "state": {
+                "recent_joins": {},
+                "invite_cache": {},
+                "last_member_join_mention": None,
+            },
+            "using_server": 300,
+            "byebye_channel": 0,
+            "message_log": 0,
+            "get_block_log_channel": lambda guild_id: 0,
+            "add_blockhistory": lambda *args, **kwargs: None,
+            "process_anti_nuke_ban": lambda *args, **kwargs: None,
+            "get_anti_raid_settings": lambda guild_id: {"on_off": False},
+            "get_quarantine_role": lambda guild_id: 0,
+            "save_invite_log": lambda *args, **kwargs: None,
+            "get_autorole": lambda guild_id: [],
+            "verify_role": 500,
+            "greeting_channel": 400,
+            "get_log_channel": lambda guild_id: {"role": None},
+            "add_mention_delay_user": lambda *args, **kwargs: None,
+            "format_duration": lambda duration: "0초",
+        },
+    )
+
+    await bot.registered_events["on_member_update"](before, after)
+
+    assert len(greeting_channel.sent_embeds) == 1
+    assert greeting_channel.sent_embeds[0].title == "환영합니다!"
+    assert len(mention_channel.sent_embeds) == 1
+    assert mention_channel.sent_messages[0]["content"] == "<@11>"
+
+
+@pytest.mark.asyncio
+async def test_on_member_update_logs_role_changes():
+    bot = FakeBot()
+    guild = FakeGuild(301)
+    role_log_channel = FakeTextChannel(channel_id=777)
+    bot.channels[777] = role_log_channel
+    new_role = FakeRole(900)
+
+    before = FakeMember(12, guild=guild, roles=[guild.default_role])
+    after = FakeMember(12, guild=guild, roles=[guild.default_role, new_role])
+
+    register_member_events(
+        bot,
+        {
+            "state": {
+                "recent_joins": {},
+                "invite_cache": {},
+                "last_member_join_mention": None,
+            },
+            "using_server": 0,
+            "byebye_channel": 0,
+            "message_log": 0,
+            "get_block_log_channel": lambda guild_id: 0,
+            "add_blockhistory": lambda *args, **kwargs: None,
+            "process_anti_nuke_ban": lambda *args, **kwargs: None,
+            "get_anti_raid_settings": lambda guild_id: {"on_off": False},
+            "get_quarantine_role": lambda guild_id: 0,
+            "save_invite_log": lambda *args, **kwargs: None,
+            "get_autorole": lambda guild_id: [],
+            "verify_role": 0,
+            "greeting_channel": 0,
+            "get_log_channel": lambda guild_id: {"role": 777},
+            "add_mention_delay_user": lambda *args, **kwargs: None,
+            "format_duration": lambda duration: "0초",
+        },
+    )
+
+    await bot.registered_events["on_member_update"](before, after)
+
+    assert len(role_log_channel.sent_embeds) == 1
+    assert role_log_channel.sent_embeds[0].title == "역할 부여"

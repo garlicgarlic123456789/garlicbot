@@ -39,6 +39,85 @@ class FakeTextChannel:
         self.id = channel_id
         self.mention = mention or f"<#{channel_id}>"
         self.sent_embeds = []
+        self.sent_messages = []
 
-    async def send(self, *, embed):
+    async def send(self, content=None, *, embed=None):
+        if embed is not None:
+            self.sent_embeds.append(embed)
+        self.sent_messages.append(
+            {
+                "content": content,
+                "embed": embed,
+            }
+        )
+
+
+class FakeRole:
+    def __init__(self, role_id: int, *, mention: str | None = None):
+        self.id = role_id
+        self.mention = mention or f"<@&{role_id}>"
+
+
+class FakeOwner:
+    def __init__(self, owner_id: int):
+        self.id = owner_id
+        self.sent_embeds = []
+
+    async def send(self, content=None, *, embed=None):
         self.sent_embeds.append(embed)
+
+
+class FakeGuild:
+    def __init__(self, guild_id: int, *, owner_id: int = 1):
+        self.id = guild_id
+        self.channels = {}
+        self.roles = {}
+        self.default_role = FakeRole(0, mention="@everyone")
+        self.owner = FakeOwner(owner_id)
+        self._invites = []
+
+    def get_channel(self, channel_id):
+        return self.channels.get(channel_id)
+
+    def get_role(self, role_id):
+        return self.roles.get(role_id)
+
+    async def invites(self):
+        return list(self._invites)
+
+
+class FakeMember:
+    def __init__(
+        self,
+        member_id: int,
+        *,
+        guild,
+        display_name: str = "마늘",
+        bot: bool = False,
+        roles=None,
+        joined_at=None,
+        timed_out_until=None,
+    ):
+        self.id = member_id
+        self.guild = guild
+        self.display_name = display_name
+        self.bot = bot
+        self.roles = list(roles or [guild.default_role])
+        self.joined_at = joined_at
+        self.timed_out_until = timed_out_until
+        self.mention = f"<@{member_id}>"
+        self.added_roles = []
+
+    async def add_roles(self, role, *, reason=None):
+        self.added_roles.append({"role": role, "reason": reason})
+        if role is not None and role not in self.roles:
+            self.roles.append(role)
+
+    async def remove_roles(self, *roles):
+        for role in roles:
+            if role in self.roles:
+                self.roles.remove(role)
+
+    async def edit(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
