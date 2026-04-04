@@ -8020,27 +8020,6 @@ async def mine_help(interaction: discord.Interaction) :
         return
     await interaction.followup.send("광질 확률: 다이아몬드 1%, 에메랄드 2%, 금 47%, 철 49%, 용암 1%\n광질 시 소모 경험치: 일자굴 1블록 당 20 XP\n광질 시 지급 경험치: 다이아몬드 500 XP, 에메랄드 200 XP, 철 10 XP, 금 30 XP. 단, 용암 발견 시 지급하지 아니함.")
 
-@bot.tree.command(name="프로필사진", description="특정 사용자의 프로필 사진을 보여줍니다.")
-@app_commands.describe(사용자="프로필 사진을 확인할 대상 사용자")
-async def 프로필사진(interaction: discord.Interaction, 사용자: discord.User):
-    status, until, reason = is_blocked(interaction.user)
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.response.send_message(msg)
-        return
-    await interaction.response.defer()
-    # 서버 프로필이 있는 경우 우선 사용
-    avatar_url = 사용자.display_avatar.url  # 서버 프로필이 있다면 우선, 없으면 일반 아바타
-
-    embed = discord.Embed(
-        title=f"{사용자.display_name}님의 프로필 사진",
-        color=int("a5f0ff", 16)
-    )
-    embed.set_image(url=avatar_url)
-    embed.set_footer(text=f"요청자: {interaction.user.id}")
-
-    await interaction.followup.send(embed=embed)
-
 @bot.tree.context_menu(name="티켓 생성")
 async def message_info(interaction: discord.Interaction, message: discord.Message):
     await interaction.response.defer(ephemeral=True)
@@ -9704,15 +9683,6 @@ def verify_dkim_signature(msg):
     except Exception as e:
         print(f"DKIM 검증 오류: {e}")
         return False
-
-@bot.tree.command(name = "도움말", description = "도움말을 확인합니다.")
-async def help(interaction: discord.Interaction) :
-    embed = discord.Embed(
-        title = "도움말",
-        description = "[도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce018010ba92e5741e6ac72a?pvs=4)",
-        color = int("a5f0ff", 16)
-    )
-    await interaction.response.send_message(embed = embed)
 
 '''
 # /권한회수 명령어 정의

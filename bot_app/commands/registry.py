@@ -3,6 +3,7 @@ from __future__ import annotations
 from discord.ext import commands
 
 from commands import anti_raid_command
+from commands import basic_info
 from commands import bulk_cancel
 from commands import chat_time
 from commands import close_threads
@@ -35,6 +36,7 @@ SETUP_COMMAND_MODULES = (
     chat_time,
     timestamp,
     ping,
+    basic_info,
     close_threads,
     remove_all_roles,
     security_check,
