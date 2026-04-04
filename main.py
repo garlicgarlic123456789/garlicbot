@@ -99,10 +99,7 @@ from commands import compatibility
 from bot_app.commands.registry import register_known_commands
 from bot_app.events import register_log_events, register_member_events, register_ready_events
 from bot_app.events.message_pipeline import (
-    handle_developer_text_commands,
-    handle_message_delete_command,
-    record_chat_analyze_message,
-    should_ignore_direct_message,
+    run_message_preprocessing,
 )
 
 from zoneinfo import ZoneInfo
@@ -1119,15 +1116,11 @@ def check_call_limit(user_id):
 async def on_message(message):
     global error
 
-    await record_chat_analyze_message(
+    if await run_message_preprocessing(
         message,
         get_chat_analyze_onoff=get_chat_analyze_onoff,
         chat_analyze_count=chat_analyze_count,
         chat_analyze_count_channel=chat_analyze_count_channel,
-    )
-
-    await handle_developer_text_commands(
-        message,
         developer=developer,
         add_account_relation=add_account_relation,
         remove_account_relation=remove_account_relation,
@@ -1136,13 +1129,6 @@ async def on_message(message):
         check_blacklist=check_blacklist,
         delete_blacklist=delete_blacklist,
         update_premium=update_premium,
-    )
-
-    if should_ignore_direct_message(message):
-        return
-
-    if await handle_message_delete_command(
-        message,
         bot=bot,
         using_server=using_server,
         message_log=message_log,

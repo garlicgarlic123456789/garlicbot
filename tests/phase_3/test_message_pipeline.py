@@ -8,6 +8,7 @@ from bot_app.events.message_pipeline import (
     handle_developer_text_commands,
     handle_message_delete_command,
     record_chat_analyze_message,
+    run_message_preprocessing,
     should_ignore_direct_message,
 )
 from tests.helpers.fakes import FakeBot, FakeTextChannel
@@ -215,6 +216,90 @@ async def test_handle_message_delete_command_deletes_original_and_logs():
     assert log_channel.sent_embeds[0].fields[3].value == "<@77>"
 
 
+@pytest.mark.asyncio
+async def test_run_message_preprocessing_keeps_flow_after_developer_command():
+    chat_analyze_count = {}
+    chat_analyze_count_channel = {}
+    author = FakePipelineAuthor(99)
+    message = FakePipelineMessage(
+        content="!부계추가 100 200",
+        author=author,
+        guild=FakePipelineGuild(1),
+        channel=FakePipelineChannel(channel_id=20),
+    )
+    added_relations = []
+
+    async def fake_get_chat_analyze_onoff(guild_id):
+        return True
+
+    should_stop = await run_message_preprocessing(
+        message,
+        get_chat_analyze_onoff=fake_get_chat_analyze_onoff,
+        chat_analyze_count=chat_analyze_count,
+        chat_analyze_count_channel=chat_analyze_count_channel,
+        developer=99,
+        add_account_relation=lambda main_id, sub_id: added_relations.append((main_id, sub_id)),
+        remove_account_relation=lambda *args: None,
+        get_related_accounts=lambda user_id: [],
+        add_blacklist=lambda *args: None,
+        check_blacklist=lambda user_id: (False,),
+        delete_blacklist=lambda *args: None,
+        update_premium=lambda *args: None,
+        bot=FakeBot(),
+        using_server=1,
+        message_log=100,
+    )
+
+    assert should_stop is False
+    assert added_relations == [(100, 200)]
+    assert message.replies[0]["content"] == "처리되었습니다."
+    assert len(chat_analyze_count) == 1
+    formatted_time = next(iter(chat_analyze_count))
+    assert chat_analyze_count[formatted_time][1] == [99]
+    assert chat_analyze_count_channel[formatted_time][1][20] == [99]
+
+
+@pytest.mark.asyncio
+async def test_run_message_preprocessing_stops_when_delete_command_is_handled():
+    bot = FakeBot()
+    log_channel = FakeTextChannel(channel_id=100)
+    bot.channels[100] = log_channel
+    original_message = FakeOriginalMessage(guild_id=1, author_id=77)
+    author = FakePipelineAuthor(10, manage_messages=True)
+    message = FakePipelineMessage(
+        content="!메시지삭제",
+        author=author,
+        guild=FakePipelineGuild(1),
+        channel=FakePipelineChannel(channel_id=20, original_message=original_message),
+        reference_message_id=999,
+    )
+
+    async def fake_get_chat_analyze_onoff(guild_id):
+        return False
+
+    should_stop = await run_message_preprocessing(
+        message,
+        get_chat_analyze_onoff=fake_get_chat_analyze_onoff,
+        chat_analyze_count={},
+        chat_analyze_count_channel={},
+        developer=99,
+        add_account_relation=lambda *args: None,
+        remove_account_relation=lambda *args: None,
+        get_related_accounts=lambda user_id: [],
+        add_blacklist=lambda *args: None,
+        check_blacklist=lambda user_id: (False,),
+        delete_blacklist=lambda *args: None,
+        update_premium=lambda *args: None,
+        bot=bot,
+        using_server=1,
+        message_log=100,
+    )
+
+    assert should_stop is True
+    assert original_message.deleted is True
+    assert message.replies[0]["content"] == "처리되었습니다."
+
+
 def test_should_ignore_direct_message_checks_guild_presence():
     dm_message = type("Message", (), {"guild": None})()
     guild_message = type("Message", (), {"guild": object()})()
@@ -227,6 +312,4 @@ def test_main_keeps_message_pipeline_boundary():
     source = Path("main.py").read_text(encoding="utf-8")
 
     assert "from bot_app.events.message_pipeline import (" in source
-    assert "record_chat_analyze_message(" in source
-    assert "handle_developer_text_commands(" in source
-    assert "handle_message_delete_command(" in source
+    assert "run_message_preprocessing(" in source

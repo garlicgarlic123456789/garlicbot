@@ -197,3 +197,51 @@ async def handle_message_delete_command(
     log_channel = bot.get_channel(message_log)
     await log_channel.send(embed=embed)
     return True
+
+
+async def run_message_preprocessing(
+    message,
+    *,
+    get_chat_analyze_onoff,
+    chat_analyze_count: dict,
+    chat_analyze_count_channel: dict,
+    developer: int,
+    add_account_relation,
+    remove_account_relation,
+    get_related_accounts,
+    add_blacklist,
+    check_blacklist,
+    delete_blacklist,
+    update_premium,
+    bot,
+    using_server: int,
+    message_log: int,
+) -> bool:
+    await record_chat_analyze_message(
+        message,
+        get_chat_analyze_onoff=get_chat_analyze_onoff,
+        chat_analyze_count=chat_analyze_count,
+        chat_analyze_count_channel=chat_analyze_count_channel,
+    )
+
+    await handle_developer_text_commands(
+        message,
+        developer=developer,
+        add_account_relation=add_account_relation,
+        remove_account_relation=remove_account_relation,
+        get_related_accounts=get_related_accounts,
+        add_blacklist=add_blacklist,
+        check_blacklist=check_blacklist,
+        delete_blacklist=delete_blacklist,
+        update_premium=update_premium,
+    )
+
+    if should_ignore_direct_message(message):
+        return True
+
+    return await handle_message_delete_command(
+        message,
+        bot=bot,
+        using_server=using_server,
+        message_log=message_log,
+    )
