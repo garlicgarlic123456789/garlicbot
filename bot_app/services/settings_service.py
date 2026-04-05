@@ -3,9 +3,10 @@ from __future__ import annotations
 import discord
 
 from bot_app.repositories.settings_repository import settings_repository
+from bot_app.types.readability_contracts import AutomodConfig
 
 
-def get_automod_setting(server_id: int, repository=settings_repository):
+def get_automod_setting(server_id: int, repository=settings_repository) -> AutomodConfig:
     return repository.get_automod(server_id)
 
 

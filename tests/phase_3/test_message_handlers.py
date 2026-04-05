@@ -10,6 +10,7 @@ from bot_app.events.message_handlers import (
     handle_moderation_text_commands,
     handle_using_server_role_watchers,
 )
+from bot_app.types.readability_contracts import AutomodConfig, AutomodRuleConfig
 from tests.helpers.fakes import FakeBot, FakeRole, FakeTextChannel
 
 
@@ -241,7 +242,13 @@ async def test_handle_automod_message_handles_invite_link(monkeypatch):
     monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: False)
     monkeypatch.setattr(
         "bot_app.events.message_handlers.get_automod_setting",
-        lambda guild_id: {"invite_link": [True, 60], "political": [False, 0], "sexual": [False, 0], "mention": [False, 0]},
+        lambda guild_id: AutomodConfig(
+            political=AutomodRuleConfig(enabled=False, action=0),
+            sexual=AutomodRuleConfig(enabled=False, action=0),
+            invite_link=AutomodRuleConfig(enabled=True, action=60),
+            mention=AutomodRuleConfig(enabled=False, action=0),
+            whitelist_permission="admin",
+        ),
     )
 
     handled = await handle_automod_message(
@@ -292,7 +299,13 @@ async def test_handle_automod_message_stops_for_allowed_role_mention_exception(m
     monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: False)
     monkeypatch.setattr(
         "bot_app.events.message_handlers.get_automod_setting",
-        lambda guild_id: {"invite_link": [False, 0], "political": [False, 0], "sexual": [False, 0], "mention": [True, 60]},
+        lambda guild_id: AutomodConfig(
+            political=AutomodRuleConfig(enabled=False, action=0),
+            sexual=AutomodRuleConfig(enabled=False, action=0),
+            invite_link=AutomodRuleConfig(enabled=False, action=0),
+            mention=AutomodRuleConfig(enabled=True, action=60),
+            whitelist_permission="admin",
+        ),
     )
 
     handled = await handle_automod_message(

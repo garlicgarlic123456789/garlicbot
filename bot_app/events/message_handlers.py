@@ -405,23 +405,23 @@ async def handle_automod_message(message, *, context: Mapping[str, Any]) -> bool
 
     automod_setting = get_automod_setting(message.guild.id)
 
-    if automod_setting["invite_link"][0]:
+    if automod_setting.invite_link.enabled:
         if isinstance(message.channel, discord.Thread) and message.channel.parent.id == 1394966782426484796:
             return True
 
         pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
         if re.search(pattern1, message.content):
-            await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting["invite_link"][1], True, None)
+            await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting.invite_link.action, True, None)
             return True
         elif "discord://-/invite/" in message.content:
-            await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting["invite_link"][1], True, None)
+            await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting.invite_link.action, True, None)
             return True
         elif message.message_snapshots:
             if re.search(pattern1, message.message_snapshots[0].content):
-                await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting["invite_link"][1], True, None)
+                await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting.invite_link.action, True, None)
                 return True
             elif "discord://-/invite/" in message.message_snapshots[0].content:
-                await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting["invite_link"][1], True, None)
+                await context["handle_spamming"](message, "디스코드 서버 초대 링크", automod_setting.invite_link.action, True, None)
                 return True
 
     message_content = re.sub(r"[^가-힣a-zA-Z]", "", message.content)
@@ -430,10 +430,10 @@ async def handle_automod_message(message, *, context: Mapping[str, Any]) -> bool
     else:
         message_content2 = ""
 
-    if automod_setting["political"][0]:
+    if automod_setting.political.enabled:
         for keyword in context["automod_keyword"]:
             if keyword in message_content or keyword in message_content2:
-                await context["handle_spamming"](message, context["automod_reason"], automod_setting["political"][1], True, keyword, True)
+                await context["handle_spamming"](message, context["automod_reason"], automod_setting.political.action, True, keyword, True)
                 return True
 
     if message.guild.id == context["using_server"]:
@@ -458,14 +458,14 @@ async def handle_automod_message(message, *, context: Mapping[str, Any]) -> bool
                     await context["handle_spamming"](message, context["automod_reason4"], 15 * 60 * 60, True, keyword)
                     return True
 
-    if automod_setting["sexual"][0]:
+    if automod_setting.sexual.enabled:
         if message.channel.id != 1344617642312597585:
             for keyword in context["automod_keyword5"]:
                 if keyword in message_content or keyword in message_content2:
-                    await context["handle_spamming"](message, context["automod_reason5"], automod_setting["sexual"][1], True, keyword, True)
+                    await context["handle_spamming"](message, context["automod_reason5"], automod_setting.sexual.action, True, keyword, True)
                     return True
 
-    if automod_setting["mention"][0]:
+    if automod_setting.mention.enabled:
         if message.channel.id != 1320304882393153586:
             if message.guild.id == context["using_server"]:
                 for role_mention in context["do_mention_role2"]:
@@ -473,7 +473,7 @@ async def handle_automod_message(message, *, context: Mapping[str, Any]) -> bool
                         return True
             for keyword in context["automod_keyword6"]:
                 if keyword in message.content:
-                    await context["handle_spamming"](message, context["automod_reason6"], automod_setting["mention"][1], True, keyword)
+                    await context["handle_spamming"](message, context["automod_reason6"], automod_setting.mention.action, True, keyword)
                     return True
 
     if message.guild.id == context["using_server"]:

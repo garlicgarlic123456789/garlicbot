@@ -5,11 +5,12 @@ import pytest
 
 from bot_app.repositories.xp_repository import XpRepository
 from bot_app.services.xp_service import apply_message_xp, process_attendance_reward
+from bot_app.types.readability_contracts import XpSetting
 
 
 class FakeXpRepository:
     def __init__(self, *, xp_setting=None, attendance_settings=None, attendance_result=(True, 1)):
-        self._xp_setting = xp_setting or [True, 15, 30, None, None, "XP"]
+        self._xp_setting = xp_setting or XpSetting(True, 15, 30, None, None, "XP")
         self._attendance_settings = attendance_settings or {
             "on_off": True,
             "minimum": 100,
@@ -61,7 +62,7 @@ def test_apply_message_xp_skips_when_feature_missing():
 
 
 def test_apply_message_xp_updates_without_cooldown():
-    repository = FakeXpRepository(xp_setting=[True, 25, 0, None, None, "XP"])
+    repository = FakeXpRepository(xp_setting=XpSetting(True, 25, 0, None, None, "XP"))
 
     result = apply_message_xp(
         server_id=1,
@@ -116,7 +117,7 @@ def test_apply_message_xp_records_cooldown_timestamp_when_awarded():
 
 @pytest.mark.asyncio
 async def test_process_attendance_reward_handles_disabled_xp():
-    repository = FakeXpRepository(xp_setting=[False, 15, 30, None, None, "XP"])
+    repository = FakeXpRepository(xp_setting=XpSetting(False, 15, 30, None, None, "XP"))
 
     result = await process_attendance_reward(
         server_id=1,
@@ -199,7 +200,7 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
 
     def fake_get_xp_setting_dict(server_id):
         calls.append(("get_xp_setting", server_id))
-        return ["setting"]
+        return [True, 15, 30, None, None, "XP"]
 
     async def fake_get_attendance_settings(server_id):
         calls.append(("get_attendance_settings", server_id))
@@ -223,7 +224,7 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
 
     repository = XpRepository()
 
-    assert repository.get_xp_setting(1) == ["setting"]
+    assert repository.get_xp_setting(1) == XpSetting(True, 15, 30, None, None, "XP")
     assert await repository.get_attendance_settings(1) == {"on_off": True}
     assert repository.process_attendance(1, 2) == (True, 2)
     repository.add_xp(1, 2, 30)
