@@ -1,8 +1,18 @@
 from typing import Mapping
 import random
 
+from commands.return_level import return_level
 from bot_app.repositories.xp_repository import xp_repository
-from bot_app.types.readability_contracts import AttendanceRewardResult, MessageXpApplyResult, XpSetting
+from bot_app.types.readability_contracts import (
+    AttendanceRewardResult,
+    MessageXpApplyResult,
+    XpAdjustmentResult,
+    XpRankingEntry,
+    XpRankingPage,
+    XpSetting,
+    XpSnapshot,
+    XpTransferResult,
+)
 
 
 def _coerce_xp_setting(setting: XpSetting | list | tuple | None) -> XpSetting:
@@ -130,4 +140,106 @@ async def process_attendance_reward(
         streak_bonus=streak_bonus,
         total_xp=total_xp,
         unit=unit,
+    )
+
+
+def get_xp_snapshot(
+    *,
+    server_id: int,
+    user_id: int,
+    xp_settings: Mapping[int, object],
+    using_server: int,
+    repository=xp_repository,
+    leveler=return_level,
+) -> XpSnapshot:
+    setting = _resolve_xp_setting(server_id, xp_settings, repository)
+    total_xp = repository.get_xp(server_id, user_id)
+    month_xp = repository.get_month_xp(server_id, user_id)
+    old_xp = repository.get_old_xp(server_id, user_id) if server_id == using_server else None
+    return XpSnapshot(
+        total_xp=total_xp,
+        month_xp=month_xp,
+        total_level=leveler(total_xp),
+        month_level=leveler(month_xp),
+        unit=setting.unit,
+        old_xp=old_xp,
+    )
+
+
+def transfer_xp(
+    *,
+    server_id: int,
+    sender_user_id: int,
+    receiver_user_id: int,
+    amount: int,
+    xp_settings: Mapping[int, object],
+    repository=xp_repository,
+) -> XpTransferResult:
+    setting = _resolve_xp_setting(server_id, xp_settings, repository)
+    if repository.get_xp(server_id, sender_user_id) < amount:
+        return XpTransferResult(status="insufficient_balance", amount=amount, unit=setting.unit)
+
+    repository.add_xp(server_id, sender_user_id, -amount)
+    repository.add_month_xp(server_id, sender_user_id, -amount)
+    repository.add_xp(server_id, receiver_user_id, amount)
+    repository.add_month_xp(server_id, receiver_user_id, amount)
+    return XpTransferResult(status="success", amount=amount, unit=setting.unit)
+
+
+def adjust_xp(
+    *,
+    server_id: int,
+    user_id: int,
+    amount: int,
+    xp_settings: Mapping[int, object],
+    repository=xp_repository,
+) -> XpAdjustmentResult:
+    setting = _resolve_xp_setting(server_id, xp_settings, repository)
+    repository.add_xp(server_id, user_id, amount)
+    repository.add_month_xp(server_id, user_id, amount)
+    return XpAdjustmentResult(
+        amount=amount,
+        total_xp=repository.get_xp(server_id, user_id),
+        month_xp=repository.get_month_xp(server_id, user_id),
+        unit=setting.unit,
+    )
+
+
+def get_xp_ranking_page(
+    *,
+    server_id: int,
+    scope: str,
+    page: int,
+    page_size: int,
+    xp_settings: Mapping[int, object],
+    repository=xp_repository,
+    leveler=return_level,
+) -> XpRankingPage:
+    setting = _resolve_xp_setting(server_id, xp_settings, repository)
+    if scope == "month":
+        ranking_title = "경험치 순위 (월간)"
+        exp_data = repository.get_all_month_xp(server_id)
+    else:
+        ranking_title = "경험치 순위"
+        exp_data = repository.get_all_xp(server_id)
+
+    sorted_exp = sorted(exp_data.items(), key=lambda item: item[1], reverse=True)
+    start_index = (page - 1) * page_size
+    end_index = start_index + page_size
+    rankings = sorted_exp[start_index:end_index]
+    entries = tuple(
+        XpRankingEntry(
+            user_id=int(user_id),
+            xp=xp_amount,
+            level=leveler(xp_amount),
+            rank=index,
+        )
+        for index, (user_id, xp_amount) in enumerate(rankings, start=start_index + 1)
+    )
+    return XpRankingPage(
+        title=ranking_title,
+        page=page,
+        total_pages=len(sorted_exp) // page_size + 1,
+        unit=setting.unit,
+        entries=entries,
     )

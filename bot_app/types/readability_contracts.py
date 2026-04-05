@@ -30,6 +30,7 @@ AttendanceRewardStatus = Literal[
     "attendance_disabled",
     "already_checked",
 ]
+XpTransferStatus = Literal["success", "insufficient_balance"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,3 +135,45 @@ class AttendanceRewardResult:
     streak_bonus: int = 0
     total_xp: int = 0
     unit: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class XpSnapshot:
+    total_xp: int
+    month_xp: int
+    total_level: int
+    month_level: int
+    unit: str
+    old_xp: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class XpTransferResult:
+    status: XpTransferStatus
+    amount: int
+    unit: str
+
+
+@dataclass(frozen=True, slots=True)
+class XpAdjustmentResult:
+    amount: int
+    total_xp: int
+    month_xp: int
+    unit: str
+
+
+@dataclass(frozen=True, slots=True)
+class XpRankingEntry:
+    user_id: int
+    xp: int
+    level: int
+    rank: int
+
+
+@dataclass(frozen=True, slots=True)
+class XpRankingPage:
+    title: str
+    page: int
+    total_pages: int
+    unit: str
+    entries: tuple[XpRankingEntry, ...]

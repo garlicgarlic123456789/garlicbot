@@ -103,7 +103,13 @@ from bot_app.commands.slash_moderation_handlers import (
     run_unwarn_slash_command,
     run_warn_slash_command,
 )
-from bot_app.commands.slash_xp_handlers import run_attendance_slash_command
+from bot_app.commands.slash_xp_handlers import (
+    run_add_xp_slash_command,
+    run_attendance_slash_command,
+    run_check_xp_slash_command,
+    run_gift_xp_slash_command,
+    run_xp_ranking_slash_command,
+)
 from bot_app.events import register_log_events, register_member_events, register_ready_events
 from bot_app.events.message_handlers import (
     handle_automod_message,
@@ -2183,124 +2189,27 @@ async def attendance(interaction: discord.Interaction):
 
 @bot.tree.command(name="경험치확인", description = "특정 사용자의 경험치를 조회합니다.")
 async def check_exp(interaction: discord.Interaction, 사용자: discord.User = None):
-    member = 사용자
-    await interaction.response.defer()
-
-    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
-        embed = discord.Embed(
-            title="오류",
-            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    if member is None:
-        member = interaction.user
-    
-    exp = get_xp(interaction.guild.id, member.id)
-    month_exp = get_month_xp(interaction.guild.id, member.id)
-    
-    if interaction.guild.id == using_server :
-        old_exp = get_old_xp(interaction.guild.id, member.id)
-    else : 
-        old_exp = None
-
-    lvl = return_level(exp)
-    month_lvl = return_level(month_exp)
-
-    unit = xp_setting[interaction.guild.id][5]
-    
-    if old_exp is not None : 
-        embed = discord.Embed(
-            title="경험치 확인",
-            color=int("a5f0ff", 16),
-            description = f"{member.mention}님의 경험치 보유 현황: \n- 전체 기간: {exp} {unit} ({lvl} 레벨)\n- 이번 달: {month_exp} {unit} ({month_lvl} 레벨)\n-# [경험치 초기화](https://discord.com/channels/1320303102703702037/1423235138950529085/1435640425703538768) 전: {old_exp} {unit}"
-        )
-    else : 
-        embed = discord.Embed(
-            title="경험치 확인",
-            color=int("a5f0ff", 16),
-            description = f"{member.mention}님의 경험치 보유 현황: \n- 전체 기간: {exp} {unit} ({lvl} 레벨)\n- 이번 달: {month_exp} {unit} ({month_lvl} 레벨)"
-        )
-        
-    await interaction.followup.send(embed = embed)
+    await run_check_xp_slash_command(
+        interaction,
+        target_user=사용자,
+        context={
+            "is_blocked": is_blocked,
+            "xp_setting": xp_setting,
+            "using_server": using_server,
+        },
+    )
 
 @bot.tree.command(name="경험치선물", description = "특정 사용자에게 경험치를 선물합니다.")
 async def gift_exp(interaction: discord.Interaction, member: discord.User, amount: int):
-    await interaction.response.defer()
-    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
-        embed = discord.Embed(
-            title="오류",
-            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    if member.bot : 
-        embed = discord.Embed(
-            title="오류",
-            description="봇은 경험치 선물을 받을 수 없습니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    if amount <= 0:
-        embed = discord.Embed(
-            title="오류",
-            description="선물하려는 경험치의 양이 비정상적입니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    if interaction.user.id == member.id :
-        embed = discord.Embed(
-            title="오류",
-            description="자신에게는 경험치를 선물할 수 없습니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    if get_xp(interaction.guild.id, interaction.user.id) < amount : 
-        embed = discord.Embed(
-            title="오류",
-            description="경험치가 부족합니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    
-    update_xp(interaction.guild.id, interaction.user.id, -amount)
-    update_month_xp(interaction.guild.id, interaction.user.id, -amount)
-    update_xp(interaction.guild.id, member.id, amount)
-    update_month_xp(interaction.guild.id, member.id, amount)
-
-    unit = xp_setting[interaction.guild.id][5]
-
-    embed = discord.Embed(
-        title="완료",
-        color=int("a5f0ff", 16),
-        description = f"{interaction.user.mention}님이 {member.mention}님에게 {amount} {unit}을(를) 선물하였습니다."
+    await run_gift_xp_slash_command(
+        interaction,
+        target_user=member,
+        amount=amount,
+        context={
+            "is_blocked": is_blocked,
+            "xp_setting": xp_setting,
+        },
     )
-    
-    await interaction.followup.send(embed = embed)
 
 '''
 exp_shop = [
@@ -2573,29 +2482,14 @@ async def gamble(interaction: discord.Interaction, amount: int, choice: app_comm
 @app_commands.describe(사용자="경험치를 추가할 사용자", 경험치="추가할 경험치 양 (음수 값을 입력 시 차감)")
 @app_commands.default_permissions(administrator = True)
 async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경험치: int):
-    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
-        embed = discord.Embed(
-            title="오류",
-            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-    member = 사용자
-    amount = 경험치
-
-    await interaction.response.defer()
-    
-    update_xp(interaction.guild.id, member.id, amount)
-    update_month_xp(interaction.guild.id, member.id, amount)
-
-    embed = discord.Embed(
-        title="성공",
-        color=int("a5f0ff", 16),
-        description = f"{member.mention}님의 경험치가 {amount}만큼 변경되었습니다. 현재 경험치: {get_xp(interaction.guild.id, member.id)} (월간 경험치: {get_month_xp(interaction.guild.id, member.id)})"
+    await run_add_xp_slash_command(
+        interaction,
+        target_user=사용자,
+        amount=경험치,
+        context={
+            "xp_setting": xp_setting,
+        },
     )
-    
-    await interaction.followup.send(embed = embed)
 
 @bot.tree.command(name="경험치순위", description = "경험치 순위를 확인합니다.")
 @app_commands.choices(
@@ -2605,51 +2499,17 @@ async def add_exp(interaction: discord.Interaction, 사용자: discord.User, 경
     ]
 )
 async def exp_ranking(interaction: discord.Interaction, 종류: str, 페이지: int = 1):
-    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
-        embed = discord.Embed(
-            title="오류",
-            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-    page = 페이지
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    if 종류 == "all" : 
-        exp_data = get_all_xp(interaction.guild.id)
-    elif 종류 == "month" :
-        exp_data = get_all_month_xp(interaction.guild.id)
-    sorted_exp = sorted(exp_data.items(), key=lambda x: x[1], reverse=True)
-    
-    start_idx = (page - 1) * PAGE_SIZE
-    end_idx = start_idx + PAGE_SIZE
-    rankings = sorted_exp[start_idx:end_idx]
-    
-    if 종류 == "all" : 
-        embed = discord.Embed(title="경험치 순위", color=int("a5f0ff", 16))
-    elif 종류 == "month" :
-        embed = discord.Embed(title="경험치 순위 (월간)", color=int("a5f0ff", 16))
-    description = ""
-
-    unit = xp_setting[interaction.guild.id][5]
-    
-    for rank, (user_id, exp) in enumerate(rankings, start=start_idx + 1):
-        user = await bot.fetch_user(int(user_id))
-        description += f"{rank}위: {user.mention} {return_level(exp)} 레벨 - {exp} {unit}\n"
-    
-    embed.description = description if description else "해당 페이지에 데이터가 없습니다."
-    embed.set_footer(text=f"페이지 {page} / {len(sorted_exp) // PAGE_SIZE + 1}")
-    
-    await interaction.followup.send(embed=embed)
+    await run_xp_ranking_slash_command(
+        interaction,
+        scope=종류,
+        page=페이지,
+        context={
+            "bot": bot,
+            "is_blocked": is_blocked,
+            "xp_setting": xp_setting,
+            "page_size": PAGE_SIZE,
+        },
+    )
 
 @bot.tree.command(name="사용자정보", description="해당 유저의 정보를 확인합니다.")
 @app_commands.describe(사용자="정보를 조회할 사용자")

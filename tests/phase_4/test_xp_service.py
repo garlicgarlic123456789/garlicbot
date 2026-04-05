@@ -4,12 +4,40 @@ from importlib import import_module
 import pytest
 
 from bot_app.repositories.xp_repository import XpRepository
-from bot_app.services.xp_service import apply_message_xp, get_effective_xp_setting, process_attendance_reward
-from bot_app.types.readability_contracts import AttendanceRewardResult, MessageXpApplyResult, XpSetting
+from bot_app.services.xp_service import (
+    adjust_xp,
+    apply_message_xp,
+    get_effective_xp_setting,
+    get_xp_ranking_page,
+    get_xp_snapshot,
+    process_attendance_reward,
+    transfer_xp,
+)
+from bot_app.types.readability_contracts import (
+    AttendanceRewardResult,
+    MessageXpApplyResult,
+    XpAdjustmentResult,
+    XpRankingEntry,
+    XpRankingPage,
+    XpSetting,
+    XpSnapshot,
+    XpTransferResult,
+)
 
 
 class FakeXpRepository:
-    def __init__(self, *, xp_setting=None, attendance_settings=None, attendance_result=(True, 1)):
+    def __init__(
+        self,
+        *,
+        xp_setting=None,
+        attendance_settings=None,
+        attendance_result=(True, 1),
+        xp_values=None,
+        month_xp_values=None,
+        old_xp_values=None,
+        all_xp=None,
+        all_month_xp=None,
+    ):
         self._xp_setting = xp_setting or XpSetting(True, 15, 30, None, None, "XP")
         self._attendance_settings = attendance_settings or {
             "on_off": True,
@@ -18,6 +46,11 @@ class FakeXpRepository:
             "step": 10,
         }
         self._attendance_result = attendance_result
+        self.xp_values = dict(xp_values or {})
+        self.month_xp_values = dict(month_xp_values or {})
+        self.old_xp_values = dict(old_xp_values or {})
+        self.all_xp = dict(all_xp or {})
+        self.all_month_xp = dict(all_month_xp or {})
         self.add_xp_calls = []
         self.add_month_xp_calls = []
 
@@ -32,9 +65,26 @@ class FakeXpRepository:
 
     def add_xp(self, server_id: int, user_id: int, amount: int):
         self.add_xp_calls.append((server_id, user_id, amount))
+        self.xp_values[(server_id, user_id)] = self.xp_values.get((server_id, user_id), 0) + amount
 
     def add_month_xp(self, server_id: int, user_id: int, amount: int):
         self.add_month_xp_calls.append((server_id, user_id, amount))
+        self.month_xp_values[(server_id, user_id)] = self.month_xp_values.get((server_id, user_id), 0) + amount
+
+    def get_xp(self, server_id: int, user_id: int):
+        return self.xp_values.get((server_id, user_id), 0)
+
+    def get_month_xp(self, server_id: int, user_id: int):
+        return self.month_xp_values.get((server_id, user_id), 0)
+
+    def get_old_xp(self, server_id: int, user_id: int):
+        return self.old_xp_values.get((server_id, user_id), 0)
+
+    def get_all_xp(self, server_id: int):
+        return self.all_xp
+
+    def get_all_month_xp(self, server_id: int):
+        return self.all_month_xp
 
 
 class FakeRandom:
@@ -192,6 +242,100 @@ def test_get_effective_xp_setting_returns_named_contract_without_magic_index():
     assert result == XpSetting(True, 20, 30, None, None, "마늘")
 
 
+def test_get_xp_snapshot_returns_named_values_and_old_xp_only_on_using_server():
+    repository = FakeXpRepository(
+        xp_setting=XpSetting(True, 20, 30, None, None, "마늘"),
+        xp_values={(1, 2): 1200},
+        month_xp_values={(1, 2): 300},
+        old_xp_values={(1, 2): 800},
+    )
+
+    result = get_xp_snapshot(
+        server_id=1,
+        user_id=2,
+        xp_settings={1: [True, 20, 30, None, None, "마늘"]},
+        using_server=1,
+        repository=repository,
+        leveler=lambda xp: xp // 100,
+    )
+
+    assert result == XpSnapshot(
+        total_xp=1200,
+        month_xp=300,
+        total_level=12,
+        month_level=3,
+        unit="마늘",
+        old_xp=800,
+    )
+
+
+def test_transfer_xp_returns_insufficient_balance_without_updates():
+    repository = FakeXpRepository(
+        xp_setting=XpSetting(True, 20, 30, None, None, "마늘"),
+        xp_values={(1, 10): 50},
+        month_xp_values={(1, 10): 50},
+    )
+
+    result = transfer_xp(
+        server_id=1,
+        sender_user_id=10,
+        receiver_user_id=20,
+        amount=100,
+        xp_settings={1: [True, 20, 30, None, None, "마늘"]},
+        repository=repository,
+    )
+
+    assert result == XpTransferResult(status="insufficient_balance", amount=100, unit="마늘")
+    assert repository.add_xp_calls == []
+    assert repository.add_month_xp_calls == []
+
+
+def test_adjust_xp_returns_updated_totals():
+    repository = FakeXpRepository(
+        xp_setting=XpSetting(True, 20, 30, None, None, "XP"),
+        xp_values={(1, 2): 500},
+        month_xp_values={(1, 2): 100},
+    )
+
+    result = adjust_xp(
+        server_id=1,
+        user_id=2,
+        amount=30,
+        xp_settings={1: [True, 20, 30, None, None, "XP"]},
+        repository=repository,
+    )
+
+    assert result == XpAdjustmentResult(amount=30, total_xp=530, month_xp=130, unit="XP")
+
+
+def test_get_xp_ranking_page_preserves_footer_calculation_and_entries():
+    repository = FakeXpRepository(
+        xp_setting=XpSetting(True, 20, 30, None, None, "XP"),
+        all_xp={"1": 500, "2": 300, "3": 100},
+    )
+
+    result = get_xp_ranking_page(
+        server_id=1,
+        scope="all",
+        page=1,
+        page_size=2,
+        xp_settings={1: [True, 20, 30, None, None, "XP"]},
+        repository=repository,
+        leveler=lambda xp: xp // 100,
+    )
+
+    assert result == XpRankingPage(
+        title="경험치 순위",
+        page=1,
+        total_pages=2,
+        unit="XP",
+        entries=(
+            XpRankingEntry(user_id=1, xp=500, level=5, rank=1),
+            XpRankingEntry(user_id=2, xp=300, level=3, rank=2),
+        ),
+    )
+
+
 def test_main_routes_message_xp_and_attendance_through_service_boundary():
     source = Path("main.py").read_text(encoding="utf-8")
     attendance_start = source.index('async def attendance(interaction: discord.Interaction):')
@@ -200,7 +344,8 @@ def test_main_routes_message_xp_and_attendance_through_service_boundary():
 
     assert "from bot_app.services.xp_service import (" in source
     assert "apply_message_xp," in source
-    assert "from bot_app.commands.slash_xp_handlers import run_attendance_slash_command" in source
+    assert "from bot_app.commands.slash_xp_handlers import (" in source
+    assert "run_attendance_slash_command," in source
     assert "apply_message_xp(" in source
     assert "await run_attendance_slash_command(" in attendance_source
     assert "MessageXpApplyResult" in Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
@@ -234,11 +379,36 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
     def fake_update_month_xp(server_id, user_id, amount):
         calls.append(("add_month_xp", server_id, user_id, amount))
 
+    def fake_get_xp(server_id, user_id):
+        calls.append(("get_xp", server_id, user_id))
+        return 120
+
+    def fake_get_month_xp(server_id, user_id):
+        calls.append(("get_month_xp", server_id, user_id))
+        return 60
+
+    def fake_get_old_xp(server_id, user_id):
+        calls.append(("get_old_xp", server_id, user_id))
+        return 80
+
+    def fake_get_all_xp(server_id):
+        calls.append(("get_all_xp", server_id))
+        return {"1": 10}
+
+    def fake_get_all_month_xp(server_id):
+        calls.append(("get_all_month_xp", server_id))
+        return {"1": 5}
+
     monkeypatch.setattr(xp_repository_module, "get_xp_setting_dict", fake_get_xp_setting_dict)
     monkeypatch.setattr(xp_repository_module, "get_attendance_settings", fake_get_attendance_settings)
     monkeypatch.setattr(xp_repository_module, "process_attendance", fake_process_attendance)
     monkeypatch.setattr(xp_repository_module, "update_xp", fake_update_xp)
     monkeypatch.setattr(xp_repository_module, "update_month_xp", fake_update_month_xp)
+    monkeypatch.setattr(xp_repository_module, "get_xp", fake_get_xp)
+    monkeypatch.setattr(xp_repository_module, "get_month_xp", fake_get_month_xp)
+    monkeypatch.setattr(xp_repository_module, "get_old_xp", fake_get_old_xp)
+    monkeypatch.setattr(xp_repository_module, "get_all_xp", fake_get_all_xp)
+    monkeypatch.setattr(xp_repository_module, "get_all_month_xp", fake_get_all_month_xp)
 
     repository = XpRepository()
 
@@ -247,6 +417,11 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
     assert repository.process_attendance(1, 2) == (True, 2)
     repository.add_xp(1, 2, 30)
     repository.add_month_xp(1, 2, 40)
+    assert repository.get_xp(1, 2) == 120
+    assert repository.get_month_xp(1, 2) == 60
+    assert repository.get_old_xp(1, 2) == 80
+    assert repository.get_all_xp(1) == {"1": 10}
+    assert repository.get_all_month_xp(1) == {"1": 5}
 
     assert calls == [
         ("get_xp_setting", 1),
@@ -254,4 +429,9 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
         ("process_attendance", 1, 2),
         ("add_xp", 1, 2, 30),
         ("add_month_xp", 1, 2, 40),
+        ("get_xp", 1, 2),
+        ("get_month_xp", 1, 2),
+        ("get_old_xp", 1, 2),
+        ("get_all_xp", 1),
+        ("get_all_month_xp", 1),
     ]
