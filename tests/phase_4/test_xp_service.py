@@ -200,17 +200,14 @@ def test_main_routes_message_xp_and_attendance_through_service_boundary():
 
     assert "from bot_app.services.xp_service import (" in source
     assert "apply_message_xp," in source
-    assert "get_effective_xp_setting," in source
-    assert "process_attendance_reward," in source
+    assert "from bot_app.commands.slash_xp_handlers import run_attendance_slash_command" in source
     assert "apply_message_xp(" in source
-    assert "attendance_xp_setting = get_effective_xp_setting(" in attendance_source
-    assert "reward_result = await process_attendance_reward(" in attendance_source
+    assert "await run_attendance_slash_command(" in attendance_source
     assert "MessageXpApplyResult" in Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
     assert "AttendanceRewardResult" in Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
     assert 'if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :' not in attendance_source
-    assert "if attendance_xp_setting.enabled is False:" in attendance_source
-    assert 'if reward_result.status == "attendance_disabled":' in attendance_source
-    assert 'if reward_result.status == "already_checked":' in attendance_source
+    assert "get_effective_xp_setting(" not in attendance_source
+    assert "process_attendance_reward(" not in attendance_source
     assert "attendance_check, streak = process_attendance(" not in source
 
 
