@@ -4,7 +4,7 @@ from bot_app.repositories.file_storage import file_storage_repository
 
 
 def load_mentions_data(path: str, repository=file_storage_repository):
-    return repository.read_json(path, default=[])
+    return repository.read_json(path, default=[], recover_decode_error=False)
 
 
 def save_mentions_data(path: str, data, repository=file_storage_repository):
@@ -13,7 +13,7 @@ def save_mentions_data(path: str, data, repository=file_storage_repository):
 
 async def read_confidential_message_ids(path: str, repository=file_storage_repository):
     lines = await repository.read_lines_async(path)
-    return set(filter(None, lines))
+    return {line.strip() for line in lines if line.strip()}
 
 
 async def write_confidential_message_ids(path: str, messages, repository=file_storage_repository):
@@ -30,7 +30,7 @@ def write_auto_verify_state(path: str, content: str, repository=file_storage_rep
 
 
 def load_suggestions_data(path: str, repository=file_storage_repository):
-    return repository.read_json(path, default=[])
+    return repository.read_json(path, default=[], recover_decode_error=False)
 
 
 def save_suggestions_data(path: str, suggestions, repository=file_storage_repository):
@@ -38,7 +38,7 @@ def save_suggestions_data(path: str, suggestions, repository=file_storage_reposi
 
 
 def load_command_blocked_users(path: str, repository=file_storage_repository):
-    return repository.read_json(path, default={})
+    return repository.read_json(path, default={}, recover_decode_error=True)
 
 
 def save_command_blocked_users(path: str, data, repository=file_storage_repository):

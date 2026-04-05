@@ -1,3 +1,4 @@
+import json
 from importlib import import_module
 from pathlib import Path
 
@@ -25,8 +26,8 @@ class FakeFileStorageRepository:
         self.text_value = ""
         self.lines_value = []
 
-    def read_json(self, path: str, *, default):
-        self.calls.append(("read_json", path, default))
+    def read_json(self, path: str, *, default, recover_decode_error=False):
+        self.calls.append(("read_json", path, default, recover_decode_error))
         return self.json_value
 
     def write_json(self, path: str, data, *, ensure_ascii=False, indent=4):
@@ -62,13 +63,13 @@ def test_storage_service_wraps_json_and_text_file_access():
     save_command_blocked_users("blocked.json", {"1": {"until": "2099-01-01"}}, repository=repository)
 
     assert repository.calls == [
-        ("read_json", "mentions.json", []),
+        ("read_json", "mentions.json", [], False),
         ("write_json", "mentions.json", [{"id": 2}], False, 4),
         ("read_text", "auto_verify.txt", "파일이 존재하지 않습니다."),
         ("write_text", "auto_verify.txt", "hello"),
-        ("read_json", "suggestions.json", []),
+        ("read_json", "suggestions.json", [], False),
         ("write_json", "suggestions.json", [{"id": 3}], False, 2),
-        ("read_json", "blocked.json", {}),
+        ("read_json", "blocked.json", {}, True),
         ("write_json", "blocked.json", {"1": {"until": "2099-01-01"}}, False, 4),
     ]
 
@@ -76,7 +77,7 @@ def test_storage_service_wraps_json_and_text_file_access():
 @pytest.mark.asyncio
 async def test_storage_service_wraps_async_confidential_message_io():
     repository = FakeFileStorageRepository()
-    repository.lines_value = ["alpha", "beta", ""]
+    repository.lines_value = [" alpha ", "beta", ""]
 
     assert await read_confidential_message_ids("secret.txt", repository=repository) == {"alpha", "beta"}
     await write_confidential_message_ids("secret.txt", ["x", "y"], repository=repository)
@@ -94,7 +95,9 @@ def test_file_storage_repository_handles_missing_and_invalid_json(tmp_path: Path
     invalid_path.write_text("{not json}", encoding="utf-8")
 
     assert repository.read_json(str(missing_path), default=[]) == []
-    assert repository.read_json(str(invalid_path), default={}) == {}
+    with pytest.raises(json.JSONDecodeError):
+        repository.read_json(str(invalid_path), default={})
+    assert repository.read_json(str(invalid_path), default={}, recover_decode_error=True) == {}
 
 
 @pytest.mark.asyncio

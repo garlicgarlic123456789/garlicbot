@@ -7,7 +7,7 @@ import aiofiles
 
 
 class FileStorageRepository:
-    def read_json(self, path: str, *, default):
+    def read_json(self, path: str, *, default, recover_decode_error: bool = False):
         file_path = Path(path)
         if not file_path.exists():
             return default
@@ -15,7 +15,9 @@ class FileStorageRepository:
             with file_path.open("r", encoding="utf-8") as handle:
                 return json.load(handle)
         except json.JSONDecodeError:
-            return default
+            if recover_decode_error:
+                return default
+            raise
 
     def write_json(self, path: str, data, *, ensure_ascii=False, indent=4):
         file_path = Path(path)
