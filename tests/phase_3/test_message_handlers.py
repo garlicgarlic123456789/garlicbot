@@ -324,8 +324,16 @@ async def test_handle_automod_message_stops_for_allowed_role_mention_exception()
 
 def test_main_keeps_message_handler_boundary():
     source = Path("main.py").read_text(encoding="utf-8")
+    on_message_start = source.index("async def on_message(message):")
+    helper_start = source.index("async def handle_remaining_message_flow(message):")
+    on_message_source = source[on_message_start:helper_start]
 
     assert "from bot_app.events.message_handlers import (" in source
-    assert "handle_moderation_text_commands(" in source
-    assert "handle_using_server_role_watchers(" in source
-    assert "handle_automod_message(" in source
+    assert "async def handle_remaining_message_flow(message):" in source
+    assert "handle_moderation_text_commands(" in on_message_source
+    assert "handle_using_server_role_watchers(" in on_message_source
+    assert "handle_automod_message(" in on_message_source
+    assert "handle_remaining_message_flow(" in on_message_source
+    assert 'if message.content == "마늘아"' not in on_message_source
+    assert 'if message.content.startswith("마느라 ")' not in on_message_source
+    assert "if server_id not in xp_setting" not in on_message_source

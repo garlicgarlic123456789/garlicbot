@@ -1206,6 +1206,9 @@ async def on_message(message):
     ):
         return
     
+    await handle_remaining_message_flow(message)
+
+async def handle_remaining_message_flow(message):
     if message.guild.id == using_server :
         if message.channel.id == 1320303102703702042 or message.channel.id == 1417447633949163530 : 
             # 활동 멤버 부여 기준 안내
@@ -1982,6 +1985,8 @@ async def on_message(message):
         last_exp_time[server_id][user_id] = now
         update_xp(server_id, user_id, gain_xp)
         update_month_xp(server_id, user_id, gain_xp)
+
+
 
 ban_time_list = {}
 
