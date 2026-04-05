@@ -3,8 +3,15 @@ from pathlib import Path
 
 import pytest
 
+import bot_app.commands.slash_moderation_handlers as slash_moderation_handlers_module
 from bot_app.events import message_handlers as message_handlers_module
 from bot_app.events.message_handlers import handle_moderation_text_commands
+from bot_app.commands.slash_moderation_handlers import (
+    run_remove_timeout_slash_command,
+    run_timeout_slash_command,
+    run_unwarn_slash_command,
+    run_warn_slash_command,
+)
 from bot_app.repositories.moderation_repository import ModerationRepository
 from bot_app.services.moderation_service import (
     DEFAULT_REASON,
@@ -79,6 +86,34 @@ class FakeMessage:
 
     async def reply(self, content=None, *, embed=None, mention_author=False):
         self.replies.append({"content": content, "embed": embed, "mention_author": mention_author})
+
+
+class FakeResponse:
+    def __init__(self):
+        self.deferred = []
+        self.sent = []
+
+    async def defer(self, *, ephemeral=False):
+        self.deferred.append({"ephemeral": ephemeral})
+
+    async def send_message(self, content=None, *, embed=None, ephemeral=False):
+        self.sent.append({"content": content, "embed": embed, "ephemeral": ephemeral})
+
+
+class FakeFollowup:
+    def __init__(self):
+        self.sent = []
+
+    async def send(self, content=None, *, embed=None, ephemeral=False):
+        self.sent.append({"content": content, "embed": embed, "ephemeral": ephemeral})
+
+
+class FakeSlashInteraction:
+    def __init__(self, *, user, guild):
+        self.user = user
+        self.guild = guild
+        self.response = FakeResponse()
+        self.followup = FakeFollowup()
 
 
 class FakeModerationRepository:
@@ -267,6 +302,188 @@ async def test_message_handler_warn_path_uses_service_boundary(monkeypatch):
     assert message_log_channel.sent_embeds[0].title == "경고"
 
 
+@pytest.mark.asyncio
+async def test_warn_slash_helper_executes_service_flow(monkeypatch):
+    service_calls = []
+    finalize_calls = []
+    bot = FakeBot()
+    block_channel = FakeTextChannel(channel_id=100)
+    message_log_channel = FakeTextChannel(channel_id=101)
+    bot.channels[100] = block_channel
+    bot.channels[101] = message_log_channel
+
+    async def fake_add_warning_action(**kwargs):
+        service_calls.append(kwargs)
+        result = type("WarnResult", (), {})()
+        result.new_count = 3
+        result.delta = 1
+        result.warn_max = 3
+        result.reason = "사유"
+        result.reached_limit = True
+        return result
+
+    async def fake_finalize_warn_limit_ban(**kwargs):
+        finalize_calls.append(kwargs)
+
+    monkeypatch.setattr(slash_moderation_handlers_module, "add_warning_action", fake_add_warning_action)
+    monkeypatch.setattr(slash_moderation_handlers_module, "finalize_warn_limit_ban", fake_finalize_warn_limit_ban)
+    monkeypatch.setattr(slash_moderation_handlers_module, "get_block_log_channel_for_guild", lambda bot, guild_id: block_channel)
+
+    member = FakeMember(2, top_role=1)
+    guild = FakeGuild(1, member=member)
+    interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
+
+    error_count = await run_warn_slash_command(
+        interaction,
+        type("FakeUser", (), {"id": 2, "mention": "<@2>"})(),
+        1,
+        "사유",
+        context={
+            "friendly_list": [],
+            "bot": bot,
+            "using_server": 1,
+            "message_log": 101,
+            "is_blocked": lambda user: (False, None, None),
+        },
+        error_count=5,
+    )
+
+    assert error_count == 5
+    assert service_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "amount": 1, "reason": "사유"}]
+    assert finalize_calls == [{"server_id": 1, "user_id": 2, "bot_user_id": 1316579106749681664}]
+    assert guild.ban_calls[0]["reason"] == "경고 한도 도달"
+    assert interaction.followup.sent[0]["embed"].title == "경고"
+    assert interaction.followup.sent[1]["embed"].title == "차단"
+
+
+@pytest.mark.asyncio
+async def test_unwarn_slash_helper_executes_service_flow(monkeypatch):
+    service_calls = []
+    bot = FakeBot()
+    block_channel = FakeTextChannel(channel_id=100)
+    bot.channels[100] = block_channel
+
+    async def fake_remove_warning_action(**kwargs):
+        service_calls.append(kwargs)
+        result = type("WarnResult", (), {})()
+        result.new_count = 1
+        result.delta = 2
+        result.warn_max = 5
+        result.reason = "정정"
+        return result
+
+    monkeypatch.setattr(slash_moderation_handlers_module, "remove_warning_action", fake_remove_warning_action)
+    monkeypatch.setattr(slash_moderation_handlers_module, "get_block_log_channel_for_guild", lambda bot, guild_id: block_channel)
+
+    member = FakeMember(2, top_role=1)
+    guild = FakeGuild(1, member=member)
+    interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
+
+    await run_unwarn_slash_command(
+        interaction,
+        type("FakeUser", (), {"id": 2, "mention": "<@2>"})(),
+        2,
+        "정정",
+        context={
+            "bot": bot,
+            "using_server": 999,
+            "message_log": 101,
+            "is_blocked": lambda user: (False, None, None),
+        },
+    )
+
+    assert service_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "amount": 2, "reason": "정정"}]
+    assert interaction.followup.sent[0]["embed"].title == "경고 차감"
+
+
+@pytest.mark.asyncio
+async def test_timeout_slash_helper_executes_service_flow(monkeypatch):
+    add_timeout_calls = []
+    record_calls = []
+    bot = FakeBot()
+    block_channel = FakeTextChannel(channel_id=100)
+    bot.channels[100] = block_channel
+
+    def fake_record_timeout_action(**kwargs):
+        record_calls.append(kwargs)
+        result = type("TimeoutResult", (), {})()
+        result.reason = "사유"
+        return result
+
+    monkeypatch.setattr(slash_moderation_handlers_module, "record_timeout_action", fake_record_timeout_action)
+    monkeypatch.setattr(slash_moderation_handlers_module, "get_block_log_channel_for_guild", lambda bot, guild_id: block_channel)
+
+    async def fake_add_timeout(member, duration, reason):
+        add_timeout_calls.append((member.id, duration, reason))
+
+    member = FakeMember(2, top_role=1)
+    guild = FakeGuild(1, member=member)
+    interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
+
+    error_count = await run_timeout_slash_command(
+        interaction,
+        member,
+        2,
+        "분",
+        "사유",
+        "False",
+        context={
+            "friendly_list": [],
+            "bot": bot,
+            "using_server": 999,
+            "message_log": 101,
+            "is_blocked": lambda user: (False, None, None),
+            "print_time": lambda seconds: f"{seconds}초",
+            "add_timeout": fake_add_timeout,
+        },
+        error_count=3,
+    )
+
+    assert error_count == 3
+    assert add_timeout_calls == [(2, 120, "사유")]
+    assert record_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "duration": 120, "reason": "사유"}]
+    assert interaction.followup.sent[0]["embed"].title == "타임아웃"
+
+
+@pytest.mark.asyncio
+async def test_remove_timeout_slash_helper_executes_service_flow(monkeypatch):
+    record_calls = []
+    bot = FakeBot()
+    block_channel = FakeTextChannel(channel_id=100)
+    bot.channels[100] = block_channel
+
+    def fake_record_untimeout_action(**kwargs):
+        record_calls.append(kwargs)
+        result = type("TimeoutResult", (), {})()
+        result.reason = "사유"
+        return result
+
+    monkeypatch.setattr(slash_moderation_handlers_module, "record_untimeout_action", fake_record_untimeout_action)
+    monkeypatch.setattr(slash_moderation_handlers_module, "get_block_log_channel_for_guild", lambda bot, guild_id: block_channel)
+
+    member = FakeMember(2, top_role=1)
+    guild = FakeGuild(1, member=member)
+    interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
+
+    error_count = await run_remove_timeout_slash_command(
+        interaction,
+        member,
+        "사유",
+        context={
+            "bot": bot,
+            "using_server": 999,
+            "message_log": 101,
+            "is_blocked": lambda user: (False, None, None),
+        },
+        error_count=8,
+    )
+
+    assert error_count == 8
+    assert member.edit_calls == [{"timed_out_until": None, "reason": "사유"}]
+    assert record_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "reason": "사유"}]
+    assert interaction.followup.sent[0]["embed"].title == "타임아웃 해제"
+
+
 def test_message_handler_source_uses_moderation_services():
     source = Path("bot_app/events/message_handlers.py").read_text(encoding="utf-8")
     main_source = Path("main.py").read_text(encoding="utf-8")
@@ -306,27 +523,19 @@ def test_main_slash_moderation_commands_use_service_boundary():
     timeout_source = source[timeout_start:timeout_end]
     remove_timeout_source = source[remove_timeout_start:legacy_block_end]
 
-    assert "from bot_app.services.moderation_service import (" in source
-    assert "from bot_app.services.settings_service import get_block_log_channel_for_guild" in source
-    assert "add_warning_action(" in warn_source
-    assert "finalize_warn_limit_ban(" in warn_source
-    assert "remove_warning_action(" in unwarn_source
-    assert "record_timeout_action(" in timeout_source
-    assert "record_untimeout_action(" in remove_timeout_source
-    assert "parse_timeout_duration(" in timeout_source
-    assert "get_block_log_channel_for_guild(" in warn_source
-    assert "get_block_log_channel_for_guild(" in unwarn_source
-    assert "get_block_log_channel_for_guild(" in timeout_source
-    assert "get_block_log_channel_for_guild(" in remove_timeout_source
-    assert "await add_warning(" not in warn_source
-    assert "await remove_warning(" not in unwarn_source
+    assert "from bot_app.commands.slash_moderation_handlers import (" in source
+    assert "run_warn_slash_command(" in warn_source
+    assert "run_unwarn_slash_command(" in unwarn_source
+    assert "run_timeout_slash_command(" in timeout_source
+    assert "run_remove_timeout_slash_command(" in remove_timeout_source
+    assert "add_warning_action(" not in warn_source
+    assert "remove_warning_action(" not in unwarn_source
+    assert "record_timeout_action(" not in timeout_source
+    assert "record_untimeout_action(" not in remove_timeout_source
     assert "add_blockhistory(" not in warn_source
     assert "add_blockhistory(" not in unwarn_source
     assert "add_blockhistory(" not in timeout_source
     assert "add_blockhistory(" not in remove_timeout_source
-    assert "get_warn_max(" not in warn_source
-    assert "get_warn_max(" not in unwarn_source
-    assert "set_warning(" not in warn_source
 
 
 @pytest.mark.asyncio
