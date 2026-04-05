@@ -3,7 +3,7 @@ from typing import Mapping
 import random
 
 from bot_app.repositories.xp_repository import xp_repository
-from bot_app.types.readability_contracts import XpSetting
+from bot_app.types.readability_contracts import MessageXpApplyResult, XpSetting
 
 
 @dataclass
@@ -22,13 +22,14 @@ def _coerce_xp_setting(setting: XpSetting | list | tuple | None) -> XpSetting:
         return setting
     if not setting:
         return XpSetting(False, None, None, None, None, "")
+    enabled, chat_xp, chat_xp_cooldown, voice_xp, voice_xp_cooldown, unit = setting
     return XpSetting(
-        enabled=bool(setting[0]),
-        chat_xp=setting[1],
-        chat_xp_cooldown=setting[2],
-        voice_xp=setting[3],
-        voice_xp_cooldown=setting[4],
-        unit=setting[5] or "",
+        enabled=bool(enabled),
+        chat_xp=chat_xp,
+        chat_xp_cooldown=chat_xp_cooldown,
+        voice_xp=voice_xp,
+        voice_xp_cooldown=voice_xp_cooldown,
+        unit=unit or "",
     )
 
 
@@ -46,35 +47,35 @@ def apply_message_xp(
     last_exp_time: dict[int, dict[int, float]],
     now_monotonic: float,
     repository=xp_repository,
-):
+) -> MessageXpApplyResult:
     if server_id not in xp_settings:
-        return False
+        return MessageXpApplyResult(status="skipped_missing_setting")
 
     setting = _coerce_xp_setting(xp_settings[server_id])
     if not setting.enabled:
-        return False
+        return MessageXpApplyResult(status="skipped_disabled")
 
     gain_xp = setting.chat_xp
     cooldown = setting.chat_xp_cooldown
     if gain_xp is None or cooldown is None:
-        return False
+        return MessageXpApplyResult(status="skipped_missing_value")
 
     if cooldown == 0:
         repository.add_xp(server_id, user_id, gain_xp)
         repository.add_month_xp(server_id, user_id, gain_xp)
-        return True
+        return MessageXpApplyResult(status="awarded", awarded_xp=gain_xp)
 
     if server_id not in last_exp_time:
         last_exp_time[server_id] = {}
 
     if user_id in last_exp_time[server_id]:
         if now_monotonic - last_exp_time[server_id][user_id] < cooldown:
-            return False
+            return MessageXpApplyResult(status="skipped_cooldown")
 
     last_exp_time[server_id][user_id] = now_monotonic
     repository.add_xp(server_id, user_id, gain_xp)
     repository.add_month_xp(server_id, user_id, gain_xp)
-    return True
+    return MessageXpApplyResult(status="awarded", awarded_xp=gain_xp)
 
 
 async def process_attendance_reward(

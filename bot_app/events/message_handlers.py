@@ -447,8 +447,9 @@ async def handle_using_server_role_watchers(message, *, context: Mapping[str, An
 
 async def handle_automod_message(message, *, context: Mapping[str, Any]) -> AutomodExecutionResult:
     """Run automod checks and expose an explicit processing result."""
-    if is_automod_exempt_channel(message.guild.id, message.channel):
-        return _handled_automod_result(reason_code="exempt_channel")
+    exemption_result = is_automod_exempt_channel(message.guild.id, message.channel)
+    if exemption_result.status == "exempt":
+        return _handled_automod_result(reason_code=exemption_result.matched_scope or "exempt_channel")
 
     automod_setting = get_automod_setting(message.guild.id)
 

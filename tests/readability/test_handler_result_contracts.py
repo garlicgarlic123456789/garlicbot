@@ -2,8 +2,10 @@ from pathlib import Path
 
 from bot_app.types.readability_contracts import (
     AutomodExecutionResult,
+    AutomodExemptionResult,
     ErrorTrackedSlashCommandResult,
     LoopStartResult,
+    MessageXpApplyResult,
     ModerationCommandResult,
     SlashCommandResult,
     UserBlockState,
@@ -52,6 +54,19 @@ def test_message_handler_result_contracts_are_named_and_readable():
     assert tracked_slash_result.error_count == 4
     assert block_state.blocked_until_label == "내일"
 
+    automod_exemption = AutomodExemptionResult(
+        status="exempt",
+        matched_scope="channel",
+        matched_channel_id=20,
+    )
+    message_xp_result = MessageXpApplyResult(
+        status="awarded",
+        awarded_xp=15,
+    )
+
+    assert automod_exemption.matched_scope == "channel"
+    assert message_xp_result.awarded_xp == 15
+
 
 def test_main_connection_points_use_named_handler_results():
     main_source = Path("main.py").read_text(encoding="utf-8")
@@ -72,3 +87,12 @@ def test_main_slash_connection_points_use_named_slash_results():
     assert "error = timeout_command_result.error_count" in main_source
     assert "remove_timeout_result = await run_remove_timeout_slash_command(" in main_source
     assert "error = remove_timeout_result.error_count" in main_source
+
+
+def test_service_boundaries_expose_named_result_objects():
+    settings_service_source = Path("bot_app/services/settings_service.py").read_text(encoding="utf-8")
+    xp_service_source = Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
+
+    assert "AutomodExemptionResult" in settings_service_source
+    assert "MessageXpApplyResult" in xp_service_source
+    assert "return MessageXpApplyResult(status=\"awarded\"" in xp_service_source

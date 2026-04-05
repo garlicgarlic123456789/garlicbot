@@ -10,7 +10,7 @@ from bot_app.services.settings_service import (
     get_block_log_channel_for_guild,
     is_automod_exempt_channel,
 )
-from bot_app.types.readability_contracts import AutomodConfig, AutomodRuleConfig
+from bot_app.types.readability_contracts import AutomodConfig, AutomodExemptionResult, AutomodRuleConfig
 from tests.helpers.fakes import FakeBot, FakeTextChannel
 
 
@@ -44,7 +44,11 @@ def test_is_automod_exempt_channel_checks_direct_channel_first():
     repository = FakeSettingsRepository(exception_channel_ids={20})
     channel = SimpleNamespace(id=20, category=None)
 
-    assert is_automod_exempt_channel(1, channel, repository=repository) is True
+    assert is_automod_exempt_channel(1, channel, repository=repository) == AutomodExemptionResult(
+        status="exempt",
+        matched_scope="channel",
+        matched_channel_id=20,
+    )
     assert repository.calls == [("is_automod_exception_channel", 1, 20)]
 
 
@@ -52,7 +56,11 @@ def test_is_automod_exempt_channel_checks_normal_channel_category():
     repository = FakeSettingsRepository(exception_channel_ids={30})
     channel = SimpleNamespace(id=20, category=SimpleNamespace(id=30))
 
-    assert is_automod_exempt_channel(1, channel, repository=repository) is True
+    assert is_automod_exempt_channel(1, channel, repository=repository) == AutomodExemptionResult(
+        status="exempt",
+        matched_scope="category",
+        matched_channel_id=30,
+    )
     assert repository.calls == [
         ("is_automod_exception_channel", 1, 20),
         ("is_automod_exception_channel", 1, 30),
@@ -68,7 +76,11 @@ def test_is_automod_exempt_channel_checks_thread_parent_and_category(monkeypatch
     thread.id = 20
     thread.parent = parent
 
-    assert is_automod_exempt_channel(1, thread, repository=repository) is True
+    assert is_automod_exempt_channel(1, thread, repository=repository) == AutomodExemptionResult(
+        status="exempt",
+        matched_scope="thread_parent_category",
+        matched_channel_id=40,
+    )
     assert repository.calls == [
         ("is_automod_exception_channel", 1, 20),
         ("is_automod_exception_channel", 1, 30),
@@ -112,6 +124,7 @@ def test_message_handler_and_main_use_settings_services():
     assert "get_block_log_channel_for_guild(" in source
     assert "is_automod_exempt_channel(" in source
     assert "get_automod_setting(" in source
+    assert "AutomodExemptionResult" in Path("bot_app/services/settings_service.py").read_text(encoding="utf-8")
     assert "automod_setting.invite_link.enabled" in source
     assert 'automod_setting["invite_link"][0]' not in source
     assert 'context["get_block_log_channel"]' not in source

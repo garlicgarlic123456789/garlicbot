@@ -12,6 +12,7 @@ from bot_app.events.message_handlers import (
 )
 from bot_app.types.readability_contracts import (
     AutomodConfig,
+    AutomodExemptionResult,
     AutomodRuleConfig,
     AutomodExecutionResult,
     ModerationCommandResult,
@@ -202,7 +203,14 @@ async def test_handle_automod_message_returns_true_for_exception_channel(monkeyp
         channel=FakeChannel(channel_id=20),
     )
 
-    monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: True)
+    monkeypatch.setattr(
+        "bot_app.events.message_handlers.is_automod_exempt_channel",
+        lambda guild_id, channel: AutomodExemptionResult(
+            status="exempt",
+            matched_scope="channel",
+            matched_channel_id=channel.id,
+        ),
+    )
 
     result = await handle_automod_message(
         message,
@@ -239,7 +247,7 @@ async def test_handle_automod_message_returns_true_for_exception_channel(monkeyp
     assert result == AutomodExecutionResult(
         status="handled",
         stop_processing=True,
-        reason_code="exempt_channel",
+        reason_code="channel",
     )
 
 
@@ -256,7 +264,10 @@ async def test_handle_automod_message_handles_invite_link(monkeypatch):
     async def fake_handle_spamming(*args):
         spamming_calls.append(args)
 
-    monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: False)
+    monkeypatch.setattr(
+        "bot_app.events.message_handlers.is_automod_exempt_channel",
+        lambda guild_id, channel: AutomodExemptionResult(status="not_exempt"),
+    )
     monkeypatch.setattr(
         "bot_app.events.message_handlers.get_automod_setting",
         lambda guild_id: AutomodConfig(
@@ -317,7 +328,10 @@ async def test_handle_automod_message_stops_for_allowed_role_mention_exception(m
         channel=FakeChannel(channel_id=20),
     )
 
-    monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: False)
+    monkeypatch.setattr(
+        "bot_app.events.message_handlers.is_automod_exempt_channel",
+        lambda guild_id, channel: AutomodExemptionResult(status="not_exempt"),
+    )
     monkeypatch.setattr(
         "bot_app.events.message_handlers.get_automod_setting",
         lambda guild_id: AutomodConfig(

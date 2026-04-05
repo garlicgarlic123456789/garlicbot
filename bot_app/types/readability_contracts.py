@@ -16,6 +16,14 @@ AutomodStatus = Literal["handled", "not_handled"]
 LoopStartStatus = Literal["started", "already_running"]
 UserBlockStatus = Literal["blocked", "not_blocked"]
 SlashCommandStatus = Literal["completed", "rejected", "failed"]
+AutomodExemptionStatus = Literal["exempt", "not_exempt"]
+MessageXpApplyStatus = Literal[
+    "awarded",
+    "skipped_missing_setting",
+    "skipped_disabled",
+    "skipped_missing_value",
+    "skipped_cooldown",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,3 +104,16 @@ class ErrorTrackedSlashCommandResult:
     status: SlashCommandStatus
     error_count: int
     reason_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AutomodExemptionResult:
+    status: AutomodExemptionStatus
+    matched_scope: str | None = None
+    matched_channel_id: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MessageXpApplyResult:
+    status: MessageXpApplyStatus
+    awarded_xp: int = 0

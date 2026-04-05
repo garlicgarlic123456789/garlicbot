@@ -2,14 +2,19 @@ from commands.database import get_automod, get_automod_exception_channel, get_bl
 from bot_app.types.readability_contracts import AutomodConfig, AutomodRuleConfig
 
 
+def _build_rule_config(raw_rule: list | tuple) -> AutomodRuleConfig:
+    enabled, action = raw_rule
+    return AutomodRuleConfig(enabled=enabled, action=action)
+
+
 class SettingsRepository:
-    def get_automod(self, server_id: int):
+    def get_automod(self, server_id: int) -> AutomodConfig:
         raw = get_automod(server_id)
         return AutomodConfig(
-            political=AutomodRuleConfig(enabled=raw["political"][0], action=raw["political"][1]),
-            sexual=AutomodRuleConfig(enabled=raw["sexual"][0], action=raw["sexual"][1]),
-            invite_link=AutomodRuleConfig(enabled=raw["invite_link"][0], action=raw["invite_link"][1]),
-            mention=AutomodRuleConfig(enabled=raw["mention"][0], action=raw["mention"][1]),
+            political=_build_rule_config(raw["political"]),
+            sexual=_build_rule_config(raw["sexual"]),
+            invite_link=_build_rule_config(raw["invite_link"]),
+            mention=_build_rule_config(raw["mention"]),
             whitelist_permission=raw["whitelist_permission"],
         )
 

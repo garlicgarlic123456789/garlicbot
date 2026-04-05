@@ -5,7 +5,7 @@ import pytest
 
 from bot_app.repositories.xp_repository import XpRepository
 from bot_app.services.xp_service import apply_message_xp, process_attendance_reward
-from bot_app.types.readability_contracts import XpSetting
+from bot_app.types.readability_contracts import MessageXpApplyResult, XpSetting
 
 
 class FakeXpRepository:
@@ -58,7 +58,7 @@ def test_apply_message_xp_skips_when_feature_missing():
         repository=FakeXpRepository(),
     )
 
-    assert result is False
+    assert result == MessageXpApplyResult(status="skipped_missing_setting", awarded_xp=0)
 
 
 def test_apply_message_xp_updates_without_cooldown():
@@ -73,7 +73,7 @@ def test_apply_message_xp_updates_without_cooldown():
         repository=repository,
     )
 
-    assert result is True
+    assert result == MessageXpApplyResult(status="awarded", awarded_xp=25)
     assert repository.add_xp_calls == [(1, 2, 25)]
     assert repository.add_month_xp_calls == [(1, 2, 25)]
 
@@ -91,7 +91,7 @@ def test_apply_message_xp_respects_cooldown():
         repository=repository,
     )
 
-    assert result is False
+    assert result == MessageXpApplyResult(status="skipped_cooldown", awarded_xp=0)
     assert repository.add_xp_calls == []
     assert repository.add_month_xp_calls == []
 
@@ -109,7 +109,7 @@ def test_apply_message_xp_records_cooldown_timestamp_when_awarded():
         repository=repository,
     )
 
-    assert result is True
+    assert result == MessageXpApplyResult(status="awarded", awarded_xp=15)
     assert last_exp_time == {1: {2: 100.0}}
     assert repository.add_xp_calls == [(1, 2, 15)]
     assert repository.add_month_xp_calls == [(1, 2, 15)]
@@ -187,6 +187,7 @@ def test_main_routes_message_xp_and_attendance_through_service_boundary():
     assert "process_attendance_reward," in source
     assert "apply_message_xp(" in source
     assert "reward_result = await process_attendance_reward(" in source
+    assert "MessageXpApplyResult" in Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
     assert 'if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :' in source
     assert 'if reward_result.status == "attendance_disabled":' in source
     assert 'if reward_result.status == "already_checked":' in source
