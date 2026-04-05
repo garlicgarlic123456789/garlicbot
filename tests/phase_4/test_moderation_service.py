@@ -290,6 +290,45 @@ def test_message_handler_source_uses_moderation_services():
     assert '"set_warning": set_warning' not in handler_call_source
 
 
+def test_main_slash_moderation_commands_use_service_boundary():
+    source = Path("main.py").read_text(encoding="utf-8")
+    warn_start = source.index('async def 경고(interaction: discord.Interaction, 사용자: discord.User, 개수: int, 사유: str):')
+    warn_end = source.index('@bot.tree.command(name="경고차감"', warn_start)
+    unwarn_start = source.index('async def 경고차감(interaction: discord.Interaction, 사용자: discord.User, 개수: int, 사유: str):')
+    unwarn_end = source.index('@bot.tree.command(name="경고확인"', unwarn_start)
+    timeout_start = source.index('async def timeout(interaction: discord.Interaction, 사용자: discord.Member, 시간: int, 단위: str = "분", 사유: str = "None", 개인응답: str = "False"):')
+    timeout_end = source.index('@bot.tree.command(name="타임아웃해제"', timeout_start)
+    remove_timeout_start = source.index('async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Member, 사유: str = "None"):')
+    legacy_block_end = source.index("'''", remove_timeout_start)
+
+    warn_source = source[warn_start:warn_end]
+    unwarn_source = source[unwarn_start:unwarn_end]
+    timeout_source = source[timeout_start:timeout_end]
+    remove_timeout_source = source[remove_timeout_start:legacy_block_end]
+
+    assert "from bot_app.services.moderation_service import (" in source
+    assert "from bot_app.services.settings_service import get_block_log_channel_for_guild" in source
+    assert "add_warning_action(" in warn_source
+    assert "finalize_warn_limit_ban(" in warn_source
+    assert "remove_warning_action(" in unwarn_source
+    assert "record_timeout_action(" in timeout_source
+    assert "record_untimeout_action(" in remove_timeout_source
+    assert "parse_timeout_duration(" in timeout_source
+    assert "get_block_log_channel_for_guild(" in warn_source
+    assert "get_block_log_channel_for_guild(" in unwarn_source
+    assert "get_block_log_channel_for_guild(" in timeout_source
+    assert "get_block_log_channel_for_guild(" in remove_timeout_source
+    assert "await add_warning(" not in warn_source
+    assert "await remove_warning(" not in unwarn_source
+    assert "add_blockhistory(" not in warn_source
+    assert "add_blockhistory(" not in unwarn_source
+    assert "add_blockhistory(" not in timeout_source
+    assert "add_blockhistory(" not in remove_timeout_source
+    assert "get_warn_max(" not in warn_source
+    assert "get_warn_max(" not in unwarn_source
+    assert "set_warning(" not in warn_source
+
+
 @pytest.mark.asyncio
 async def test_moderation_repository_delegates_to_database_helpers(monkeypatch):
     calls = []
