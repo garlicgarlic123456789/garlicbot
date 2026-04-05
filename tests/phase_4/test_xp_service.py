@@ -4,8 +4,8 @@ from importlib import import_module
 import pytest
 
 from bot_app.repositories.xp_repository import XpRepository
-from bot_app.services.xp_service import apply_message_xp, process_attendance_reward
-from bot_app.types.readability_contracts import MessageXpApplyResult, XpSetting
+from bot_app.services.xp_service import apply_message_xp, get_effective_xp_setting, process_attendance_reward
+from bot_app.types.readability_contracts import AttendanceRewardResult, MessageXpApplyResult, XpSetting
 
 
 class FakeXpRepository:
@@ -129,7 +129,7 @@ async def test_process_attendance_reward_handles_disabled_xp():
         repository=repository,
     )
 
-    assert result.status == "xp_disabled"
+    assert result == AttendanceRewardResult(status="xp_disabled")
     assert repository.add_xp_calls == []
 
 
@@ -147,8 +147,7 @@ async def test_process_attendance_reward_handles_already_checked():
         repository=repository,
     )
 
-    assert result.status == "already_checked"
-    assert result.streak == 3
+    assert result == AttendanceRewardResult(status="already_checked", streak=3)
     assert repository.add_xp_calls == []
 
 
@@ -168,29 +167,50 @@ async def test_process_attendance_reward_awards_expected_bonus_flow():
         rng=rng,
     )
 
-    assert result.status == "success"
-    assert result.streak == 8
-    assert result.check_xp == 150
-    assert result.boost_check_xp == 700
-    assert result.streak_bonus == 180
-    assert result.total_xp == 1030
-    assert result.unit == "마늘"
+    assert result == AttendanceRewardResult(
+        status="success",
+        streak=8,
+        check_xp=150,
+        boost_check_xp=700,
+        streak_bonus=180,
+        total_xp=1030,
+        unit="마늘",
+    )
     assert repository.add_xp_calls == [(1, 2, 1030)]
     assert repository.add_month_xp_calls == [(1, 2, 1030)]
 
 
+def test_get_effective_xp_setting_returns_named_contract_without_magic_index():
+    repository = FakeXpRepository(xp_setting=XpSetting(True, 20, 30, None, None, "마늘"))
+
+    result = get_effective_xp_setting(
+        server_id=1,
+        xp_settings={1: [True, 20, 30, None, None, "마늘"]},
+        repository=repository,
+    )
+
+    assert result == XpSetting(True, 20, 30, None, None, "마늘")
+
+
 def test_main_routes_message_xp_and_attendance_through_service_boundary():
     source = Path("main.py").read_text(encoding="utf-8")
+    attendance_start = source.index('async def attendance(interaction: discord.Interaction):')
+    attendance_end = source.index('@bot.tree.command(name="경험치확인"', attendance_start)
+    attendance_source = source[attendance_start:attendance_end]
 
     assert "from bot_app.services.xp_service import (" in source
     assert "apply_message_xp," in source
+    assert "get_effective_xp_setting," in source
     assert "process_attendance_reward," in source
     assert "apply_message_xp(" in source
-    assert "reward_result = await process_attendance_reward(" in source
+    assert "attendance_xp_setting = get_effective_xp_setting(" in attendance_source
+    assert "reward_result = await process_attendance_reward(" in attendance_source
     assert "MessageXpApplyResult" in Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
-    assert 'if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :' in source
-    assert 'if reward_result.status == "attendance_disabled":' in source
-    assert 'if reward_result.status == "already_checked":' in source
+    assert "AttendanceRewardResult" in Path("bot_app/services/xp_service.py").read_text(encoding="utf-8")
+    assert 'if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :' not in attendance_source
+    assert "if attendance_xp_setting.enabled is False:" in attendance_source
+    assert 'if reward_result.status == "attendance_disabled":' in attendance_source
+    assert 'if reward_result.status == "already_checked":' in attendance_source
     assert "attendance_check, streak = process_attendance(" not in source
 
 

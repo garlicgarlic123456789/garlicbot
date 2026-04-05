@@ -133,6 +133,7 @@ from bot_app.services.moderation_service import (
 from bot_app.services.settings_service import get_block_log_channel_for_guild
 from bot_app.services.xp_service import (
     apply_message_xp,
+    get_effective_xp_setting,
     process_attendance_reward,
 )
 
@@ -2176,7 +2177,11 @@ async def attendance(interaction: discord.Interaction):
         await interaction.followup.send(msg)
         return
     
-    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
+    attendance_xp_setting = get_effective_xp_setting(
+        server_id=interaction.guild.id,
+        xp_settings=xp_setting,
+    )
+    if attendance_xp_setting.enabled is False:
         embed = discord.Embed(
             title="오류",
             description="경험치 기능이 사용 중지되어 있는 서버입니다.",

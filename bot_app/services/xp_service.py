@@ -1,20 +1,8 @@
-from dataclasses import dataclass
 from typing import Mapping
 import random
 
 from bot_app.repositories.xp_repository import xp_repository
-from bot_app.types.readability_contracts import MessageXpApplyResult, XpSetting
-
-
-@dataclass
-class AttendanceRewardResult:
-    status: str
-    streak: int = 0
-    check_xp: int = 0
-    boost_check_xp: int = 0
-    streak_bonus: int = 0
-    total_xp: int = 0
-    unit: str = ""
+from bot_app.types.readability_contracts import AttendanceRewardResult, MessageXpApplyResult, XpSetting
 
 
 def _coerce_xp_setting(setting: XpSetting | list | tuple | None) -> XpSetting:
@@ -37,6 +25,16 @@ def _resolve_xp_setting(server_id: int, xp_settings: Mapping[int, object], repos
     if server_id in xp_settings:
         return _coerce_xp_setting(xp_settings[server_id])
     return _coerce_xp_setting(repository.get_xp_setting(server_id))
+
+
+def get_effective_xp_setting(
+    *,
+    server_id: int,
+    xp_settings: Mapping[int, object],
+    repository=xp_repository,
+) -> XpSetting:
+    """Return the named XP setting contract for a server."""
+    return _resolve_xp_setting(server_id, xp_settings, repository)
 
 
 def apply_message_xp(
@@ -88,7 +86,7 @@ async def process_attendance_reward(
     server_booster_role_id: int,
     repository=xp_repository,
     rng=random,
-):
+) -> AttendanceRewardResult:
     setting = _resolve_xp_setting(server_id, xp_settings, repository)
     if setting.enabled is False:
         return AttendanceRewardResult(status="xp_disabled")

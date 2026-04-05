@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from bot_app.types.readability_contracts import (
+    AttendanceRewardResult,
     AutomodExecutionResult,
     AutomodExemptionResult,
     ErrorTrackedSlashCommandResult,
@@ -67,6 +68,16 @@ def test_message_handler_result_contracts_are_named_and_readable():
     assert automod_exemption.matched_scope == "channel"
     assert message_xp_result.awarded_xp == 15
 
+    attendance_reward = AttendanceRewardResult(
+        status="success",
+        streak=2,
+        total_xp=120,
+        unit="마늘",
+    )
+
+    assert attendance_reward.status == "success"
+    assert attendance_reward.total_xp == 120
+
 
 def test_main_connection_points_use_named_handler_results():
     main_source = Path("main.py").read_text(encoding="utf-8")
@@ -95,4 +106,5 @@ def test_service_boundaries_expose_named_result_objects():
 
     assert "AutomodExemptionResult" in settings_service_source
     assert "MessageXpApplyResult" in xp_service_source
+    assert "AttendanceRewardResult" in xp_service_source
     assert "return MessageXpApplyResult(status=\"awarded\"" in xp_service_source

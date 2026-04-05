@@ -24,6 +24,12 @@ MessageXpApplyStatus = Literal[
     "skipped_missing_value",
     "skipped_cooldown",
 ]
+AttendanceRewardStatus = Literal[
+    "success",
+    "xp_disabled",
+    "attendance_disabled",
+    "already_checked",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,3 +123,14 @@ class AutomodExemptionResult:
 class MessageXpApplyResult:
     status: MessageXpApplyStatus
     awarded_xp: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class AttendanceRewardResult:
+    status: AttendanceRewardStatus
+    streak: int = 0
+    check_xp: int = 0
+    boost_check_xp: int = 0
+    streak_bonus: int = 0
+    total_xp: int = 0
+    unit: str = ""
