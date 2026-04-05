@@ -106,6 +106,7 @@ from bot_app.events.message_handlers import (
 from bot_app.events.message_pipeline import (
     run_message_preprocessing,
 )
+from bot_app.services import apply_message_xp, process_attendance_reward
 
 from zoneinfo import ZoneInfo
 
@@ -1956,35 +1957,13 @@ async def handle_remaining_message_flow(message):
         user_id = message.author.id
         server_id = message.guild.id
 
-        if server_id not in xp_setting : 
-            return
-
-        if not xp_setting[server_id][0] : 
-            return
-        
-        cooldown = xp_setting[server_id][2]
-    
-        if cooldown == 0 : 
-            gain_xp = xp_setting[server_id][1]
-            update_xp(server_id, user_id, gain_xp)
-            update_month_xp(server_id, user_id, gain_xp)
-            return
-
-        now = asyncio.get_event_loop().time()
-        
-        # last_exp_time 딕셔너리 초기화
-        if server_id not in last_exp_time:
-            last_exp_time[server_id] = {}
-        
-        # 경험치 추가 쿨다운 확인
-        if user_id in last_exp_time[server_id] and now - last_exp_time[server_id][user_id] < cooldown:
-            return
-        
-        gain_xp = xp_setting[server_id][1]
-        
-        last_exp_time[server_id][user_id] = now
-        update_xp(server_id, user_id, gain_xp)
-        update_month_xp(server_id, user_id, gain_xp)
+        apply_message_xp(
+            server_id=server_id,
+            user_id=user_id,
+            xp_settings=xp_setting,
+            last_exp_time=last_exp_time,
+            now_monotonic=asyncio.get_event_loop().time(),
+        )
 
 
 
@@ -2201,8 +2180,16 @@ async def attendance(interaction: discord.Interaction):
         await interaction.followup.send(embed=embed)
         return
     
-    settings = await get_attendance_settings(interaction.guild.id)
-    if settings["on_off"] == False : 
+    reward_result = await process_attendance_reward(
+        server_id=interaction.guild.id,
+        user_id=interaction.user.id,
+        user_role_ids={role.id for role in interaction.user.roles},
+        xp_settings=xp_setting,
+        using_server=using_server,
+        server_booster_role_id=server_booster_role_id,
+    )
+
+    if reward_result.status == "attendance_disabled":
         embed = discord.Embed(
             title="오류",
             description="출석체크 기능이 사용 중지되어 있는 서버입니다.",
@@ -2211,56 +2198,27 @@ async def attendance(interaction: discord.Interaction):
         await interaction.followup.send(embed=embed)
         return
 
-    attendance_check, streak = process_attendance(interaction.guild.id, interaction.user.id)
-
-    if not attendance_check:
+    if reward_result.status == "already_checked":
         today_date = datetime.now(kst).strftime("%Y-%m-%d")
         await interaction.followup.send(f"**[오류!]** {today_date}: {interaction.user.mention} 오늘 이미 출석체크를 완료하였습니다. 다시 시도하세요.")
         return
 
-    streak_bonus = 0
-    
-    if interaction.guild.id == using_server :
-        if streak > 1 : 
-            streak_bonus = random.randrange(50, 101, 10)
-        if streak >= 7 : 
-            streak_bonus += random.randrange(50, 151, 10)
-        if streak >= 14 : 
-            streak_bonus += random.randrange(100, 201, 10)
-        if streak >= 30 :
-            streak_bonus += random.randrange(300, 501, 10)
-    
-    settings["maximum"] += 1
-    
-    check_xp = random.randrange(settings["minimum"], settings["maximum"], settings["step"])
-
-    if interaction.guild.id == using_server and any(role.id == server_booster_role_id for role in interaction.user.roles):
-        boost_check_xp = random.randrange(300, 1001, 10)
-    else : 
-        boost_check_xp = 0
-    user_id = str(interaction.user.id)
     today_date = datetime.now(kst).strftime("%Y-%m-%d")
 
-    total_xp = check_xp + boost_check_xp + streak_bonus
-    update_xp(interaction.guild.id, interaction.user.id, total_xp)
-    update_month_xp(interaction.guild.id, interaction.user.id, total_xp)
-
-    unit = xp_setting[interaction.guild.id][5]
-
-    if boost_check_xp > 0 and streak > 1: 
+    if reward_result.boost_check_xp > 0 and reward_result.streak > 1: 
         if interaction.guild.id == using_server : 
-            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함, 연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {reward_result.streak}일차!) 보상으로 `{reward_result.total_xp}` {reward_result.unit}(서버 부스터 보너스 `{reward_result.boost_check_xp}` {reward_result.unit} 포함, 연속 출석 보너스 `{reward_result.streak_bonus}` {reward_result.unit} 포함)(이)가 지급되었습니다.")
         else : 
-            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+boost_check_xp+streak_bonus}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함)(이)가 지급되었습니다.")
-    elif streak > 1 :
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {reward_result.streak}일차!) 보상으로 `{reward_result.total_xp}` {reward_result.unit}(서버 부스터 보너스 `{reward_result.boost_check_xp}` {reward_result.unit} 포함)(이)가 지급되었습니다.")
+    elif reward_result.streak > 1 :
         if interaction.guild.id == using_server : 
-            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` {unit}(연속 출석 보너스 `{streak_bonus}` {unit} 포함)(이)가 지급되었습니다.")
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {reward_result.streak}일차!) 보상으로 `{reward_result.total_xp}` {reward_result.unit}(연속 출석 보너스 `{reward_result.streak_bonus}` {reward_result.unit} 포함)(이)가 지급되었습니다.")
         else : 
-            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {streak}일차!) 보상으로 `{check_xp+streak_bonus}` {unit}(이)가 지급되었습니다.")
-    elif boost_check_xp > 0 :
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp+boost_check_xp}` {unit}(서버 부스터 보너스 `{boost_check_xp}` {unit} 포함)(이)가 지급되었습니다.")
+            await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! (연속 {reward_result.streak}일차!) 보상으로 `{reward_result.total_xp}` {reward_result.unit}(이)가 지급되었습니다.")
+    elif reward_result.boost_check_xp > 0 :
+        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{reward_result.total_xp}` {reward_result.unit}(서버 부스터 보너스 `{reward_result.boost_check_xp}` {reward_result.unit} 포함)(이)가 지급되었습니다.")
     else : 
-        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{check_xp}` {unit}(이)가 지급되었습니다.")
+        await interaction.followup.send(f"**[알림]** {today_date}: {interaction.user.mention} 출석체크 완료! 보상으로 `{reward_result.total_xp}` {reward_result.unit}(이)가 지급되었습니다.")
 
 
 
