@@ -6,6 +6,15 @@ from typing import Any, Mapping
 
 import discord
 
+from bot_app.services import (
+    add_warning_action,
+    finalize_warn_limit_ban,
+    parse_timeout_duration,
+    record_timeout_action,
+    record_untimeout_action,
+    remove_warning_action,
+)
+
 
 async def handle_moderation_text_commands(
     message,
@@ -44,8 +53,6 @@ async def handle_moderation_text_commands(
                 await message.reply(embed=embed, mention_author=False)
                 return True, error_count
 
-            warn_max = context["get_warn_max"](message.guild.id)
-
             if 개수 <= 0:
                 embed = discord.Embed(title="오류", description="개수의 값은 1 이상이여야 합니다.", color=discord.Color.red())
                 await message.reply(embed=embed, mention_author=False)
@@ -66,21 +73,22 @@ async def handle_moderation_text_commands(
                 await message.reply(embed=embed, mention_author=False)
                 return True, error_count
 
-            result = await context["add_warning"](message.guild.id, user_id, 개수)
-
-            if not 사유:
-                사유 = "*(사유 입력되지 않음)*"
-
-            context["add_blockhistory"](사용자.id, message.author.id, 사유, "warn", 개수, message.guild.id)
+            result = await add_warning_action(
+                server_id=message.guild.id,
+                user_id=int(user_id),
+                admin_id=message.author.id,
+                amount=개수,
+                reason=사유,
+            )
 
             embed = discord.Embed(title="경고", color=discord.Color.red(), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            if warn_max is not None:
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]}) / {warn_max}개", inline=False)
+            if result.warn_max is not None:
+                embed.add_field(name="경고 개수", value=f"{result.new_count}개 (+{result.delta}) / {result.warn_max}개", inline=False)
             else:
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]})", inline=False)
-            embed.add_field(name="사유", value=사유, inline=False)
+                embed.add_field(name="경고 개수", value=f"{result.new_count}개 (+{result.delta})", inline=False)
+            embed.add_field(name="사유", value=result.reason, inline=False)
 
             channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
             if channel:
@@ -93,7 +101,7 @@ async def handle_moderation_text_commands(
 
             await message.reply(embed=embed, mention_author=False)
 
-            if warn_max is not None and result[2] >= warn_max:
+            if result.reached_limit:
                 try:
                     await message.guild.ban(사용자, reason="경고 한도 도달", delete_message_days=0)
                 except discord.Forbidden:
@@ -115,7 +123,11 @@ async def handle_moderation_text_commands(
                     await message.reply(embed=embed, mention_author=False)
                     return True, error_count
 
-                context["add_blockhistory"](사용자.id, 1316579106749681664, "경고 한도 도달", "ban", 0, message.guild.id)
+                await finalize_warn_limit_ban(
+                    server_id=message.guild.id,
+                    user_id=사용자.id,
+                    bot_user_id=1316579106749681664,
+                )
                 embed = discord.Embed(title="차단", color=discord.Color.red(), timestamp=discord.utils.utcnow())
                 embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
                 embed.add_field(name="관리자", value="<@1316579106749681664>", inline=False)
@@ -130,8 +142,6 @@ async def handle_moderation_text_commands(
                     log_channel = context["bot"].get_channel(context["message_log"])
                     if log_channel:
                         await log_channel.send(embed=embed)
-
-                await context["set_warning"](message.guild.id, user_id, 0)
 
             return True, error_count
 
@@ -166,20 +176,22 @@ async def handle_moderation_text_commands(
                 await message.reply(embed=embed, mention_author=False)
                 return True, error_count
 
-            result = await context["remove_warning"](message.guild.id, user_id, 개수)
-            warn_max = context["get_warn_max"](message.guild.id)
-
-            if not 사유:
-                사유 = "*(사유 입력되지 않음)*"
+            result = await remove_warning_action(
+                server_id=message.guild.id,
+                user_id=int(user_id),
+                admin_id=message.author.id,
+                amount=개수,
+                reason=사유,
+            )
 
             embed = discord.Embed(title="경고 차감", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            if warn_max is not None:
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]}) / {warn_max}개", inline=False)
+            if result.warn_max is not None:
+                embed.add_field(name="경고 개수", value=f"{result.new_count}개 (-{result.delta}) / {result.warn_max}개", inline=False)
             else:
-                embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]})", inline=False)
-            embed.add_field(name="사유", value=사유, inline=False)
+                embed.add_field(name="경고 개수", value=f"{result.new_count}개 (-{result.delta})", inline=False)
+            embed.add_field(name="사유", value=result.reason, inline=False)
 
             channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
             if channel:
@@ -190,7 +202,6 @@ async def handle_moderation_text_commands(
                 if log_channel:
                     await log_channel.send(embed=embed)
 
-            context["add_blockhistory"](사용자.id, message.author.id, 사유, "unwarn", 개수, message.guild.id)
             await message.reply(embed=embed, mention_author=False)
             return True, error_count
 
@@ -226,15 +237,7 @@ async def handle_moderation_text_commands(
                 await message.reply(embed=embed, mention_author=False)
                 return True, error_count
 
-            duration = int(duration)
-            if unit == "분":
-                duration *= 60
-            elif unit == "시간":
-                duration *= 3600
-            elif unit == "일":
-                duration *= 86400
-            elif unit == "주":
-                duration *= 604800
+            duration = parse_timeout_duration(int(duration), unit)
 
             if duration > 2419200:
                 embed = discord.Embed(title="오류", description="duration의 값은 2419200 이하여야 합니다.", color=discord.Color.red())
@@ -264,10 +267,13 @@ async def handle_moderation_text_commands(
                 error_count += 1
                 return True, error_count
 
-            if reason is None:
-                reason = "*(사유 입력되지 않음)*"
-
-            context["add_blockhistory"](member.id, message.author.id, reason, "timeout", duration, message.guild.id)
+            result = record_timeout_action(
+                server_id=message.guild.id,
+                user_id=member.id,
+                admin_id=message.author.id,
+                duration=duration,
+                reason=reason,
+            )
 
             if duration > 0:
                 time_text = context["print_time"](duration)
@@ -278,7 +284,7 @@ async def handle_moderation_text_commands(
             embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
             embed.add_field(name="기간", value=f"{time_text}", inline=False)
-            embed.add_field(name="사유", value=reason, inline=False)
+            embed.add_field(name="사유", value=result.reason, inline=False)
 
             channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
             if channel:
@@ -332,13 +338,17 @@ async def handle_moderation_text_commands(
                 error_count += 1
                 return True, error_count
 
-            if reason is None:
-                reason = "*(사유 입력되지 않음)*"
+            result = record_untimeout_action(
+                server_id=message.guild.id,
+                user_id=member.id,
+                admin_id=message.author.id,
+                reason=reason,
+            )
 
             embed = discord.Embed(title="타임아웃 해제", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            embed.add_field(name="사유", value=reason, inline=False)
+            embed.add_field(name="사유", value=result.reason, inline=False)
 
             channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
             if channel:
@@ -349,7 +359,6 @@ async def handle_moderation_text_commands(
                 if log_channel:
                     await log_channel.send(embed=embed)
 
-            context["add_blockhistory"](member.id, message.author.id, reason, "untimeout", 0, message.guild.id)
             await message.reply(embed=embed, mention_author=False)
             return True, error_count
 
