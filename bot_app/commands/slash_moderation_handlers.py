@@ -7,10 +7,12 @@ import discord
 from bot_app.services.moderation_service import (
     add_warning_action,
     finalize_warn_limit_ban,
+    get_warning_status,
     parse_timeout_duration,
     record_timeout_action,
     record_untimeout_action,
     remove_warning_action,
+    set_warn_limit,
 )
 from bot_app.services.settings_service import get_block_log_channel_for_guild
 from bot_app.types.readability_contracts import (
@@ -182,6 +184,77 @@ async def run_warn_slash_command(
                 await log_channel.send(embed=embed)
 
     return _tracked_slash_result(error_count, status="completed", reason_code="warn_processed")
+
+
+async def run_set_warn_limit_slash_command(
+    interaction: discord.Interaction,
+    warn_limit: int,
+    *,
+    context: Mapping[str, Any],
+) -> SlashCommandResult:
+    if not interaction.user.guild_permissions.manage_guild:
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `서버 관리하기`",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _slash_result(status="rejected", reason_code="missing_manage_guild_permission")
+
+    await interaction.response.defer()
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _slash_result(status="rejected", reason_code="blocked_user")
+
+    if warn_limit < 0 or warn_limit > 100:
+        embed = discord.Embed(
+            title="오류",
+            description="한도의 값은 0 이상 100 이하이어야 합니다. 한도를 없애고 싶다면, 한도에 `0`을 입력하시면 경고 한도가 비활성화됩니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return _slash_result(status="rejected", reason_code="warn_limit_out_of_range")
+
+    persisted_limit = None if warn_limit == 0 else warn_limit
+    result = set_warn_limit(server_id=interaction.guild.id, warn_max=persisted_limit)
+    embed = discord.Embed(
+        title="완료",
+        description=f"경고 한도가 {result.warn_max}개로 설정되었습니다." if result.warn_max is not None else "경고 한도가 비활성화되었습니다.",
+        color=int("a5f0ff", 16),
+    )
+    await interaction.followup.send(embed=embed)
+    return _slash_result(status="completed", reason_code="warn_limit_updated")
+
+
+async def run_check_warning_slash_command(
+    interaction: discord.Interaction,
+    target_user: discord.User | None,
+    *,
+    context: Mapping[str, Any],
+) -> SlashCommandResult:
+    await interaction.response.defer()
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _slash_result(status="rejected", reason_code="blocked_user")
+
+    resolved_user = target_user or interaction.user
+    warning_status = await get_warning_status(server_id=interaction.guild.id, user_id=resolved_user.id)
+
+    embed = discord.Embed(
+        title="경고 확인",
+        color=int("a5f0ff", 16),
+        timestamp=discord.utils.utcnow(),
+    )
+    embed.add_field(name="사용자", value=f"{resolved_user.mention}", inline=False)
+    if warning_status.warn_max is not None:
+        embed.add_field(name="경고 개수", value=f"{warning_status.warning_count}개 / {warning_status.warn_max}개", inline=False)
+    else:
+        embed.add_field(name="경고 개수", value=f"{warning_status.warning_count}개", inline=False)
+
+    await interaction.followup.send(embed=embed)
+    return _slash_result(status="completed", reason_code="warning_checked")
 
 
 async def run_unwarn_slash_command(

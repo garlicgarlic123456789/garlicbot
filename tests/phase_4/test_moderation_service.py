@@ -7,7 +7,9 @@ import bot_app.commands.slash_moderation_handlers as slash_moderation_handlers_m
 from bot_app.events import message_handlers as message_handlers_module
 from bot_app.events.message_handlers import handle_moderation_text_commands
 from bot_app.commands.slash_moderation_handlers import (
+    run_check_warning_slash_command,
     run_remove_timeout_slash_command,
+    run_set_warn_limit_slash_command,
     run_timeout_slash_command,
     run_unwarn_slash_command,
     run_warn_slash_command,
@@ -17,34 +19,40 @@ from bot_app.services.moderation_service import (
     DEFAULT_REASON,
     add_warning_action,
     finalize_warn_limit_ban,
+    get_warning_status,
     parse_timeout_duration,
     record_timeout_action,
     record_untimeout_action,
     remove_warning_action,
+    set_warn_limit,
 )
 from bot_app.types.readability_contracts import (
     ErrorTrackedSlashCommandResult,
     ModerationCommandResult,
     SlashCommandResult,
     UserBlockState,
+    WarnLimitSettingResult,
+    WarningStatusSnapshot,
 )
 from tests.helpers.fakes import FakeBot, FakeTextChannel
 
 
 class FakePermissions:
-    def __init__(self, *, ban_members=False, moderate_members=False):
+    def __init__(self, *, ban_members=False, moderate_members=False, manage_guild=False):
         self.ban_members = ban_members
         self.moderate_members = moderate_members
+        self.manage_guild = manage_guild
 
 
 class FakeAuthor:
-    def __init__(self, author_id: int, *, ban_members=False, moderate_members=False, top_role=10):
+    def __init__(self, author_id: int, *, ban_members=False, moderate_members=False, manage_guild=False, top_role=10):
         self.id = author_id
         self.bot = False
         self.mention = f"<@{author_id}>"
         self.guild_permissions = FakePermissions(
             ban_members=ban_members,
             moderate_members=moderate_members,
+            manage_guild=manage_guild,
         )
         self.top_role = top_role
 
@@ -147,6 +155,13 @@ class FakeModerationRepository:
     def add_blockhistory(self, user_id: int, admin_id: int, reason: str, type_: str, addinfo: int, server_id: int):
         self.calls.append(("add_blockhistory", user_id, admin_id, reason, type_, addinfo, server_id))
 
+    async def get_warning_count(self, server_id: int, user_id: int):
+        self.calls.append(("get_warning_count", server_id, user_id))
+        return self.remove_warning_result[2]
+
+    def update_warn_max(self, server_id: int, max_warn: int | None):
+        self.calls.append(("update_warn_max", server_id, max_warn))
+
 
 @pytest.mark.asyncio
 async def test_add_warning_action_records_history_and_limit_state():
@@ -246,6 +261,28 @@ def test_timeout_record_helpers_normalize_reason_and_blockhistory():
         ("add_blockhistory", 20, 30, DEFAULT_REASON, "timeout", 600, 10),
         ("add_blockhistory", 20, 30, "완료", "untimeout", 0, 10),
     ]
+
+
+@pytest.mark.asyncio
+async def test_get_warning_status_reads_count_and_warn_limit():
+    repository = FakeModerationRepository(warn_max=5, remove_warning_result=(0, 0, 2))
+
+    result = await get_warning_status(server_id=10, user_id=20, repository=repository)
+
+    assert result == WarningStatusSnapshot(warning_count=2, warn_max=5)
+    assert repository.calls == [
+        ("get_warning_count", 10, 20),
+        ("get_warn_max", 10),
+    ]
+
+
+def test_set_warn_limit_persists_normalized_value():
+    repository = FakeModerationRepository()
+
+    result = set_warn_limit(server_id=10, warn_max=None, repository=repository)
+
+    assert result == WarnLimitSettingResult(warn_max=None)
+    assert repository.calls == [("update_warn_max", 10, None)]
 
 
 @pytest.mark.asyncio
@@ -599,6 +636,13 @@ async def test_moderation_repository_delegates_to_database_helpers(monkeypatch):
         calls.append(("set_warning", server_id, user_id, amount))
         return amount
 
+    async def fake_load_warning(server_id, user_id):
+        calls.append(("load_warning", server_id, user_id))
+        return 4
+
+    def fake_update_warn_max(server_id, max_warn):
+        calls.append(("update_warn_max", server_id, max_warn))
+
     def fake_add_blockhistory(user_id, admin_id, reason, type_, addinfo, server_id):
         calls.append(("add_blockhistory", user_id, admin_id, reason, type_, addinfo, server_id))
 
@@ -606,6 +650,8 @@ async def test_moderation_repository_delegates_to_database_helpers(monkeypatch):
     monkeypatch.setattr(moderation_repository_module, "add_warning", fake_add_warning)
     monkeypatch.setattr(moderation_repository_module, "remove_warning", fake_remove_warning)
     monkeypatch.setattr(moderation_repository_module, "set_warning", fake_set_warning)
+    monkeypatch.setattr(moderation_repository_module, "load_warning", fake_load_warning)
+    monkeypatch.setattr(moderation_repository_module, "update_warn_max", fake_update_warn_max)
     monkeypatch.setattr(moderation_repository_module, "add_blockhistory", fake_add_blockhistory)
 
     repository = ModerationRepository()
@@ -614,6 +660,8 @@ async def test_moderation_repository_delegates_to_database_helpers(monkeypatch):
     assert await repository.add_warning(1, 2, 3) == [0, 3, 3]
     assert await repository.remove_warning(1, 2, 3) == [3, 3, 0]
     assert await repository.reset_warning(1, 2) == 0
+    assert await repository.get_warning_count(1, 2) == 4
+    repository.update_warn_max(1, 7)
     repository.add_blockhistory(2, 3, "사유", "warn", 1, 1)
 
     assert calls == [
@@ -621,5 +669,7 @@ async def test_moderation_repository_delegates_to_database_helpers(monkeypatch):
         ("add_warning", 1, 2, 3),
         ("remove_warning", 1, 2, 3),
         ("set_warning", 1, 2, 0),
+        ("load_warning", 1, 2),
+        ("update_warn_max", 1, 7),
         ("add_blockhistory", 2, 3, "사유", "warn", 1, 1),
     ]

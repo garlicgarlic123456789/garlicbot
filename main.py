@@ -98,11 +98,14 @@ from commands import compatibility
 
 from bot_app.commands.registry import register_known_commands
 from bot_app.commands.slash_moderation_handlers import (
+    run_check_warning_slash_command,
     run_remove_timeout_slash_command,
+    run_set_warn_limit_slash_command,
     run_timeout_slash_command,
     run_unwarn_slash_command,
     run_warn_slash_command,
 )
+from bot_app.commands.slash_guild_settings_handlers import run_set_log_channel_slash_command
 from bot_app.commands.slash_xp_handlers import (
     run_add_xp_slash_command,
     run_attendance_slash_command,
@@ -2630,43 +2633,11 @@ async def 사용자정보(interaction: discord.Interaction, 사용자: discord.U
 @bot.tree.command(name = "경고한도설정", description = "경고 한도를 설정합니다. 설정된 한도에 도달하면 유저가 밴됩니다.")
 @app_commands.describe(한도="설정할 경고 한도 (한도 기능을 비활성화하려는 경우 0)")
 async def set_warn_limit(interaction: discord.Interaction, 한도: int):
-    if not interaction.user.guild_permissions.manage_guild:
-        embed = discord.Embed(
-            title="오류",
-            description="권한이 부족합니다. 다음 권한이 필요합니다: `서버 관리하기`",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    if 한도 < 0 or 한도 > 100 : 
-        embed = discord.Embed(
-            title="오류",
-            description="한도의 값은 0 이상 100 이하이어야 합니다. 한도를 없애고 싶다면, 한도에 `0`을 입력하시면 경고 한도가 비활성화됩니다.",
-            color = discord.Color.red(),
-        )
-        await interaction.followup.send(embed=embed, ephemeral=False)
-        return
-    
-    if 한도 == 0: 
-        한도 = None
-    
-    update_warn_max(interaction.guild.id, 한도)
-
-    embed = discord.Embed(
-        title="완료",
-        description=f"경고 한도가 {한도}개로 설정되었습니다." if 한도 is not None else "경고 한도가 비활성화되었습니다.",
-        color = int("a5f0ff", 16)
+    await run_set_warn_limit_slash_command(
+        interaction,
+        warn_limit=한도,
+        context={"is_blocked": is_blocked},
     )
-    await interaction.followup.send(embed=embed)
-    return
 
 @bot.tree.command(name="경고", description = "특정 사용자에게 경고를 부여합니다.")
 @app_commands.describe(사용자="경고를 부여할 사용자", 개수="추가할 경고 개수", 사유="경고 사유")
@@ -2709,33 +2680,11 @@ async def 경고차감(interaction: discord.Interaction, 사용자: discord.User
 @bot.tree.command(name="경고확인", description = "특정 사용자의 경고 개수를 확인합니다.")
 @app_commands.describe(사용자="경고를 확인할 사용자. 입력하지 않으면 본인이 대상이 됩니다.")
 async def 경고확인(interaction: discord.Interaction, 사용자: discord.User = None):
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    사용자 = 사용자 or interaction.user
-    warn_max = get_warn_max(interaction.guild.id)
-
-    warning_count = await load_warning(interaction.guild.id, 사용자.id)
-
-    # 결과 출력
-    embed = discord.Embed(
-        title="경고 확인",
-        color=int("a5f0ff", 16),
-        timestamp=discord.utils.utcnow()
+    await run_check_warning_slash_command(
+        interaction,
+        target_user=사용자,
+        context={"is_blocked": is_blocked},
     )
-    embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
-    if warn_max is not None :
-        embed.add_field(name="경고 개수", value=f"{warning_count}개 / {warn_max}개", inline=False)
-    else : 
-        embed.add_field(name="경고 개수", value=f"{warning_count}개", inline=False)
-
-    await interaction.followup.send(embed=embed)
 
 
     
@@ -3250,44 +3199,17 @@ async def bulk_unban(interaction: discord.Interaction, 사용자_리스트: str,
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(수정삭제로그 = "수정/삭제 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 반응로그 = "반응 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 역할부여회수로그 = "역할 부여 및 회수 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 제재로그 = "제재 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.", 이미지로그 = "이미지 삭제 로그를 전송할 채널. 입력하지 않을 시 기능 비활성화.")
 async def set_log_channel(interaction: discord.Interaction, 수정삭제로그: discord.TextChannel = None, 반응로그: discord.TextChannel = None, 역할부여회수로그: discord.TextChannel = None, 제재로그: discord.TextChannel = None, 이미지로그: discord.TextChannel = None):
-    await interaction.response.defer(ephemeral=False)
     global error
-
-    if 수정삭제로그 is not None : 
-        수정삭제로그 = 수정삭제로그.id
-    if 반응로그 is not None :
-        반응로그 = 반응로그.id
-    if 역할부여회수로그 is not None :
-        역할부여회수로그 = 역할부여회수로그.id
-    if 이미지로그 is not None : 
-        이미지로그 = 이미지로그.id
-
-    if 제재로그 is not None :
-        제재로그 = 제재로그.id
-    else : 
-        제재로그 = 0
-
-    try : 
-        update_log_channel(interaction.guild.id, 수정삭제로그, 반응로그, 역할부여회수로그, 이미지로그)
-        update_block_log_channel(interaction.guild.id, 제재로그)
-    except Exception as e : 
-        print(f"오류 #{error}: {e}")
-        embed = discord.Embed(
-            title="오류",
-            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        error += 1
-        return
-
-    embed = discord.Embed(
-        title="완료",
-        description="로그 채널 설정이 완료되었습니다.",
-        color=int("a5f0ff", 16),
+    log_channel_result = await run_set_log_channel_slash_command(
+        interaction,
+        editdelete_channel=수정삭제로그,
+        reaction_channel=반응로그,
+        role_channel=역할부여회수로그,
+        block_channel=제재로그,
+        image_channel=이미지로그,
+        error_count=error,
     )
-    await interaction.followup.send(embed=embed)
-    return
+    error = log_channel_result.error_count
 
 
 @bot.tree.command(name="타임아웃", description = "특정 사용자에게 타임아웃을 설정합니다. 이미 타임아웃된 경우 타임아웃 기간을 추가합니다.")

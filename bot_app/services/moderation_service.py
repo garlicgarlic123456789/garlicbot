@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from bot_app.repositories.moderation_repository import moderation_repository
+from bot_app.types.readability_contracts import WarnLimitSettingResult, WarningStatusSnapshot
 
 
 DEFAULT_REASON = "*(사유 입력되지 않음)*"
@@ -120,3 +121,24 @@ def record_untimeout_action(
     normalized_reason = normalize_reason(reason)
     repository.add_blockhistory(user_id, admin_id, normalized_reason, "untimeout", 0, server_id)
     return TimeoutActionResult(duration=0, reason=normalized_reason)
+
+
+async def get_warning_status(
+    *,
+    server_id: int,
+    user_id: int,
+    repository=moderation_repository,
+) -> WarningStatusSnapshot:
+    warning_count = await repository.get_warning_count(server_id, user_id)
+    warn_max = repository.get_warn_max(server_id)
+    return WarningStatusSnapshot(warning_count=warning_count, warn_max=warn_max)
+
+
+def set_warn_limit(
+    *,
+    server_id: int,
+    warn_max: int | None,
+    repository=moderation_repository,
+) -> WarnLimitSettingResult:
+    repository.update_warn_max(server_id, warn_max)
+    return WarnLimitSettingResult(warn_max=warn_max)

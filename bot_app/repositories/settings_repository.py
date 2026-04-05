@@ -1,5 +1,11 @@
-from commands.database import get_automod, get_automod_exception_channel, get_block_log_channel
-from bot_app.types.readability_contracts import AutomodConfig, AutomodRuleConfig
+from commands.database import (
+    get_automod,
+    get_automod_exception_channel,
+    get_block_log_channel,
+    update_block_log_channel,
+    update_log_channel,
+)
+from bot_app.types.readability_contracts import AutomodConfig, AutomodRuleConfig, GuildLogChannelSelection
 
 
 def _build_rule_config(raw_rule: list | tuple) -> AutomodRuleConfig:
@@ -23,6 +29,10 @@ class SettingsRepository:
 
     def get_block_log_channel(self, server_id: int):
         return get_block_log_channel(server_id)
+
+    def update_guild_log_channels(self, server_id: int, selection: GuildLogChannelSelection):
+        update_log_channel(server_id, selection.editdelete, selection.reaction, selection.role, selection.image)
+        update_block_log_channel(server_id, selection.block)
 
 
 settings_repository = SettingsRepository()

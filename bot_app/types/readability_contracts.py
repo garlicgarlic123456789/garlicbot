@@ -177,3 +177,23 @@ class XpRankingPage:
     total_pages: int
     unit: str
     entries: tuple[XpRankingEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class WarningStatusSnapshot:
+    warning_count: int
+    warn_max: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class WarnLimitSettingResult:
+    warn_max: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class GuildLogChannelSelection:
+    editdelete: int | None
+    reaction: int | None
+    role: int | None
+    image: int | None
+    block: int

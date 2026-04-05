@@ -3,7 +3,7 @@ from __future__ import annotations
 import discord
 
 from bot_app.repositories.settings_repository import settings_repository
-from bot_app.types.readability_contracts import AutomodConfig, AutomodExemptionResult
+from bot_app.types.readability_contracts import AutomodConfig, AutomodExemptionResult, GuildLogChannelSelection
 
 
 def get_automod_setting(server_id: int, repository=settings_repository) -> AutomodConfig:
@@ -40,3 +40,13 @@ def is_automod_exempt_channel(server_id: int, channel, repository=settings_repos
 def get_block_log_channel_for_guild(bot, server_id: int, repository=settings_repository):
     channel_id = repository.get_block_log_channel(server_id)
     return bot.get_channel(channel_id)
+
+
+def update_guild_log_channels(
+    *,
+    server_id: int,
+    selection: GuildLogChannelSelection,
+    repository=settings_repository,
+) -> GuildLogChannelSelection:
+    repository.update_guild_log_channels(server_id, selection)
+    return selection

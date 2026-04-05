@@ -9,8 +9,9 @@ from bot_app.services.settings_service import (
     get_automod_setting,
     get_block_log_channel_for_guild,
     is_automod_exempt_channel,
+    update_guild_log_channels,
 )
-from bot_app.types.readability_contracts import AutomodConfig, AutomodExemptionResult, AutomodRuleConfig
+from bot_app.types.readability_contracts import AutomodConfig, AutomodExemptionResult, AutomodRuleConfig, GuildLogChannelSelection
 from tests.helpers.fakes import FakeBot, FakeTextChannel
 
 
@@ -38,6 +39,9 @@ class FakeSettingsRepository:
     def get_block_log_channel(self, server_id: int):
         self.calls.append(("get_block_log_channel", server_id))
         return self.block_log_channel_id
+
+    def update_guild_log_channels(self, server_id: int, selection: GuildLogChannelSelection):
+        self.calls.append(("update_guild_log_channels", server_id, selection))
 
 
 def test_is_automod_exempt_channel_checks_direct_channel_first():
@@ -111,6 +115,18 @@ def test_settings_service_returns_automod_setting_and_block_log_channel():
     ]
 
 
+def test_settings_service_updates_guild_log_channels_with_named_contract():
+    repository = FakeSettingsRepository()
+    selection = GuildLogChannelSelection(editdelete=11, reaction=12, role=13, image=14, block=15)
+
+    result = update_guild_log_channels(server_id=1, selection=selection, repository=repository)
+
+    assert result == selection
+    assert repository.calls == [
+        ("update_guild_log_channels", 1, selection),
+    ]
+
+
 def test_message_handler_and_main_use_settings_services():
     source = Path("bot_app/events/message_handlers.py").read_text(encoding="utf-8")
     main_source = Path("main.py").read_text(encoding="utf-8")
@@ -157,9 +173,17 @@ def test_settings_repository_delegates_to_database_helpers(monkeypatch):
         calls.append(("get_block_log_channel", server_id))
         return 999
 
+    def fake_update_log_channel(server_id, editdelete, reaction, role, image):
+        calls.append(("update_log_channel", server_id, editdelete, reaction, role, image))
+
+    def fake_update_block_log_channel(server_id, channel_id):
+        calls.append(("update_block_log_channel", server_id, channel_id))
+
     monkeypatch.setattr(settings_repository_module, "get_automod", fake_get_automod)
     monkeypatch.setattr(settings_repository_module, "get_automod_exception_channel", fake_get_automod_exception_channel)
     monkeypatch.setattr(settings_repository_module, "get_block_log_channel", fake_get_block_log_channel)
+    monkeypatch.setattr(settings_repository_module, "update_log_channel", fake_update_log_channel)
+    monkeypatch.setattr(settings_repository_module, "update_block_log_channel", fake_update_block_log_channel)
 
     repository = SettingsRepository()
 
@@ -172,8 +196,14 @@ def test_settings_repository_delegates_to_database_helpers(monkeypatch):
     )
     assert repository.is_automod_exception_channel(1, 2) is True
     assert repository.get_block_log_channel(1) == 999
+    repository.update_guild_log_channels(
+        1,
+        GuildLogChannelSelection(editdelete=11, reaction=12, role=13, image=14, block=15),
+    )
     assert calls == [
         ("get_automod", 1),
         ("get_automod_exception_channel", 1, 2),
         ("get_block_log_channel", 1),
+        ("update_log_channel", 1, 11, 12, 13, 14),
+        ("update_block_log_channel", 1, 15),
     ]
