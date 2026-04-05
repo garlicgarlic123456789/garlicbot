@@ -40,6 +40,7 @@ from bot_app.config.ids import (
     RECORD_CHANNEL_ID,
     USING_SERVER_ID,
 )
+from bot_app.services.storage_service import load_command_blocked_users, save_command_blocked_users
 
 # API KEY 정보로드
 load_environment()
@@ -330,20 +331,11 @@ error = 1
 
 # JSON 파일에서 차단된 사용자 정보를 불러오는 함수
 def load_blocked_users2():
-    if not os.path.exists(BLOCKED_USERS_FILE):
-        return {}
-    with open(BLOCKED_USERS_FILE, "r", encoding="utf-8") as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            # 파일 내용이 올바르지 않을 경우 빈 딕셔너리 반환
-            data = {}
-    return data
+    return load_command_blocked_users(BLOCKED_USERS_FILE)
 
 # JSON 파일에 차단된 사용자 정보를 저장하는 함수
 def save_blocked_users2(data):
-    with open(BLOCKED_USERS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    save_command_blocked_users(BLOCKED_USERS_FILE, data)
 
 def is_blocked(user: discord.User):
     data = load_blocked_users2()

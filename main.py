@@ -106,7 +106,20 @@ from bot_app.events.message_handlers import (
 from bot_app.events.message_pipeline import (
     run_message_preprocessing,
 )
-from bot_app.services import apply_message_xp, process_attendance_reward
+from bot_app.services.storage_service import (
+    load_mentions_data,
+    load_suggestions_data,
+    read_auto_verify_state,
+    read_confidential_message_ids,
+    save_mentions_data,
+    save_suggestions_data,
+    write_auto_verify_state,
+    write_confidential_message_ids,
+)
+from bot_app.services.xp_service import (
+    apply_message_xp,
+    process_attendance_reward,
+)
 
 from zoneinfo import ZoneInfo
 
@@ -525,27 +538,18 @@ def check_likeability(id):
     return data.get(id, 0)
 
 def load_mentions():
-    if os.path.exists(MENTION_FILE):
-        with open(MENTION_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return []
+    return load_mentions_data(MENTION_FILE)
 
 def save_mentions(data):
-    with open(MENTION_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    save_mentions_data(MENTION_FILE, data)
 
 mentions = load_mentions()
 
 async def read_confidential_messages():
-    if not os.path.exists(secret_file_name):
-        return set()
-    async with aiofiles.open(secret_file_name, mode='r', encoding='utf-8') as f:
-        lines = await f.readlines()
-    return set(line.strip() for line in lines)
+    return await read_confidential_message_ids(secret_file_name)
 
 async def write_confidential_messages(messages):
-    async with aiofiles.open(secret_file_name, mode='w', encoding='utf-8') as f:
-        await f.writelines(f"{msg}\n" for msg in messages)
+    await write_confidential_message_ids(secret_file_name, messages)
 
 def read_denial_list():
     """소명거부리스트.txt 파일에서 사용자 ID 읽기"""
@@ -566,15 +570,11 @@ FILE_PATH = "auto_verify.txt"
 
 # 파일 상태를 변경하는 함수
 def update_file(content):
-    with open(FILE_PATH, "w", encoding="utf-8") as f:
-        f.write(content)
+    write_auto_verify_state(FILE_PATH, content)
 
 # 파일 상태를 읽는 함수
 def read_file():
-    if not os.path.exists(FILE_PATH):
-        return "파일이 존재하지 않습니다."
-    with open(FILE_PATH, "r", encoding="utf-8") as f:
-        return f.read().strip()
+    return read_auto_verify_state(FILE_PATH)
 
 def hash_user_id(user_id):
     """사용자 ID를 해시화합니다."""
@@ -582,10 +582,7 @@ def hash_user_id(user_id):
 
 def load_suggestions():
     """JSON 파일에서 의견 목록을 불러옵니다."""
-    if not os.path.exists('suggestions.json'):
-        return []
-    with open('suggestions.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
+    return load_suggestions_data("suggestions.json")
 
 # 경고 데이터 로드 및 저장 함수
 def load_warnings(old_warning: bool = False):
@@ -607,8 +604,7 @@ def save_warnings(warnings):
 
 def save_suggestions(suggestions):
     """의견 목록을 JSON 파일에 저장합니다."""
-    with open('suggestions.json', 'w', encoding='utf-8') as f:
-        json.dump(suggestions, f, ensure_ascii=False, indent=2)
+    save_suggestions_data("suggestions.json", suggestions)
 
 def load_blocked_users():
     """차단된 사용자 목록을 불러옵니다."""

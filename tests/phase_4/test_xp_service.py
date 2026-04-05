@@ -181,7 +181,9 @@ async def test_process_attendance_reward_awards_expected_bonus_flow():
 def test_main_routes_message_xp_and_attendance_through_service_boundary():
     source = Path("main.py").read_text(encoding="utf-8")
 
-    assert "from bot_app.services import apply_message_xp, process_attendance_reward" in source
+    assert "from bot_app.services.xp_service import (" in source
+    assert "apply_message_xp," in source
+    assert "process_attendance_reward," in source
     assert "apply_message_xp(" in source
     assert "reward_result = await process_attendance_reward(" in source
     assert 'if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :' in source

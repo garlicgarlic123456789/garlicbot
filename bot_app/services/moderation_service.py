@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from bot_app.repositories import moderation_repository
+from bot_app.repositories.moderation_repository import moderation_repository
 
 
 DEFAULT_REASON = "*(사유 입력되지 않음)*"

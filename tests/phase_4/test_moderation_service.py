@@ -274,7 +274,8 @@ def test_message_handler_source_uses_moderation_services():
     next_call_start = main_source.index("    if handled:", handler_call_start)
     handler_call_source = main_source[handler_call_start:next_call_start]
 
-    assert "from bot_app.services import (" in source
+    assert "from bot_app.services.moderation_service import (" in source
+    assert "from bot_app.services.settings_service import (" in source
     assert "add_warning_action(" in source
     assert "remove_warning_action(" in source
     assert "record_timeout_action(" in source

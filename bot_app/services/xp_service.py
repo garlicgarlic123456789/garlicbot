@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import random
 
-from bot_app.repositories import xp_repository
+from bot_app.repositories.xp_repository import xp_repository
 
 
 @dataclass

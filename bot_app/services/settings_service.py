@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import discord
 
-from bot_app.repositories import settings_repository
+from bot_app.repositories.settings_repository import settings_repository
 
 
 def get_automod_setting(server_id: int, repository=settings_repository):

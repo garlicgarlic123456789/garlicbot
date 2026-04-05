@@ -6,16 +6,18 @@ from typing import Any, Mapping
 
 import discord
 
-from bot_app.services import (
+from bot_app.services.moderation_service import (
     add_warning_action,
     finalize_warn_limit_ban,
-    get_automod_setting,
-    get_block_log_channel_for_guild,
-    is_automod_exempt_channel,
     parse_timeout_duration,
     record_timeout_action,
     record_untimeout_action,
     remove_warning_action,
+)
+from bot_app.services.settings_service import (
+    get_automod_setting,
+    get_block_log_channel_for_guild,
+    is_automod_exempt_channel,
 )
 
 
