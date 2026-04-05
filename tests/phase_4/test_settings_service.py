@@ -102,11 +102,11 @@ def test_settings_service_returns_automod_setting_and_block_log_channel():
 def test_message_handler_and_main_use_settings_services():
     source = Path("bot_app/events/message_handlers.py").read_text(encoding="utf-8")
     main_source = Path("main.py").read_text(encoding="utf-8")
-    moderation_call_start = main_source.index("handled, error = await handle_moderation_text_commands(")
-    moderation_call_end = main_source.index("    if handled:", moderation_call_start)
+    moderation_call_start = main_source.index("moderation_result = await handle_moderation_text_commands(")
+    moderation_call_end = main_source.index("    if moderation_result.stop_processing:", moderation_call_start)
     moderation_call_source = main_source[moderation_call_start:moderation_call_end]
-    automod_call_start = main_source.index("    if await handle_automod_message(")
-    automod_call_end = main_source.index("        return", automod_call_start)
+    automod_call_start = main_source.index("    automod_result = await handle_automod_message(")
+    automod_call_end = main_source.index("    if automod_result.stop_processing:", automod_call_start)
     automod_call_source = main_source[automod_call_start:automod_call_end]
 
     assert "get_block_log_channel_for_guild(" in source

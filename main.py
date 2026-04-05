@@ -1151,7 +1151,7 @@ async def on_message(message):
         message_log=message_log,
     ):
         return
-    handled, error = await handle_moderation_text_commands(
+    moderation_result = await handle_moderation_text_commands(
         message,
         context={
             "friendly_list": friendly_list,
@@ -1164,7 +1164,8 @@ async def on_message(message):
         },
         error_count=error,
     )
-    if handled:
+    error = moderation_result.error_count
+    if moderation_result.stop_processing:
         return
 
     await handle_using_server_role_watchers(
@@ -1177,7 +1178,7 @@ async def on_message(message):
         },
     )
 
-    if await handle_automod_message(
+    automod_result = await handle_automod_message(
         message,
         context={
             "handle_spamming": handle_spamming,
@@ -1207,7 +1208,8 @@ async def on_message(message):
             "raid_keyword1": raid_keyword1,
             "do_mention_role2": do_mention_role2,
         },
-    ):
+    )
+    if automod_result.stop_processing:
         return
     
     await handle_remaining_message_flow(message)

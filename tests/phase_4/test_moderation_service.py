@@ -22,6 +22,7 @@ from bot_app.services.moderation_service import (
     record_untimeout_action,
     remove_warning_action,
 )
+from bot_app.types.readability_contracts import ModerationCommandResult
 from tests.helpers.fakes import FakeBot, FakeTextChannel
 
 
@@ -272,7 +273,7 @@ async def test_message_handler_warn_path_uses_service_boundary(monkeypatch):
         channel=FakeTextChannel(channel_id=20),
     )
 
-    handled, error_count = await handle_moderation_text_commands(
+    result = await handle_moderation_text_commands(
         message,
         context={
             "friendly_list": [],
@@ -286,8 +287,12 @@ async def test_message_handler_warn_path_uses_service_boundary(monkeypatch):
         error_count=7,
     )
 
-    assert handled is True
-    assert error_count == 7
+    assert result == ModerationCommandResult(
+        status="handled",
+        error_count=7,
+        stop_processing=True,
+        reason_code="warn_processed",
+    )
     assert service_calls == [
         {
             "server_id": 1,
@@ -487,8 +492,8 @@ async def test_remove_timeout_slash_helper_executes_service_flow(monkeypatch):
 def test_message_handler_source_uses_moderation_services():
     source = Path("bot_app/events/message_handlers.py").read_text(encoding="utf-8")
     main_source = Path("main.py").read_text(encoding="utf-8")
-    handler_call_start = main_source.index("handled, error = await handle_moderation_text_commands(")
-    next_call_start = main_source.index("    if handled:", handler_call_start)
+    handler_call_start = main_source.index("moderation_result = await handle_moderation_text_commands(")
+    next_call_start = main_source.index("    if moderation_result.stop_processing:", handler_call_start)
     handler_call_source = main_source[handler_call_start:next_call_start]
 
     assert "from bot_app.services.moderation_service import (" in source
@@ -505,6 +510,7 @@ def test_message_handler_source_uses_moderation_services():
     assert '"remove_warning": remove_warning' not in handler_call_source
     assert '"add_blockhistory": add_blockhistory' not in handler_call_source
     assert '"set_warning": set_warning' not in handler_call_source
+    assert "moderation_result.error_count" in main_source
 
 
 def test_main_slash_moderation_commands_use_service_boundary():

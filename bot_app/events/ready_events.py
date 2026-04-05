@@ -5,12 +5,15 @@ from typing import Any, Mapping
 
 import discord
 
+from bot_app.types.readability_contracts import LoopStartResult
 
-def start_loop_if_needed(loop) -> bool:
+
+def start_loop_if_needed(loop) -> LoopStartResult:
+    """Start a discord task loop once and return a readable status."""
     if loop.is_running():
-        return False
+        return LoopStartResult(status="already_running", started=False)
     loop.start()
-    return True
+    return LoopStartResult(status="started", started=True)
 
 
 def build_ticket_embed() -> discord.Embed:

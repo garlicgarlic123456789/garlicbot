@@ -10,7 +10,12 @@ from bot_app.events.message_handlers import (
     handle_moderation_text_commands,
     handle_using_server_role_watchers,
 )
-from bot_app.types.readability_contracts import AutomodConfig, AutomodRuleConfig
+from bot_app.types.readability_contracts import (
+    AutomodConfig,
+    AutomodRuleConfig,
+    AutomodExecutionResult,
+    ModerationCommandResult,
+)
 from tests.helpers.fakes import FakeBot, FakeRole, FakeTextChannel
 
 
@@ -95,7 +100,7 @@ async def test_handle_moderation_text_commands_processes_commands_when_plain_mes
     async def fake_process_commands(msg):
         process_calls.append(msg)
 
-    handled, error_count = await handle_moderation_text_commands(
+    result = await handle_moderation_text_commands(
         message,
         context={
             "friendly_list": [],
@@ -115,8 +120,12 @@ async def test_handle_moderation_text_commands_processes_commands_when_plain_mes
         error_count=7,
     )
 
-    assert handled is False
-    assert error_count == 7
+    assert result == ModerationCommandResult(
+        status="not_handled",
+        error_count=7,
+        stop_processing=False,
+        reason_code=None,
+    )
     assert process_calls == [message]
 
 
@@ -130,7 +139,7 @@ async def test_handle_moderation_text_commands_warn_permission_error():
         channel=FakeChannel(channel_id=20),
     )
 
-    handled, error_count = await handle_moderation_text_commands(
+    result = await handle_moderation_text_commands(
         message,
         context={
             "friendly_list": [],
@@ -150,8 +159,12 @@ async def test_handle_moderation_text_commands_warn_permission_error():
         error_count=3,
     )
 
-    assert handled is True
-    assert error_count == 3
+    assert result == ModerationCommandResult(
+        status="error",
+        error_count=3,
+        stop_processing=True,
+        reason_code="warn_permission_denied",
+    )
     assert message.replies[0]["embed"].title == "오류"
     assert "권한이 부족합니다" in message.replies[0]["embed"].description
 
@@ -191,7 +204,7 @@ async def test_handle_automod_message_returns_true_for_exception_channel(monkeyp
 
     monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: True)
 
-    handled = await handle_automod_message(
+    result = await handle_automod_message(
         message,
         context={
             "handle_spamming": lambda *args, **kwargs: None,
@@ -223,7 +236,11 @@ async def test_handle_automod_message_returns_true_for_exception_channel(monkeyp
         },
     )
 
-    assert handled is True
+    assert result == AutomodExecutionResult(
+        status="handled",
+        stop_processing=True,
+        reason_code="exempt_channel",
+    )
 
 
 @pytest.mark.asyncio
@@ -251,7 +268,7 @@ async def test_handle_automod_message_handles_invite_link(monkeypatch):
         ),
     )
 
-    handled = await handle_automod_message(
+    result = await handle_automod_message(
         message,
         context={
             "handle_spamming": fake_handle_spamming,
@@ -283,7 +300,11 @@ async def test_handle_automod_message_handles_invite_link(monkeypatch):
         },
     )
 
-    assert handled is True
+    assert result == AutomodExecutionResult(
+        status="handled",
+        stop_processing=True,
+        reason_code="invite_link",
+    )
     assert spamming_calls
 
 
@@ -308,7 +329,7 @@ async def test_handle_automod_message_stops_for_allowed_role_mention_exception(m
         ),
     )
 
-    handled = await handle_automod_message(
+    result = await handle_automod_message(
         message,
         context={
             "handle_spamming": lambda *args, **kwargs: None,
@@ -340,7 +361,11 @@ async def test_handle_automod_message_stops_for_allowed_role_mention_exception(m
         },
     )
 
-    assert handled is True
+    assert result == AutomodExecutionResult(
+        status="handled",
+        stop_processing=True,
+        reason_code="allowed_role_mention",
+    )
 
 
 def test_main_keeps_message_handler_boundary():

@@ -11,6 +11,7 @@ from bot_app.events.ready_events import (
     run_ready_initialization,
     start_loop_if_needed,
 )
+from bot_app.types.readability_contracts import LoopStartResult
 from tests.helpers.fakes import FakeBot
 
 
@@ -80,9 +81,9 @@ def test_start_loop_if_needed_only_starts_once():
     stopped = FakeLoop(running=False)
     running = FakeLoop(running=True)
 
-    assert start_loop_if_needed(stopped) is True
+    assert start_loop_if_needed(stopped) == LoopStartResult(status="started", started=True)
     assert stopped.start_calls == 1
-    assert start_loop_if_needed(running) is False
+    assert start_loop_if_needed(running) == LoopStartResult(status="already_running", started=False)
     assert running.start_calls == 0
 
 

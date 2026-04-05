@@ -11,6 +11,9 @@ WhitelistPermission = Literal[
     "ban_members",
     "timeout_members",
 ]
+ModerationCommandStatus = Literal["handled", "not_handled", "error"]
+AutomodStatus = Literal["handled", "not_handled"]
+LoopStartStatus = Literal["started", "already_running"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,3 +53,24 @@ class LogChannelConfig:
 class AnonymousSetting:
     enabled: bool | None
     log_channel_id: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class ModerationCommandResult:
+    status: ModerationCommandStatus
+    error_count: int
+    stop_processing: bool
+    reason_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AutomodExecutionResult:
+    status: AutomodStatus
+    stop_processing: bool
+    reason_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LoopStartResult:
+    status: LoopStartStatus
+    started: bool
