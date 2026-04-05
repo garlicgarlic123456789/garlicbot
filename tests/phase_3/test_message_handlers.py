@@ -180,7 +180,7 @@ async def test_handle_using_server_role_watchers_sends_deprecated_role_notice():
 
 
 @pytest.mark.asyncio
-async def test_handle_automod_message_returns_true_for_exception_channel():
+async def test_handle_automod_message_returns_true_for_exception_channel(monkeypatch):
     message = FakeMessage(
         content="테스트",
         author=FakeAuthor(1),
@@ -188,11 +188,11 @@ async def test_handle_automod_message_returns_true_for_exception_channel():
         channel=FakeChannel(channel_id=20),
     )
 
+    monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: True)
+
     handled = await handle_automod_message(
         message,
         context={
-            "get_automod_exception_channel": lambda guild_id, channel_id: channel_id == 20,
-            "get_automod": lambda guild_id: {"invite_link": [False, 0], "political": [False, 0], "sexual": [False, 0], "mention": [False, 0]},
             "handle_spamming": lambda *args, **kwargs: None,
             "using_server": 1,
             "automod_keyword": [],
@@ -226,7 +226,7 @@ async def test_handle_automod_message_returns_true_for_exception_channel():
 
 
 @pytest.mark.asyncio
-async def test_handle_automod_message_handles_invite_link():
+async def test_handle_automod_message_handles_invite_link(monkeypatch):
     spamming_calls = []
     message = FakeMessage(
         content="discord.gg/test",
@@ -238,11 +238,15 @@ async def test_handle_automod_message_handles_invite_link():
     async def fake_handle_spamming(*args):
         spamming_calls.append(args)
 
+    monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: False)
+    monkeypatch.setattr(
+        "bot_app.events.message_handlers.get_automod_setting",
+        lambda guild_id: {"invite_link": [True, 60], "political": [False, 0], "sexual": [False, 0], "mention": [False, 0]},
+    )
+
     handled = await handle_automod_message(
         message,
         context={
-            "get_automod_exception_channel": lambda guild_id, channel_id: False,
-            "get_automod": lambda guild_id: {"invite_link": [True, 60], "political": [False, 0], "sexual": [False, 0], "mention": [False, 0]},
             "handle_spamming": fake_handle_spamming,
             "using_server": 1,
             "automod_keyword": [],
@@ -277,7 +281,7 @@ async def test_handle_automod_message_handles_invite_link():
 
 
 @pytest.mark.asyncio
-async def test_handle_automod_message_stops_for_allowed_role_mention_exception():
+async def test_handle_automod_message_stops_for_allowed_role_mention_exception(monkeypatch):
     message = FakeMessage(
         content="<@&12345> 허용 멘션",
         author=FakeAuthor(1),
@@ -285,11 +289,15 @@ async def test_handle_automod_message_stops_for_allowed_role_mention_exception()
         channel=FakeChannel(channel_id=20),
     )
 
+    monkeypatch.setattr("bot_app.events.message_handlers.is_automod_exempt_channel", lambda guild_id, channel: False)
+    monkeypatch.setattr(
+        "bot_app.events.message_handlers.get_automod_setting",
+        lambda guild_id: {"invite_link": [False, 0], "political": [False, 0], "sexual": [False, 0], "mention": [True, 60]},
+    )
+
     handled = await handle_automod_message(
         message,
         context={
-            "get_automod_exception_channel": lambda guild_id, channel_id: False,
-            "get_automod": lambda guild_id: {"invite_link": [False, 0], "political": [False, 0], "sexual": [False, 0], "mention": [True, 60]},
             "handle_spamming": lambda *args, **kwargs: None,
             "using_server": 1,
             "automod_keyword": [],

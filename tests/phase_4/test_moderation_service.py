@@ -227,6 +227,7 @@ async def test_message_handler_warn_path_uses_service_boundary(monkeypatch):
         return service_result
 
     monkeypatch.setattr(message_handlers_module, "add_warning_action", fake_add_warning_action)
+    monkeypatch.setattr(message_handlers_module, "get_block_log_channel_for_guild", lambda bot, guild_id: block_channel)
 
     member = FakeMember(2, top_role=1)
     message = FakeMessage(
@@ -241,7 +242,6 @@ async def test_message_handler_warn_path_uses_service_boundary(monkeypatch):
         context={
             "friendly_list": [],
             "bot": bot,
-            "get_block_log_channel": lambda guild_id: 100,
             "using_server": 1,
             "message_log": 101,
             "print_time": lambda duration: f"{duration}초",

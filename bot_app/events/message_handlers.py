@@ -9,6 +9,9 @@ import discord
 from bot_app.services import (
     add_warning_action,
     finalize_warn_limit_ban,
+    get_automod_setting,
+    get_block_log_channel_for_guild,
+    is_automod_exempt_channel,
     parse_timeout_duration,
     record_timeout_action,
     record_untimeout_action,
@@ -90,7 +93,7 @@ async def handle_moderation_text_commands(
                 embed.add_field(name="경고 개수", value=f"{result.new_count}개 (+{result.delta})", inline=False)
             embed.add_field(name="사유", value=result.reason, inline=False)
 
-            channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
+            channel = get_block_log_channel_for_guild(context["bot"], message.guild.id)
             if channel:
                 await channel.send(embed=embed)
 
@@ -134,7 +137,7 @@ async def handle_moderation_text_commands(
                 embed.add_field(name="사유", value="경고 한도 도달", inline=False)
 
                 await message.reply(embed=embed, mention_author=False)
-                channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
+                channel = get_block_log_channel_for_guild(context["bot"], message.guild.id)
                 if channel:
                     await channel.send(embed=embed)
 
@@ -193,7 +196,7 @@ async def handle_moderation_text_commands(
                 embed.add_field(name="경고 개수", value=f"{result.new_count}개 (-{result.delta})", inline=False)
             embed.add_field(name="사유", value=result.reason, inline=False)
 
-            channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
+            channel = get_block_log_channel_for_guild(context["bot"], message.guild.id)
             if channel:
                 await channel.send(embed=embed)
 
@@ -286,7 +289,7 @@ async def handle_moderation_text_commands(
             embed.add_field(name="기간", value=f"{time_text}", inline=False)
             embed.add_field(name="사유", value=result.reason, inline=False)
 
-            channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
+            channel = get_block_log_channel_for_guild(context["bot"], message.guild.id)
             if channel:
                 await channel.send(embed=embed)
 
@@ -350,7 +353,7 @@ async def handle_moderation_text_commands(
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
             embed.add_field(name="사유", value=result.reason, inline=False)
 
-            channel = context["bot"].get_channel(context["get_block_log_channel"](message.guild.id))
+            channel = get_block_log_channel_for_guild(context["bot"], message.guild.id)
             if channel:
                 await channel.send(embed=embed)
 
@@ -395,21 +398,10 @@ async def handle_using_server_role_watchers(message, *, context: Mapping[str, An
 
 
 async def handle_automod_message(message, *, context: Mapping[str, Any]) -> bool:
-    if context["get_automod_exception_channel"](message.guild.id, message.channel.id) is True:
+    if is_automod_exempt_channel(message.guild.id, message.channel):
         return True
 
-    if isinstance(message.channel, discord.Thread):
-        if context["get_automod_exception_channel"](message.guild.id, message.channel.parent.id) is True:
-            return True
-        if message.channel.parent.category is not None:
-            if context["get_automod_exception_channel"](message.guild.id, message.channel.parent.category.id) is True:
-                return True
-    else:
-        if message.channel.category is not None:
-            if context["get_automod_exception_channel"](message.guild.id, message.channel.category.id) is True:
-                return True
-
-    automod_setting = context["get_automod"](message.guild.id)
+    automod_setting = get_automod_setting(message.guild.id)
 
     if automod_setting["invite_link"][0]:
         if isinstance(message.channel, discord.Thread) and message.channel.parent.id == 1394966782426484796:

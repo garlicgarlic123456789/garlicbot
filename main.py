@@ -1145,7 +1145,6 @@ async def on_message(message):
         context={
             "friendly_list": friendly_list,
             "bot": bot,
-            "get_block_log_channel": get_block_log_channel,
             "using_server": using_server,
             "message_log": message_log,
             "print_time": print_time,
@@ -1170,8 +1169,6 @@ async def on_message(message):
     if await handle_automod_message(
         message,
         context={
-            "get_automod_exception_channel": get_automod_exception_channel,
-            "get_automod": get_automod,
             "handle_spamming": handle_spamming,
             "using_server": using_server,
             "automod_keyword": automod_keyword,

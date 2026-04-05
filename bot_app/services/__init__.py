@@ -10,6 +10,11 @@ from .moderation_service import (
     record_untimeout_action,
     remove_warning_action,
 )
+from .settings_service import (
+    get_automod_setting,
+    get_block_log_channel_for_guild,
+    is_automod_exempt_channel,
+)
 from .xp_service import (
     AttendanceRewardResult,
     apply_message_xp,
@@ -24,6 +29,9 @@ __all__ = [
     "add_warning_action",
     "apply_message_xp",
     "finalize_warn_limit_ban",
+    "get_automod_setting",
+    "get_block_log_channel_for_guild",
+    "is_automod_exempt_channel",
     "normalize_reason",
     "parse_timeout_duration",
     "process_attendance_reward",
