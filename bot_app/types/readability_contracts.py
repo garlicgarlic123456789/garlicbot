@@ -14,6 +14,8 @@ WhitelistPermission = Literal[
 ModerationCommandStatus = Literal["handled", "not_handled", "error"]
 AutomodStatus = Literal["handled", "not_handled"]
 LoopStartStatus = Literal["started", "already_running"]
+UserBlockStatus = Literal["blocked", "not_blocked"]
+SlashCommandStatus = Literal["completed", "rejected", "failed"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,3 +76,23 @@ class AutomodExecutionResult:
 class LoopStartResult:
     status: LoopStartStatus
     started: bool
+
+
+@dataclass(frozen=True, slots=True)
+class UserBlockState:
+    status: UserBlockStatus
+    blocked_until_label: str | None = None
+    reason: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class SlashCommandResult:
+    status: SlashCommandStatus
+    reason_code: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ErrorTrackedSlashCommandResult:
+    status: SlashCommandStatus
+    error_count: int
+    reason_code: str | None = None

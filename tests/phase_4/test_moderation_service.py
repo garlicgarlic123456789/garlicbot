@@ -22,7 +22,12 @@ from bot_app.services.moderation_service import (
     record_untimeout_action,
     remove_warning_action,
 )
-from bot_app.types.readability_contracts import ModerationCommandResult
+from bot_app.types.readability_contracts import (
+    ErrorTrackedSlashCommandResult,
+    ModerationCommandResult,
+    SlashCommandResult,
+    UserBlockState,
+)
 from tests.helpers.fakes import FakeBot, FakeTextChannel
 
 
@@ -338,11 +343,11 @@ async def test_warn_slash_helper_executes_service_flow(monkeypatch):
     guild = FakeGuild(1, member=member)
     interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
 
-    error_count = await run_warn_slash_command(
-        interaction,
-        type("FakeUser", (), {"id": 2, "mention": "<@2>"})(),
-        1,
-        "사유",
+    result = await run_warn_slash_command(
+        interaction=interaction,
+        target_user=type("FakeUser", (), {"id": 2, "mention": "<@2>"})(),
+        warning_amount=1,
+        reason_text="사유",
         context={
             "friendly_list": [],
             "bot": bot,
@@ -353,7 +358,11 @@ async def test_warn_slash_helper_executes_service_flow(monkeypatch):
         error_count=5,
     )
 
-    assert error_count == 5
+    assert result == ErrorTrackedSlashCommandResult(
+        status="completed",
+        error_count=5,
+        reason_code="warn_processed",
+    )
     assert service_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "amount": 1, "reason": "사유"}]
     assert finalize_calls == [{"server_id": 1, "user_id": 2, "bot_user_id": 1316579106749681664}]
     assert guild.ban_calls[0]["reason"] == "경고 한도 도달"
@@ -384,11 +393,11 @@ async def test_unwarn_slash_helper_executes_service_flow(monkeypatch):
     guild = FakeGuild(1, member=member)
     interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
 
-    await run_unwarn_slash_command(
-        interaction,
-        type("FakeUser", (), {"id": 2, "mention": "<@2>"})(),
-        2,
-        "정정",
+    result = await run_unwarn_slash_command(
+        interaction=interaction,
+        target_user=type("FakeUser", (), {"id": 2, "mention": "<@2>"})(),
+        warning_amount=2,
+        reason_text="정정",
         context={
             "bot": bot,
             "using_server": 999,
@@ -397,6 +406,7 @@ async def test_unwarn_slash_helper_executes_service_flow(monkeypatch):
         },
     )
 
+    assert result == SlashCommandResult(status="completed", reason_code="unwarn_processed")
     assert service_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "amount": 2, "reason": "정정"}]
     assert interaction.followup.sent[0]["embed"].title == "경고 차감"
 
@@ -425,13 +435,13 @@ async def test_timeout_slash_helper_executes_service_flow(monkeypatch):
     guild = FakeGuild(1, member=member)
     interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
 
-    error_count = await run_timeout_slash_command(
-        interaction,
-        member,
-        2,
-        "분",
-        "사유",
-        "False",
+    result = await run_timeout_slash_command(
+        interaction=interaction,
+        target_user=member,
+        timeout_value=2,
+        timeout_unit="분",
+        reason_text="사유",
+        private_response="False",
         context={
             "friendly_list": [],
             "bot": bot,
@@ -444,7 +454,11 @@ async def test_timeout_slash_helper_executes_service_flow(monkeypatch):
         error_count=3,
     )
 
-    assert error_count == 3
+    assert result == ErrorTrackedSlashCommandResult(
+        status="completed",
+        error_count=3,
+        reason_code="timeout_processed",
+    )
     assert add_timeout_calls == [(2, 120, "사유")]
     assert record_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "duration": 120, "reason": "사유"}]
     assert interaction.followup.sent[0]["embed"].title == "타임아웃"
@@ -470,10 +484,10 @@ async def test_remove_timeout_slash_helper_executes_service_flow(monkeypatch):
     guild = FakeGuild(1, member=member)
     interaction = FakeSlashInteraction(user=FakeAuthor(1, top_role=10), guild=guild)
 
-    error_count = await run_remove_timeout_slash_command(
-        interaction,
-        member,
-        "사유",
+    result = await run_remove_timeout_slash_command(
+        interaction=interaction,
+        target_user=member,
+        reason_text="사유",
         context={
             "bot": bot,
             "using_server": 999,
@@ -483,7 +497,11 @@ async def test_remove_timeout_slash_helper_executes_service_flow(monkeypatch):
         error_count=8,
     )
 
-    assert error_count == 8
+    assert result == ErrorTrackedSlashCommandResult(
+        status="completed",
+        error_count=8,
+        reason_code="untimeout_processed",
+    )
     assert member.edit_calls == [{"timed_out_until": None, "reason": "사유"}]
     assert record_calls == [{"server_id": 1, "user_id": 2, "admin_id": 1, "reason": "사유"}]
     assert interaction.followup.sent[0]["embed"].title == "타임아웃 해제"
@@ -534,6 +552,9 @@ def test_main_slash_moderation_commands_use_service_boundary():
     assert "run_unwarn_slash_command(" in unwarn_source
     assert "run_timeout_slash_command(" in timeout_source
     assert "run_remove_timeout_slash_command(" in remove_timeout_source
+    assert "warn_command_result.error_count" in warn_source
+    assert "timeout_command_result.error_count" in timeout_source
+    assert "remove_timeout_result.error_count" in remove_timeout_source
     assert "add_warning_action(" not in warn_source
     assert "remove_warning_action(" not in unwarn_source
     assert "record_timeout_action(" not in timeout_source
@@ -542,6 +563,19 @@ def test_main_slash_moderation_commands_use_service_boundary():
     assert "add_blockhistory(" not in unwarn_source
     assert "add_blockhistory(" not in timeout_source
     assert "add_blockhistory(" not in remove_timeout_source
+
+
+def test_slash_command_helpers_wrap_blocked_tuple_with_named_state():
+    block_state = slash_moderation_handlers_module._resolve_user_block_state(  # noqa: SLF001
+        lambda user: (True, "내일", "테스트"),
+        object(),
+    )
+
+    assert block_state == UserBlockState(
+        status="blocked",
+        blocked_until_label="내일",
+        reason="테스트",
+    )
 
 
 @pytest.mark.asyncio
