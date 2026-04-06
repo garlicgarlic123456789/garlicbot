@@ -64,6 +64,10 @@ class GambleButtonView(discord.ui.View):
                 )
                 return
 
+            if self.already_played:
+                await interaction.response.send_message("**[오류!]** 이미 게임이 종료되었습니다.", ephemeral=True)
+                return
+
             balance_check = check_gamble_balance(
                 server_id=interaction.guild.id,
                 creator_user_id=self.author.id,
@@ -85,9 +89,6 @@ class GambleButtonView(discord.ui.View):
                 return
 
             self.disable_all_buttons()
-            if self.already_played:
-                await interaction.response.send_message("**[오류!]** 이미 게임이 종료되었습니다.", ephemeral=True)
-                return
 
             self.already_played = True
             await interaction.response.defer()

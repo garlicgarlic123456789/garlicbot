@@ -271,6 +271,7 @@ async def test_gamble_view_does_not_resettle_after_game_finishes(monkeypatch):
     first_interaction = FakeButtonInteraction(user=first_participant, guild=FakeGuild(1), message=FakeMessage())
     second_interaction = FakeButtonInteraction(user=second_participant, guild=FakeGuild(1), message=FakeMessage())
     call_count = 0
+    balance_check_count = 0
 
     def fake_resolve_gamble_round(**kwargs):
         nonlocal call_count
@@ -284,10 +285,15 @@ async def test_gamble_view_does_not_resettle_after_game_finishes(monkeypatch):
             unit="XP",
         )
 
+    def fake_check_gamble_balance(**kwargs):
+        nonlocal balance_check_count
+        balance_check_count += 1
+        return SimpleNamespace(status="ok", amount=100, unit="XP")
+
     monkeypatch.setattr(
         slash_xp_economy_handlers_module,
         "check_gamble_balance",
-        lambda **kwargs: SimpleNamespace(status="ok", amount=100, unit="XP"),
+        fake_check_gamble_balance,
     )
     monkeypatch.setattr(slash_xp_economy_handlers_module, "resolve_gamble_round", fake_resolve_gamble_round)
 
@@ -295,6 +301,7 @@ async def test_gamble_view_does_not_resettle_after_game_finishes(monkeypatch):
     await view.button_callback(second_interaction, "짝")
 
     assert call_count == 1
+    assert balance_check_count == 1
     assert second_interaction.response.sent[0]["content"] == "**[오류!]** 이미 게임이 종료되었습니다."
     assert second_interaction.response.sent[0]["ephemeral"] is True
 
