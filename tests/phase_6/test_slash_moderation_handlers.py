@@ -9,12 +9,14 @@ import pytest
 
 import bot_app.commands.slash_moderation_handlers as handlers_module
 from bot_app.commands.slash_moderation_handlers import (
+    run_bulk_ban_slash_command,
+    run_bulk_unban_slash_command,
     run_ban_slash_command,
     run_kick_slash_command,
     run_unban_slash_command,
 )
 from bot_app.services.moderation_service import record_ban_action, record_kick_action, record_unban_action
-from bot_app.types.readability_contracts import ErrorTrackedSlashCommandResult
+from bot_app.types.readability_contracts import ErrorTrackedSlashCommandResult, SlashCommandResult
 from tests.helpers.fakes import FakeBot, FakeTextChannel
 
 
@@ -301,12 +303,122 @@ async def test_unban_helper_executes_public_log_flow(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_bulk_ban_helper_records_success_and_failure_entries(monkeypatch):
+    bot = FakeBot()
+    block_log_channel = FakeTextChannel(channel_id=400)
+    message_log_channel = FakeTextChannel(channel_id=401)
+    bot.channels[400] = block_log_channel
+    bot.channels[401] = message_log_channel
+
+    recorded_calls = []
+
+    async def fake_fetch_user(user_id: int):
+        if user_id == 404:
+            raise RuntimeError("missing user")
+        return FakeTargetUser(user_id)
+
+    def fake_record_ban_action(**kwargs):
+        recorded_calls.append(kwargs)
+        return SimpleNamespace(reason=kwargs["reason"] or "*(사유 입력되지 않음)*")
+
+    monkeypatch.setattr(handlers_module, "get_block_log_channel_for_guild", lambda bot, guild_id: block_log_channel)
+    monkeypatch.setattr(handlers_module, "record_ban_action", fake_record_ban_action)
+    bot.fetch_user = fake_fetch_user
+
+    guild = FakeGuild(1, owner_id=10)
+    interaction = FakeInteraction(user=FakeAuthor(10, top_role=9), guild=guild)
+
+    result = await run_bulk_ban_slash_command(
+        interaction,
+        user_ids_text="20, 404, 21",
+        reason_text="벌크 사유",
+        visibility="공개",
+        context={
+            "bot": bot,
+            "using_server": 1,
+            "owner_notify": 999,
+            "message_log": 401,
+            "is_blocked": lambda user: (False, None, None),
+        },
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="bulk_ban_processed")
+    assert interaction.response.deferred == [{"ephemeral": False}]
+    assert [call["reason"] for call in guild.ban_calls] == ["벌크 사유", "벌크 사유"]
+    assert [call["delete_message_seconds"] for call in guild.ban_calls] == [0, 0]
+    assert [call["user"].id for call in guild.ban_calls] == [20, 21]
+    assert recorded_calls == [
+        {"server_id": 1, "user_id": 20, "admin_id": 10, "reason": "벌크 사유"},
+        {"server_id": 1, "user_id": 21, "admin_id": 10, "reason": "벌크 사유"},
+    ]
+    response_embed = interaction.followup.sent[0]["embed"]
+    assert response_embed.title == "차단"
+    assert response_embed.fields[0].value == "<@20>, <@21>"
+    assert response_embed.fields[1].value == "<@404>"
+    assert block_log_channel.sent_embeds[0].title == "차단"
+    assert message_log_channel.sent_embeds[0].title == "차단"
+
+
+@pytest.mark.asyncio
+async def test_bulk_unban_helper_uses_private_visibility_owner_notify(monkeypatch):
+    bot = FakeBot()
+    owner_notify_channel = FakeTextChannel(channel_id=500)
+    message_log_channel = FakeTextChannel(channel_id=501)
+    bot.channels[500] = owner_notify_channel
+    bot.channels[501] = message_log_channel
+
+    recorded_calls = []
+
+    async def fake_fetch_user(user_id: int):
+        return FakeTargetUser(user_id)
+
+    def fake_record_unban_action(**kwargs):
+        recorded_calls.append(kwargs)
+        return SimpleNamespace(reason=kwargs["reason"] or "*(사유 입력되지 않음)*")
+
+    monkeypatch.setattr(handlers_module, "record_unban_action", fake_record_unban_action)
+    bot.fetch_user = fake_fetch_user
+
+    guild = FakeGuild(1, owner_id=10)
+    interaction = FakeInteraction(user=FakeAuthor(10, top_role=9), guild=guild)
+
+    result = await run_bulk_unban_slash_command(
+        interaction,
+        user_ids_text="30, 31",
+        reason_text="None",
+        visibility="비공개",
+        context={
+            "bot": bot,
+            "using_server": 1,
+            "owner_notify": 500,
+            "message_log": 501,
+            "is_blocked": lambda user: (False, None, None),
+        },
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="bulk_unban_processed")
+    assert interaction.response.deferred == [{"ephemeral": True}]
+    assert [call["user"].id for call in guild.unban_calls] == [30, 31]
+    assert recorded_calls == [
+        {"server_id": 1, "user_id": 30, "admin_id": 10, "reason": None},
+        {"server_id": 1, "user_id": 31, "admin_id": 10, "reason": None},
+    ]
+    response_embed = interaction.followup.sent[0]["embed"]
+    assert response_embed.title == "차단 해제"
+    assert response_embed.fields[2].value == "*(사유 입력되지 않음)*"
+    assert owner_notify_channel.sent_embeds[0].title == "차단 해제"
+    assert message_log_channel.sent_embeds[0].title == "차단 해제"
+
+
+@pytest.mark.asyncio
 async def test_main_kick_ban_and_unban_wrappers_pass_expected_context():
     source = Path("main.py").read_text(encoding="utf-8")
     extracted_wrappers = {
         "kick": _extract_main_wrapper("kick"),
         "ban": _extract_main_wrapper("ban"),
         "unban": _extract_main_wrapper("unban"),
+        "bulk_ban": _extract_main_wrapper("bulk_ban"),
+        "bulk_unban": _extract_main_wrapper("bulk_unban"),
     }
 
     wrapper_specs = {
@@ -325,6 +437,16 @@ async def test_main_kick_ban_and_unban_wrappers_pass_expected_context():
             "expected_context_keys": {"bot", "using_server", "owner_notify", "message_log", "is_blocked"},
             "args": ("interaction", "사용자", "사유", "제재내역공개여부"),
         },
+        "bulk_ban": {
+            "helper_name": "run_bulk_ban_slash_command",
+            "expected_context_keys": {"bot", "using_server", "owner_notify", "message_log", "is_blocked"},
+            "args": ("interaction", "사용자_리스트", "사유", "제재내역공개여부"),
+        },
+        "bulk_unban": {
+            "helper_name": "run_bulk_unban_slash_command",
+            "expected_context_keys": {"bot", "using_server", "owner_notify", "message_log", "is_blocked"},
+            "args": ("interaction", "사용자_리스트", "사유", "제재내역공개여부"),
+        },
     }
 
     sentinels = {
@@ -342,7 +464,7 @@ async def test_main_kick_ban_and_unban_wrappers_pass_expected_context():
     for function_name, wrapper_module in extracted_wrappers.items():
         captured = {}
 
-        async def fake_helper(*, interaction, target_user, reason_text, context, error_count, visibility=None):
+        async def fake_helper(interaction, *, context, target_user=None, reason_text=None, error_count=None, visibility=None, user_ids_text=None):
             captured.update(
                 {
                     "interaction": interaction,
@@ -351,6 +473,7 @@ async def test_main_kick_ban_and_unban_wrappers_pass_expected_context():
                     "context": context,
                     "error_count": error_count,
                     "visibility": visibility,
+                    "user_ids_text": user_ids_text,
                 }
             )
             return SimpleNamespace(error_count=99)
@@ -360,6 +483,8 @@ async def test_main_kick_ban_and_unban_wrappers_pass_expected_context():
             "run_kick_slash_command": fake_helper,
             "run_ban_slash_command": fake_helper,
             "run_unban_slash_command": fake_helper,
+            "run_bulk_ban_slash_command": fake_helper,
+            "run_bulk_unban_slash_command": fake_helper,
             **sentinels,
         }
         with warnings.catch_warnings():
@@ -370,20 +495,28 @@ async def test_main_kick_ban_and_unban_wrappers_pass_expected_context():
         target_user = FakeTargetUser(20)
         if function_name == "kick":
             await namespace[function_name](interaction, target_user, "사유")
+        elif function_name in {"bulk_ban", "bulk_unban"}:
+            await namespace[function_name](interaction, "20, 21", "사유", "비공개")
         else:
             await namespace[function_name](interaction, target_user, "사유", "비공개")
 
         assert captured["interaction"] is interaction
-        assert captured["target_user"] is target_user
-        assert captured["reason_text"] == "사유"
+        if function_name in {"bulk_ban", "bulk_unban"}:
+            assert captured["user_ids_text"] == "20, 21"
+        else:
+            assert captured["target_user"] is target_user
+            assert captured["reason_text"] == "사유"
         if function_name != "kick":
             assert captured["visibility"] == "비공개"
         assert set(captured["context"]) == wrapper_specs[function_name]["expected_context_keys"]
         for key in wrapper_specs[function_name]["expected_context_keys"]:
             assert captured["context"][key] is sentinels[key]
-        assert captured["error_count"] == 5
-        assert namespace["error"] == 99
+        if function_name in {"kick", "ban", "unban"}:
+            assert captured["error_count"] == 5
+            assert namespace["error"] == 99
 
     assert "run_kick_slash_command(" in source
     assert "run_ban_slash_command(" in source
     assert "run_unban_slash_command(" in source
+    assert "run_bulk_ban_slash_command(" in source
+    assert "run_bulk_unban_slash_command(" in source

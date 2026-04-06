@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Mapping
 
 import discord
@@ -26,6 +27,13 @@ from bot_app.types.readability_contracts import (
 
 
 BOT_USER_ID = 1316579106749681664
+
+
+@dataclass(frozen=True, slots=True)
+class BulkModerationSummary:
+    succeeded_user_mentions: tuple[str, ...]
+    failed_user_mentions: tuple[str, ...]
+    reason: str
 
 
 def _resolve_user_block_state(block_checker, user) -> UserBlockState:
@@ -62,6 +70,70 @@ def _slash_result(*, status: str, reason_code: str | None = None) -> SlashComman
         status=status,
         reason_code=reason_code,
     )
+
+
+def _normalize_optional_reason(reason_text: str | None) -> str | None:
+    return None if reason_text in (None, "None") else reason_text
+
+
+def _parse_user_id_list(user_ids_text: str) -> tuple[str, ...]:
+    return tuple(user_id.strip() for user_id in user_ids_text.split(",") if user_id.strip())
+
+
+def _build_bulk_moderation_summary(
+    *,
+    succeeded_user_mentions: list[str],
+    failed_user_mentions: list[str],
+    reason_text: str | None,
+) -> BulkModerationSummary:
+    normalized_reason = "*(사유 입력되지 않음)*" if reason_text is None else reason_text
+    return BulkModerationSummary(
+        succeeded_user_mentions=tuple(succeeded_user_mentions),
+        failed_user_mentions=tuple(failed_user_mentions),
+        reason=normalized_reason,
+    )
+
+
+def _build_bulk_moderation_embed(
+    *,
+    title: str,
+    color: int,
+    summary: BulkModerationSummary,
+    admin_mention: str,
+) -> discord.Embed:
+    embed = discord.Embed(title=title, color=color, timestamp=discord.utils.utcnow())
+    embed.add_field(
+        name="사용자",
+        value=", ".join(summary.succeeded_user_mentions) if summary.succeeded_user_mentions else "*(비어 있음)*",
+        inline=False,
+    )
+    if summary.failed_user_mentions:
+        embed.add_field(name="실패", value=", ".join(summary.failed_user_mentions), inline=False)
+    embed.add_field(name="관리자", value=admin_mention, inline=False)
+    embed.add_field(name="사유", value=summary.reason, inline=False)
+    return embed
+
+
+async def _send_bulk_moderation_logs(
+    *,
+    interaction: discord.Interaction,
+    visibility: str,
+    embed: discord.Embed,
+    context: Mapping[str, Any],
+) -> None:
+    if visibility == "공개":
+        channel = get_block_log_channel_for_guild(context["bot"], interaction.guild.id)
+        if channel:
+            await channel.send(embed=embed)
+    elif interaction.guild.id == context["using_server"]:
+        owner_channel = context["bot"].get_channel(context["owner_notify"])
+        if owner_channel:
+            await owner_channel.send(embed=embed)
+
+    if interaction.guild.id == context["using_server"]:
+        log_channel = context["bot"].get_channel(context["message_log"])
+        if log_channel:
+            await log_channel.send(embed=embed)
 
 
 async def run_warn_slash_command(
@@ -753,3 +825,131 @@ async def run_unban_slash_command(
 
     await interaction.followup.send(embed=embed)
     return _tracked_slash_result(error_count, status="completed", reason_code="unban_processed")
+
+
+async def run_bulk_ban_slash_command(
+    interaction: discord.Interaction,
+    *,
+    user_ids_text: str,
+    reason_text: str,
+    visibility: str,
+    context: Mapping[str, Any],
+) -> SlashCommandResult:
+    if interaction.guild.owner_id != interaction.user.id:
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `서버 주인`",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _slash_result(status="rejected", reason_code="bulk_ban_owner_only")
+
+    await interaction.response.defer(ephemeral=visibility != "공개")
+
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _slash_result(status="rejected", reason_code="blocked_user")
+
+    parsed_user_ids = _parse_user_id_list(user_ids_text)
+    succeeded_user_mentions: list[str] = []
+    failed_user_mentions: list[str] = []
+    normalized_reason = _normalize_optional_reason(reason_text)
+
+    for user_id_text in parsed_user_ids:
+        try:
+            target_user = await context["bot"].fetch_user(int(user_id_text))
+            await interaction.guild.ban(target_user, reason=normalized_reason, delete_message_seconds=0)
+            succeeded_user_mentions.append(f"<@{target_user.id}>")
+            record_ban_action(
+                server_id=interaction.guild.id,
+                user_id=target_user.id,
+                admin_id=interaction.user.id,
+                reason=normalized_reason,
+            )
+        except Exception:
+            failed_user_mentions.append(f"<@{user_id_text}>")
+
+    summary = _build_bulk_moderation_summary(
+        succeeded_user_mentions=succeeded_user_mentions,
+        failed_user_mentions=failed_user_mentions,
+        reason_text=normalized_reason,
+    )
+    embed = _build_bulk_moderation_embed(
+        title="차단",
+        color=discord.Color.red(),
+        summary=summary,
+        admin_mention=interaction.user.mention,
+    )
+    await _send_bulk_moderation_logs(
+        interaction=interaction,
+        visibility=visibility,
+        embed=embed,
+        context=context,
+    )
+    await interaction.followup.send(embed=embed)
+    return _slash_result(status="completed", reason_code="bulk_ban_processed")
+
+
+async def run_bulk_unban_slash_command(
+    interaction: discord.Interaction,
+    *,
+    user_ids_text: str,
+    reason_text: str,
+    visibility: str,
+    context: Mapping[str, Any],
+) -> SlashCommandResult:
+    if interaction.guild.owner_id != interaction.user.id:
+        embed = discord.Embed(
+            title="오류",
+            description="이 명령어는 서버 주인만 사용할 수 있습니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _slash_result(status="rejected", reason_code="bulk_unban_owner_only")
+
+    await interaction.response.defer(ephemeral=visibility != "공개")
+
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _slash_result(status="rejected", reason_code="blocked_user")
+
+    parsed_user_ids = _parse_user_id_list(user_ids_text)
+    succeeded_user_mentions: list[str] = []
+    failed_user_mentions: list[str] = []
+    normalized_reason = _normalize_optional_reason(reason_text)
+
+    for user_id_text in parsed_user_ids:
+        try:
+            target_user = await context["bot"].fetch_user(int(user_id_text))
+            await interaction.guild.unban(target_user, reason=normalized_reason)
+            succeeded_user_mentions.append(f"<@{target_user.id}>")
+            record_unban_action(
+                server_id=interaction.guild.id,
+                user_id=target_user.id,
+                admin_id=interaction.user.id,
+                reason=normalized_reason,
+            )
+        except Exception:
+            failed_user_mentions.append(f"<@{user_id_text}>")
+
+    summary = _build_bulk_moderation_summary(
+        succeeded_user_mentions=succeeded_user_mentions,
+        failed_user_mentions=failed_user_mentions,
+        reason_text=normalized_reason,
+    )
+    embed = _build_bulk_moderation_embed(
+        title="차단 해제",
+        color=int("a5f0ff", 16),
+        summary=summary,
+        admin_mention=interaction.user.mention,
+    )
+    await _send_bulk_moderation_logs(
+        interaction=interaction,
+        visibility=visibility,
+        embed=embed,
+        context=context,
+    )
+    await interaction.followup.send(embed=embed)
+    return _slash_result(status="completed", reason_code="bulk_unban_processed")
