@@ -9,8 +9,11 @@ from bot_app.services.moderation_service import (
     finalize_warn_limit_ban,
     get_warning_status,
     parse_timeout_duration,
+    record_ban_action,
+    record_kick_action,
     record_timeout_action,
     record_untimeout_action,
+    record_unban_action,
     remove_warning_action,
     set_warn_limit,
 )
@@ -492,3 +495,261 @@ async def run_remove_timeout_slash_command(
 
     await interaction.followup.send(embed=embed)
     return _tracked_slash_result(error_count, status="completed", reason_code="untimeout_processed")
+
+
+async def run_kick_slash_command(
+    interaction: discord.Interaction,
+    target_user: discord.Member,
+    reason_text: str,
+    *,
+    context: Mapping[str, Any],
+    error_count: int,
+) -> ErrorTrackedSlashCommandResult:
+    if target_user.id == BOT_USER_ID:
+        description = "잘못했어요.. 한 번만.." if interaction.user.id in context["friendly_list"] else "마늘이를 추방할 수 없습니다."
+        embed = discord.Embed(title="오류", description=description, color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="kick_bot_protected")
+
+    if target_user.top_role >= interaction.user.top_role:
+        embed = discord.Embed(
+            title="오류",
+            description="추방 적용 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="kick_role_hierarchy")
+
+    await interaction.response.defer()
+
+    if target_user.id == interaction.guild.owner_id:
+        embed = discord.Embed(title="오류", description="서버 주인을 제재할 수 없습니다.", color=discord.Color.red())
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="kick_owner_protected")
+
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _tracked_slash_result(error_count, status="rejected", reason_code="blocked_user")
+
+    reason_arg = None if reason_text == "None" else reason_text
+    try:
+        await interaction.guild.kick(target_user, reason=reason_arg)
+    except discord.Forbidden:
+        embed = discord.Embed(
+            title="오류",
+            description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `멤버 추방하기` 권한이 있는지 확인해 주세요.\n- 추방 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같지는 않은지 확인해 주세요.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="failed", reason_code="kick_forbidden")
+    except Exception as exc:
+        print(f"오류 #{error_count}: {exc}")
+        embed = discord.Embed(
+            title="오류",
+            description=f"오류 #{error_count}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed)
+        return _tracked_slash_result(error_count + 1, status="failed", reason_code="kick_error")
+
+    result = record_kick_action(
+        server_id=interaction.guild.id,
+        user_id=target_user.id,
+        admin_id=interaction.user.id,
+        reason=reason_arg,
+    )
+    embed = discord.Embed(title="추방", color=discord.Color.red(), timestamp=discord.utils.utcnow())
+    embed.add_field(name="사용자", value=f"{target_user.mention}", inline=False)
+    embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
+    embed.add_field(name="사유", value=result.reason, inline=False)
+
+    if interaction.guild.id == context["using_server"]:
+        record_channel = context["bot"].get_channel(context["record_channel"])
+        if record_channel:
+            await record_channel.send(embed=embed)
+
+        log_channel = context["bot"].get_channel(context["message_log"])
+        if log_channel:
+            await log_channel.send(embed=embed)
+
+    await interaction.followup.send(embed=embed)
+    await context["process_anti_nuke_ban"](interaction.guild.id, interaction.user.id, interaction.guild)
+    return _tracked_slash_result(error_count, status="completed", reason_code="kick_processed")
+
+
+async def run_ban_slash_command(
+    interaction: discord.Interaction,
+    target_user: discord.User,
+    reason_text: str,
+    visibility: str,
+    *,
+    context: Mapping[str, Any],
+    error_count: int,
+) -> ErrorTrackedSlashCommandResult:
+    if target_user.id == BOT_USER_ID:
+        description = "잘못했어요.. 한 번만.." if interaction.user.id in context["friendly_list"] else "마늘이를 차단할 수 없습니다."
+        embed = discord.Embed(title="오류", description=description, color=discord.Color.red())
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="ban_bot_protected")
+
+    if interaction.guild.owner_id != interaction.user.id and visibility == "비공개":
+        embed = discord.Embed(
+            title="오류",
+            description="제재 내역을 비공개 처리할 수 있는 권한이 부족합니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="ban_private_visibility_denied")
+
+    await interaction.response.defer(ephemeral=visibility == "비공개")
+
+    if target_user.id == interaction.guild.owner_id:
+        embed = discord.Embed(title="오류", description="서버 주인을 제재할 수 없습니다.", color=discord.Color.red())
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="ban_owner_protected")
+
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _tracked_slash_result(error_count, status="rejected", reason_code="blocked_user")
+
+    try:
+        member = await interaction.guild.fetch_member(target_user.id)
+        if member.top_role >= interaction.user.top_role:
+            embed = discord.Embed(
+                title="오류",
+                description="차단 적용 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
+                color=discord.Color.red(),
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return _tracked_slash_result(error_count, status="rejected", reason_code="ban_role_hierarchy")
+    except discord.NotFound:
+        print("서버에 사용자가 존재하지 않음. /차단 명령어에서 예외 처리됨")
+
+    reason_arg = None if reason_text == "None" else reason_text
+    try:
+        await interaction.guild.ban(target_user, reason=reason_arg, delete_message_seconds=0)
+    except discord.Forbidden:
+        embed = discord.Embed(
+            title="오류",
+            description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `멤버 차단하기` 권한이 있는지 확인해 주세요.\n- 차단 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같지는 않은지 확인해 주세요.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="failed", reason_code="ban_forbidden")
+    except Exception as exc:
+        print(f"오류 #{error_count}: {exc}")
+        embed = discord.Embed(
+            title="오류",
+            description=f"오류 #{error_count}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed)
+        return _tracked_slash_result(error_count + 1, status="failed", reason_code="ban_error")
+
+    result = record_ban_action(
+        server_id=interaction.guild.id,
+        user_id=target_user.id,
+        admin_id=interaction.user.id,
+        reason=reason_arg,
+    )
+
+    embed = discord.Embed(title="차단", color=discord.Color.red(), timestamp=discord.utils.utcnow())
+    embed.add_field(name="사용자", value=f"{target_user.mention}", inline=False)
+    embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
+    embed.add_field(name="사유", value=result.reason, inline=False)
+
+    if visibility == "공개":
+        channel = get_block_log_channel_for_guild(context["bot"], interaction.guild.id)
+        if channel:
+            await channel.send(embed=embed)
+    elif interaction.guild.id == context["using_server"]:
+        owner_notify_channel = context["bot"].get_channel(context["owner_notify"])
+        if owner_notify_channel:
+            await owner_notify_channel.send(embed=embed)
+
+    if interaction.guild.id == context["using_server"]:
+        log_channel = context["bot"].get_channel(context["message_log"])
+        if log_channel:
+            await log_channel.send(embed=embed)
+
+    await interaction.followup.send(embed=embed)
+    await context["process_anti_nuke_ban"](interaction.guild.id, interaction.user.id, interaction.guild)
+    return _tracked_slash_result(error_count, status="completed", reason_code="ban_processed")
+
+
+async def run_unban_slash_command(
+    interaction: discord.Interaction,
+    target_user: discord.User,
+    reason_text: str,
+    visibility: str,
+    *,
+    context: Mapping[str, Any],
+    error_count: int,
+) -> ErrorTrackedSlashCommandResult:
+    if interaction.guild.owner_id != interaction.user.id and visibility == "비공개":
+        embed = discord.Embed(
+            title="오류",
+            description="제재 내역을 비공개 처리할 수 있는 권한이 부족합니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="rejected", reason_code="unban_private_visibility_denied")
+
+    await interaction.response.defer(ephemeral=visibility == "비공개")
+
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _tracked_slash_result(error_count, status="rejected", reason_code="blocked_user")
+
+    reason_arg = None if reason_text == "None" else reason_text
+    try:
+        await interaction.guild.unban(target_user, reason=reason_arg)
+    except discord.Forbidden:
+        embed = discord.Embed(
+            title="오류",
+            description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `멤버 차단하기` 권한이 있는지 확인해 주세요.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return _tracked_slash_result(error_count, status="failed", reason_code="unban_forbidden")
+    except Exception as exc:
+        print(f"오류 #{error_count}: {exc}")
+        embed = discord.Embed(
+            title="오류",
+            description=f"오류 #{error_count}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            color=discord.Color.red(),
+        )
+        await interaction.followup.send(embed=embed)
+        return _tracked_slash_result(error_count + 1, status="failed", reason_code="unban_error")
+
+    result = record_unban_action(
+        server_id=interaction.guild.id,
+        user_id=target_user.id,
+        admin_id=interaction.user.id,
+        reason=reason_arg,
+    )
+
+    embed = discord.Embed(title="차단 해제", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
+    embed.add_field(name="사용자", value=f"{target_user.mention}", inline=False)
+    embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
+    embed.add_field(name="사유", value=result.reason, inline=False)
+
+    if visibility == "공개":
+        channel = get_block_log_channel_for_guild(context["bot"], interaction.guild.id)
+        if channel:
+            await channel.send(embed=embed)
+    elif interaction.guild.id == context["using_server"]:
+        owner_notify_channel = context["bot"].get_channel(context["owner_notify"])
+        if owner_notify_channel:
+            await owner_notify_channel.send(embed=embed)
+
+    if interaction.guild.id == context["using_server"]:
+        log_channel = context["bot"].get_channel(context["message_log"])
+        if log_channel:
+            await log_channel.send(embed=embed)
+
+    await interaction.followup.send(embed=embed)
+    return _tracked_slash_result(error_count, status="completed", reason_code="unban_processed")

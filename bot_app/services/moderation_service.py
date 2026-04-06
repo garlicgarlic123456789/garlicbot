@@ -23,6 +23,13 @@ class TimeoutActionResult:
     reason: str
 
 
+@dataclass
+class ModerationAuditActionResult:
+    action_type: str
+    reason: str
+    addinfo: int
+
+
 def normalize_reason(reason: str | None) -> str:
     return reason if reason else DEFAULT_REASON
 
@@ -121,6 +128,45 @@ def record_untimeout_action(
     normalized_reason = normalize_reason(reason)
     repository.add_blockhistory(user_id, admin_id, normalized_reason, "untimeout", 0, server_id)
     return TimeoutActionResult(duration=0, reason=normalized_reason)
+
+
+def record_kick_action(
+    *,
+    server_id: int,
+    user_id: int,
+    admin_id: int,
+    reason: str | None,
+    repository=moderation_repository,
+):
+    normalized_reason = normalize_reason(reason)
+    repository.add_blockhistory(user_id, admin_id, normalized_reason, "kick", 0, server_id)
+    return ModerationAuditActionResult(action_type="kick", reason=normalized_reason, addinfo=0)
+
+
+def record_ban_action(
+    *,
+    server_id: int,
+    user_id: int,
+    admin_id: int,
+    reason: str | None,
+    repository=moderation_repository,
+):
+    normalized_reason = normalize_reason(reason)
+    repository.add_blockhistory(user_id, admin_id, normalized_reason, "ban", 0, server_id)
+    return ModerationAuditActionResult(action_type="ban", reason=normalized_reason, addinfo=0)
+
+
+def record_unban_action(
+    *,
+    server_id: int,
+    user_id: int,
+    admin_id: int,
+    reason: str | None,
+    repository=moderation_repository,
+):
+    normalized_reason = normalize_reason(reason)
+    repository.add_blockhistory(user_id, admin_id, normalized_reason, "unban", 0, server_id)
+    return ModerationAuditActionResult(action_type="unban", reason=normalized_reason, addinfo=0)
 
 
 async def get_warning_status(
