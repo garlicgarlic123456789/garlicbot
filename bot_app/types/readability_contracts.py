@@ -34,6 +34,9 @@ XpTransferStatus = Literal["success", "insufficient_balance"]
 UserMoneyLookupStatus = Literal["found", "missing"]
 UserProfileSource = Literal["guild_member", "external_user"]
 UserClassificationStatus = Literal["blocked", "premium", "general"]
+XpShopPurchaseStatus = Literal["success", "unsupported_server", "manual_only_item", "invalid_item", "already_owned", "insufficient_balance"]
+GambleOfferStatus = Literal["created", "amount_too_small", "amount_too_large"]
+GambleSettlementStatus = Literal["completed", "participant_insufficient_balance", "creator_insufficient_balance"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -223,6 +226,38 @@ class UserProfileSnapshot:
     classification_status: UserClassificationStatus
     classification_label: str
     avatar_url: str
+
+
+@dataclass(frozen=True, slots=True)
+class XpShopItemSpec:
+    item_key: str
+    name: str
+    price: int
+    role_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class XpShopPurchaseResult:
+    status: XpShopPurchaseStatus
+    item_spec: XpShopItemSpec | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class GambleOfferResult:
+    status: GambleOfferStatus
+    amount: int = 0
+    unit: str = ""
+    choice: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class GambleSettlementResult:
+    status: GambleSettlementStatus
+    winner_id: int | None = None
+    loser_id: int | None = None
+    correct_choice: str = ""
+    amount: int = 0
+    unit: str = ""
 
 
 @dataclass(frozen=True, slots=True)

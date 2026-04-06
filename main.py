@@ -106,6 +106,10 @@ from bot_app.commands.slash_moderation_handlers import (
     run_warn_slash_command,
 )
 from bot_app.commands.slash_guild_settings_handlers import run_set_log_channel_slash_command
+from bot_app.commands.slash_xp_economy_handlers import (
+    run_buy_shop_slash_command,
+    run_gamble_slash_command,
+)
 from bot_app.commands.slash_user_handlers import (
     run_add_likeability_slash_command,
     run_check_likeability_slash_command,
@@ -2234,214 +2238,14 @@ exp_shop = [
 @bot.tree.command(name = "경험치샵구매", description = "경험치로 특정 상품을 구매합니다.")
 @app_commands.choices(상품명 = [app_commands.Choice(name = "파일 첨부 권한", value = "file"), app_commands.Choice(name = "투표 생성 권한", value = "vote"), app_commands.Choice(name = "비공개 스레드 생성 권한", value = "private_thread"), app_commands.Choice(name = "사운드보드 사용 권한", value = "soundboard")])
 async def buy_shop(interaction: discord.Interaction, 상품명: str):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    global exp_shop
-    if 상품명 == "add_answer" or 상품명 == "pin" or 상품명 == "unwarn" : 
-        embed = discord.Embed(
-            title="오류",
-            color=discord.Color.red(),
-            description = "해당 상품은 자동 구매가 지원되지 않습니다. <#1327836359804850269>에서 문의해 주세요."
-        )
-        await interaction.followup.send(embed = embed)
-        return
-    elif 상품명 == "file" :
-        if any(role.id in [1333390128072232980] for role in interaction.user.roles):
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "이미 해당 역할이 있습니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-        if get_xp(interaction.guild.id, interaction.user.id) >= 3000 :
-            update_xp(interaction.guild.id, interaction.user.id, -3000)
-            update_month_xp(interaction.guild.id, interaction.user.id, -3000)
-            role = interaction.guild.get_role(1333390128072232980)
-            await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
-            embed = discord.Embed(
-                title="성공",
-                color=int("a5f0ff", 16),
-                description = "성공적으로 구매 처리되었습니다."
-            )
-            await interaction.followup.send(embed = embed)
-        else :
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "경험치가 부족합니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-    elif 상품명 == "vote" :
-        if any(role.id in [1320315949005537310] for role in interaction.user.roles):
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "이미 해당 역할이 있습니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-        if get_xp(interaction.guild.id, interaction.user.id) >= 7000 :
-            update_xp(interaction.guild.id, interaction.user.id, -7000)
-            update_month_xp(interaction.guild.id, interaction.user.id, -7000)
-            role = interaction.guild.get_role(1320315949005537310)
-            await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
-            embed = discord.Embed(
-                title="성공",
-                color=int("a5f0ff", 16),
-                description = "성공적으로 구매 처리되었습니다."
-            )
-            await interaction.followup.send(embed = embed)
-        else :
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "경험치가 부족합니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-    elif 상품명 == "private_thread" :
-        if any(role.id in [1320600850082693172] for role in interaction.user.roles):
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "이미 해당 역할이 있습니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-        if get_xp(interaction.guild.id, interaction.user.id) >= 7000 :
-            update_xp(interaction.guild.id, interaction.user.id, -7000)
-            update_month_xp(interaction.guild.id, interaction.user.id, -7000)
-            role = interaction.guild.get_role(1320600850082693172)
-            await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
-            embed = discord.Embed(
-                title="성공",
-                color=int("a5f0ff", 16),
-                description = "성공적으로 구매 처리되었습니다."
-            )
-            await interaction.followup.send(embed = embed)
-        else :
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "경험치가 부족합니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-    elif 상품명 == "soundboard" :
-        if any(role.id in [1398550480707256433] for role in interaction.user.roles):
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "이미 해당 역할이 있습니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-        if get_xp(interaction.guild.id, interaction.user.id) >= 10000 :
-            update_xp(interaction.guild.id, interaction.user.id, -10000)
-            update_month_xp(interaction.guild.id, interaction.user.id, -10000)
-            role = interaction.guild.get_role(1398550480707256433)
-            await interaction.user.add_roles(role, reason = "/경험치샵구매 명령어를 통한 구매")
-            embed = discord.Embed(
-                title="성공",
-                color=int("a5f0ff", 16),
-                description = "성공적으로 구매 처리되었습니다."
-            )
-            await interaction.followup.send(embed = embed)
-        else :
-            embed = discord.Embed(
-                title="오류",
-                color=discord.Color.red(),
-                description = "경험치가 부족합니다."
-            )
-            await interaction.followup.send(embed = embed)
-            return
-
-class GambleButton(discord.ui.View):
-    def __init__(self, author: discord.Member, xp_amount: int, choice: str, unit: str):
-        super().__init__(timeout=600)  # 60초 후 버튼 비활성화
-        self.author = author
-        self.xp_amount = xp_amount
-        self.choice = choice
-        self.unit = unit
-        self.lock = asyncio.Lock()
-        self.already_played = False
-
-    async def button_callback(self, interaction: discord.Interaction, user_choice: str):
-        async with self.lock:  # 동시 실행 방지
-            if interaction.user == self.author:
-                await interaction.response.send_message("**[오류!]** 자신의 게임에서는 선택할 수 없습니다!", ephemeral=True)
-                return
-
-            status, until, reason = is_blocked(interaction.user)
-    
-            # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-            if status:
-                msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-                await interaction.response.send_message(msg, ephemeral = True)
-                return
-            
-            user_id = interaction.user.id
-            maker_id = self.author.id
-
-            if get_xp(interaction.guild.id, user_id) < self.xp_amount :
-                await interaction.response.send_message(f"**[오류!]** 게임 참가자의 {self.unit}이(가) 부족합니다.", ephemeral=True)
-                return
-            if get_xp(interaction.guild.id, maker_id) < self.xp_amount :
-                await interaction.response.send_message(f"**[오류!]** 게임 생성자의 {self.unit}이(가) 부족합니다.", ephemeral=True)
-                return
-            
-            self.disable_all_buttons()
-            if self.already_played:
-                await interaction.response.send_message("**[오류!]** 이미 게임이 종료되었습니다.", ephemeral=True)
-                return
-            else : 
-                self.already_played = True
-            await interaction.response.defer()
-            await interaction.message.edit(view=self)
-            
-            correct = self.choice
-            winner = interaction.user if user_choice == correct else self.author
-            loser = self.author if winner == interaction.user else interaction.user
-
-            winner_id = winner.id
-            loser_id = loser.id
-            
-            update_xp(interaction.guild.id, winner_id, self.xp_amount)
-            update_month_xp(interaction.guild.id, winner_id, self.xp_amount)
-            update_xp(interaction.guild.id, loser_id, -1 * self.xp_amount)
-            update_month_xp(interaction.guild.id, loser_id, -1 * self.xp_amount)
-            
-            await interaction.followup.send(
-                f"<@{winner.id}>님이 승리하고 <@{loser.id}>님이 패배하였습니다. 정답은 **{correct}**이었고 걸린 {self.unit}은(는) `{self.xp_amount}`입니다."
-            )
-
-    @discord.ui.button(label="홀", style=discord.ButtonStyle.primary)
-    async def odd_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.button_callback(interaction, "홀")
-    
-    @discord.ui.button(label="짝", style=discord.ButtonStyle.primary)
-    async def even_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.button_callback(interaction, "짝")
-
-    def disable_all_buttons(self):
-        for item in self.children:
-            item.disabled = True
+    await run_buy_shop_slash_command(
+        interaction,
+        item_key=상품명,
+        context={
+            "using_server": using_server,
+            "is_blocked": is_blocked,
+        },
+    )
 
 @bot.tree.command(name="경험치도박", description="경험치를 걸고 홀짝 도박을 진행합니다.")
 @app_commands.describe(amount="도박할 경험치 양", choice="홀 또는 짝을 선택하세요.")
@@ -2450,42 +2254,15 @@ class GambleButton(discord.ui.View):
     app_commands.Choice(name="짝", value="짝")
 ])
 async def gamble(interaction: discord.Interaction, amount: int, choice: app_commands.Choice[str]):
-    if interaction.guild.id not in xp_setting or xp_setting[interaction.guild.id][0] == False :
-        embed = discord.Embed(
-            title="오류",
-            description="경험치 기능이 사용 중지되어 있는 서버입니다.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.response.send_message(msg)
-        return
-    if amount < 1 :
-        await interaction.response.send_message("**[오류!]** amount의 값은 1 이상이여야 합니다.")
-        return
-    if amount > 1000000 :
-        await interaction.response.send_message("**[오류!]** amount의 값은 1000000 이하여야 합니다.")
-        return
-    await interaction.response.defer(ephemeral = True)
-
-    unit = xp_setting[interaction.guild.id][5]
-
-    embed = discord.Embed(
-        title="경험치 도박 게임!",
-        description=(
-            f"<@{interaction.user.id}>님이 경험치 `{amount}` {unit}을(를) 걸고 게임을 생성하였습니다.\n"
-            "홀 또는 짝 중 해당 유저가 고른 것이 무엇인지 맞춰보세요."
-        ),
-        color=discord.Color.gold()
+    await run_gamble_slash_command(
+        interaction,
+        amount=amount,
+        choice=choice,
+        context={
+            "xp_setting": xp_setting,
+            "is_blocked": is_blocked,
+        },
     )
-    view = GambleButton(interaction.user, amount, choice.value, unit)
-    await interaction.channel.send(embed=embed, view=view)
-    await interaction.followup.send("도박 게임이 생성되었습니다!")
 
 @bot.tree.command(name="경험치수정", description = "특정 사용자의 경험치를 수정합니다.")
 @app_commands.describe(사용자="경험치를 추가할 사용자", 경험치="추가할 경험치 양 (음수 값을 입력 시 차감)")
