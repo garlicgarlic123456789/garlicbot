@@ -106,6 +106,20 @@ from bot_app.commands.slash_moderation_handlers import (
     run_warn_slash_command,
 )
 from bot_app.commands.slash_guild_settings_handlers import run_set_log_channel_slash_command
+from bot_app.commands.slash_admin_support_handlers import (
+    run_add_blockhistory_entry_slash_command,
+    run_backup_channel_slash_command,
+    run_check_invite_route_slash_command,
+    run_check_user_join_route_slash_command,
+    run_delete_blockhistory_entry_slash_command,
+    run_developer_command_slash_command,
+    run_resolve_post_slash_command,
+    run_restore_channel_slash_command,
+    run_role_info_slash_command,
+    run_set_invite_route_memo_slash_command,
+    run_set_user_join_route_slash_command,
+    run_update_role_description_slash_command,
+)
 from bot_app.commands.slash_xp_economy_handlers import (
     run_buy_shop_slash_command,
     run_gamble_slash_command,
@@ -6160,357 +6174,50 @@ KST = ZoneInfo("Asia/Seoul")
 
 @bot.tree.command(name = "개발명령", description = "개발 명령을 실행합니다.")
 async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1: str = None, 입력2: str = None, 입력3: str = None) :
-    if interaction.user.id != developer :
-        await interaction.response.send_message("개발자 전용입니다.")
-        return
-    if 아이디 == 1 :
-        await interaction.response.defer(ephemeral=True)
-        await interaction.followup.send("더 이상 사용되지 않는 개발 명령어입니다. 커밋 4da0d33을 확인하세요.")
-    elif 아이디 == 2 : 
-        await interaction.response.defer(ephemeral=True)
-        if 입력1 != None :
-            if develop_chat_dict2.get(interaction.user.id) is not None :
-                response = await asyncio.to_thread(
-                    develop_chat_dict2[interaction.user.id].send_message,
-                    f"사용자명: {interaction.user.display_name}\n사용자의 입력: {입력1}",
-                    generation_config=genai.types.GenerationConfig(temperature=2.0)
-                )
-            else :
-                develop_chat_dict2[interaction.user.id] = await asyncio.to_thread(
-                    cute_model4.start_chat,
-                )
-                response = await asyncio.to_thread(
-                    develop_chat_dict2[interaction.user.id].send_message,
-                    f"사용자명: {interaction.user.display_name}\n사용자의 입력: {입력1}",
-                    generation_config=genai.types.GenerationConfig(temperature=2.0)
-                )
-            print(response.text)
-            match = re.search(r"응답:\s*(.*?)\s*\n호감도:\s*([+-]?\d+)", response.text, re.MULTILINE)
-            if match:
-                res = match.group(1)  # {1} 문자열
-                favorability = int(match.group(2))  # {2} 정수
-                await interaction.followup.send(res)
-                add_likeability(interaction.user.id, favorability)
-    elif 아이디 == 3 : 
-        await interaction.response.defer(ephemeral=True)
-        if 입력1 is not None : 
-            channel = bot.get_channel(int(입력1))
-        else : 
-            channel = bot.get_channel(normal_channel)
-        if channel:
-            if add_or_remove() : 
-                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 받으세요!", color=int("a5f0ff", 16))
-                await channel.send(embed=embed, view=ExpButton())
-            else : 
-                embed = discord.Embed(title="무료 경험치 받기", description="아래 '경험치 받기' 버튼을 클릭하고 무료로 150~1000마늘(XP)를 잃으세요!", color=int("a5f0ff", 16))
-                await channel.send(embed=embed, view=ExpRemoveButton())
-            await interaction.followup.send("처리되었습니다.")
-
-    elif 아이디 == 4 : 
-        user1 = await bot.fetch_user(int(입력1))
-        user2 = await bot.fetch_user(int(입력2))
-        await 오리실험(interaction, user1, user2)
-    elif 아이디 == 5 : 
-        await interaction.response.defer(ephemeral=True)
-        await interaction.followup.send("더 이상 사용되지 않는 개발 명령어입니다. 커밋 55983bc를 확인하세요.")
-    elif 아이디 == 6 : 
-        await interaction.response.defer()
-        입력1 = int(입력1)
-
-        await interaction.followup.send(f"서버 {입력1}: {get_anti_nuke_option(입력1)}, <#{get_anti_nuke_log_channel(입력1)}>")
-    elif 아이디 == 7 : 
-        await interaction.response.defer()
-        입력1 = int(입력1)
-        입력2 = int(입력2)
-
-        await interaction.followup.send(f"서버 {입력1}의 유저 {입력2}: {get_anti_nuke_whitelist(입력1, 입력2)}")
-    elif 아이디 == 8 : 
-        await interaction.response.defer()
-        for command in bot.tree.get_commands():
-            print(f"Command: {command.name}")
-        await interaction.followup.send("동기화된 명령어 목록을 콘솔에 출력했습니다.")
-    elif 아이디 == 9 : 
-        await interaction.response.defer()
-        print(get_asos_data_current(weather_api_key))
-        await interaction.followup.send("완료!")
-    elif 아이디 == 10 : 
-        await interaction.response.defer()
-        await interaction.followup.send(f"제재 로그 채널: {get_block_log_channel(interaction.guild.id)}")
-    elif 아이디 == 11 : 
-        await interaction.response.defer(ephemeral=True)
-
-        시작일 = 입력1
-        종료일 = 입력2
-
-        try:
-            start = datetime.strptime(시작일, "%Y-%m-%d").replace(tzinfo=KST)
-            end = datetime.strptime(종료일, "%Y-%m-%d").replace(tzinfo=KST) + timedelta(days=1) - timedelta(seconds=1)
-        except ValueError:
-            await interaction.followup.send("❗ 날짜 형식이 잘못되었습니다. `YYYY-MM-DD` 형식으로 입력해주세요.")
-            return
-
-        await interaction.followup.send(f"📊 `{시작일}`부터 `{종료일}`까지(KST 기준) 채팅 건수를 계산 중입니다...", ephemeral=True)
-
-        data = []
-        text_channels = interaction.guild.text_channels
-
-        for i, channel in enumerate(text_channels, 1):
-            try:
-                print(f"🔍 [{i}/{len(text_channels)}] 채널 처리 중: {channel.name}")
-                messages = []
-                async for message in channel.history(after=start, before=end, oldest_first=True, limit=None):
-                    # 봇의 메시지는 제외
-                    if not message.author.bot and message.created_at is not None:
-                        created_kst = message.created_at.astimezone(KST)
-                        time_key = created_kst.replace(minute=0, second=0, microsecond=0)
-                        data.append({
-                            "채널": channel.name,
-                            "시간(KST)": time_key.strftime("%Y-%m-%d %H:00"),
-                        })
-            except discord.Forbidden:
-                print(f"⚠️ 접근 불가 채널 스킵: {channel.name}")
-            await asyncio.sleep(0.2)
-
-        # 결과 정리
-        df = pd.DataFrame(data)
-        if df.empty:
-            await interaction.user.send("📭 지정된 기간 동안 수집된 유효한 메시지가 없습니다.")
-            return
-
-        grouped = df.groupby(["채널", "시간(KST)"]).size().reset_index(name="건수")
-        grouped.sort_values(by=["시간(KST)", "채널"], inplace=True)
-
-        filename = f"chat_counts_{시작일}_{종료일}_KST.csv"
-        grouped.to_csv(filename, index=False, encoding="utf-8-sig")
-
-        await interaction.user.send(file=discord.File(filename))
-    elif 아이디 == 12 : 
-        await interaction.response.defer()
-        migrate_blockhistory(int(입력1), int(입력2), interaction.guild.id)
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 13 : 
-        await interaction.response.defer()
-        user_id = int(입력1)
-
-        guild = interaction.guild
-
-        bans = [entry async for entry in guild.bans()]
-        banned_user = next((ban for ban in bans if ban.user.id == user_id), None)
-        if banned_user:
-            banned = True
-        else : 
-            banned = False
-        
-        try : 
-            member = await guild.fetch_member(user_id)
-        except discord.NotFound:
-            member = None
-        
-        result = get_related_accounts(user_id)
-        result.remove(user_id)
-        all_account = len(result)
-        timeout_sucess = 0
-        ban_sucess = 0
-        if len(result) > 0 : 
-            for i in result :
-                try :  
-                    if banned : 
-                        await guild.ban(discord.Object(id=i), reason=f"{입력1}, {i} 다중 계정", delete_message_seconds=0)
-                        ban_sucess += 1
-                    else : 
-                        await guild.unban(discord.Object(id=i), reason=f"{입력1}, {i} 다중 계정")
-                        ban_sucess += 1
-                except Exception as e:
-                    print(f"Error (un)banning user {i}: {e}")
-                if member is not None : 
-                    try : 
-                        member2 = await guild.fetch_member(i)
-                        timeout = member.timed_out_until
-                        await member2.edit(timed_out_until = timeout, reason=f"{입력1}, {i} 다중 계정")
-                        timeout_sucess += 1
-                    except discord.NotFound:
-                        pass
-                    except discord.Forbidden:
-                        pass
-        await interaction.followup.send(f"처리되었습니다. {user_id}의 다중 계정 {all_account}개를 처리했습니다.\n\n- 타임아웃: {timeout_sucess}개\n- 차단: {ban_sucess}개")
-    elif 아이디 == 14 :
-        await interaction.response.defer(ephemeral=True)
-        await scan_url(입력1)
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 15 : 
-        await interaction.response.defer()
-        save_invite_log(int(입력1), 입력2)
-        await interaction.followup.send("유저 {입력1}: 처리되었습니다.")
-    elif 아이디 == 16 : 
-        await interaction.response.defer()
-        print(get_automod(interaction.guild.id))
-        await interaction.followup.send(f"실행된 서버의 검열 기능 설정을 콘솔에 출력했습니다.")
-    elif 아이디 == 17 : 
-        await interaction.response.defer(ephemeral=True)
-        await check_account(int(입력1))
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 18 : 
-        # 봇이 추가된 서버들의 인원 수 총합, 평균, 표준편차
-        await interaction.response.defer(ephemeral=True)
-        member_counts = []
-        for guild in bot.guilds : 
-            if guild.member_count is not None:
-                member_counts.append(guild.member_count)
-        total_members = sum(member_counts)
-        if member_counts:
-            mean_members = statistics.mean(member_counts)
-            if len(member_counts) > 1:
-                stdev_members = statistics.stdev(member_counts)
-            else:
-                stdev_members = 0.0
-        else:
-            mean_members = 0.0
-            stdev_members = 0.0
-        await interaction.followup.send(
-            f"봇이 추가된 모든 서버의 인원 수 총합: {total_members}명\n"
-            f"평균: {mean_members:.2f}명\n"
-            f"표준편차: {stdev_members:.2f}명"
-        )
-        return
-    elif 아이디 == 19 : 
-        await interaction.response.defer()
-        if True : 
-            embed = discord.Embed(
-                title="오류",
-                description="폐지된 명령입니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-        if interaction.guild.id != using_server :
-            embed = discord.Embed(
-                title="오류",
-                description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-        if interaction.user.id != developer : 
-            embed = discord.Embed(
-                title="오류",
-                description="이 기능은 개발자만 사용할 수 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-        
-        roles = interaction.guild.roles
-
-        for role in roles : 
-            if role.name.startswith("구분: ") : 
-                members = role.members
-                for member in members : 
-                    update_user_join_route(member.id, role.name[4:])
-        
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 20 : 
-        await interaction.response.defer()
-        temp = get_xp_setting(interaction.guild.id)
-        temp2 = get_xp_setting_dict(interaction.guild.id)
-        await interaction.followup.send(f"경험치 기능 설정값:\n- db: {temp}\n- 딕셔너리: {temp2}")
-    elif 아이디 == 21 : 
-        await interaction.response.defer()
-        temp = get_xp(interaction.guild.id, interaction.user.id)
-        await interaction.followup.send(f"경험치: {temp}")
-    elif 아이디 == 22 : 
-        if True : 
-            await interaction.response.send_message("폐지된 개발 명령.")
-            return
-        await interaction.response.defer()
-        temp = load_exp()
-        for i, j in temp.items() : 
-            update_xp(1320303102703702037, i, j)
-        await interaction.followup.send(f"cmd 확인바람")
-    elif 아이디 == 23 : 
-        if True : 
-            await interaction.response.send_message("폐지된 개발 명령.")
-            return
-        await interaction.response.defer(ephemeral=True)
-        await migrate_mention_delay_user()
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 24 : 
-        if True : 
-            await interaction.response.send_message("폐지된 개발 명령.")
-            return
-        channel = await bot.fetch_channel(1320304892992028785)
-        await interaction.response.send_message("처리 중입니다. 이 작업은 오랜 시간이 소요될 수 있습니다. 완료되면 알림이 전송됩니다.")
-        await migrate_old_blockhistory(interaction, channel)
-    elif 아이디 == 25 : 
-        if True : 
-            await interaction.response.send_message("폐지된 개발 명령.")
-            return
-        await interaction.response.defer()
-        await reset_exp(interaction.guild.id)
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 26 : 
-        if 입력1 is not None and 입력1 == "True" : 
-            입력1 = True
-        else : 
-            입력1 = False
-        await interaction.response.defer()
-        warnings = load_warnings(입력1)
-        for key, value in warnings.items() : 
-            temp = key.split("/")
-            if len(temp) != 2: 
-                continue
-            await set_warning(int(temp[0]), int(temp[1]), value)
-        await interaction.followup.send("처리되었습니다.")
-    elif 아이디 == 27 : 
-        target = datetime(2025, 11, 25, 0, 0, 0)
-        now = datetime.now()
-        if not now < target : 
-            raise ObsoleteFunctionError("더 이상 사용되지 않는 개발 명령입니다.")
-            return
-        
-        temp = get_all_xp(interaction.guild.id)
-        for key, value in temp.items():
-            update_month_xp(interaction.guild.id, key, value)
-        
-        await interaction.followup.send("완료되었습니다.")
-        return
-    elif 아이디 == 28 : 
-        target = datetime(2026, 1, 25, 0, 0, 0)
-        now = datetime.now()
-        if not now < target : 
-            raise ObsoleteFunctionError("2026년 1월 25일 0시 0분 0초 이후로 더 이상 사용될 일이 없는 개발 명령입니다. \'입력1\'의 값을 True로 설정하여 이 개발 명령을 강제로 실행할 수 있습니다. **이 개발 명령이 무엇을 하는지 정확히 아는 것이 아니라면 테스트 환경에서만 실행하십시오..**")
-            return
-        
-        await interaction.response.send_message("처리 중입니다.")
-        message = await interaction.original_response()
-        
-        channel_list = await get_all_anti_nuke_notify_channel(True)
-
-        embed = discord.Embed(
-            title = "긴급 공지",
-            description = "이 서버는 과거 봇의 테러 방지 기능을 설정했던 것으로 보입니다. 그러나, 봇의 버그로 인해 테러 방지 기능이 제대로 설정되지 않은 것으로 확인됩니다. 우선 봇의 버그를 사전에 확인하여 조치하지 못하고, 이런 일로 심려를 끼려드린 점 사과드립니다..\n\n현재 봇의 db에 테러 방지 기능 사용 여부는 제대로 저장되지 않고 테러 방지 기능 작동 로그 채널만 저장된 것으로 보입니다. 따라서 현재까지 테러 방지 기능 로그 채널만 설정되고 테러 방지 기능 자체는 사용 설정되지 않은 상태였습니다..\n\n테러 방지 기능을 지속해서 사용하시려는 경우, 아래 버튼을 클릭하시면, 테러 방지 기능이 정상적으로 사용 설정됩니다. (버튼이 작동하지 않는 경우 `/테러방지설정` 명령어 사용 부탁드립니다.) 기능을 더 이상 사용하지 않으시려는 경우, 취해야 할 조치는 없습니다.\n\n다시 한 번 이런 일로 심려를 끼쳐 드려 죄송하다는 말씀 드리며, 앞으로 더 안정적인 봇 운영을 위해 노력하겠습니다. 추가적인 문의사항은 asdfasdf_123456789 계정에 친추 후 문의해주시면 감사하겠습니다.",
-            color = discord.Color.red()
-        )
-        
-        for server_id, channel_id in channel_list:
-            guild = bot.get_guild(server_id)
-            if guild is None:
-                continue  # 봇이 해당 서버에 없음
-
-            channel = guild.get_channel(channel_id)
-            if channel is None:
-                continue  # 채널이 없거나 접근 불가
-
-            try:
-                await channel.send(f"<@{guild.owner_id}>", embed = embed, view=enable_anti_nuke_button_temp())
-                print(f"서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) - 전송 성공")
-            except Exception as e:
-                try : 
-                    await channel.send(embed = embed, view=enable_anti_nuke_button_temp())
-                    print(f"서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) - 무멘션 전송 성공")
-                except Exception as e:
-                    print(f"메시지 전송 실패: 서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) / {e}")
-
-            await message.reply("처리되었습니다.")
+    await run_developer_command_slash_command(
+        interaction,
+        command_id=아이디,
+        input1=입력1,
+        input2=입력2,
+        input3=입력3,
+        context={
+            "developer": developer,
+            "bot": bot,
+            "normal_channel": normal_channel,
+            "add_or_remove": add_or_remove,
+            "ExpButton": ExpButton,
+            "ExpRemoveButton": ExpRemoveButton,
+            "오리실험": 오리실험,
+            "genai": genai,
+            "cute_model4": cute_model4,
+            "develop_chat_dict2": develop_chat_dict2,
+            "add_likeability": add_likeability,
+            "get_anti_nuke_option": get_anti_nuke_option,
+            "get_anti_nuke_log_channel": get_anti_nuke_log_channel,
+            "get_anti_nuke_whitelist": get_anti_nuke_whitelist,
+            "get_asos_data_current": get_asos_data_current,
+            "weather_api_key": weather_api_key,
+            "get_block_log_channel": get_block_log_channel,
+            "KST": KST,
+            "pd": pd,
+            "migrate_blockhistory": migrate_blockhistory,
+            "get_related_accounts": get_related_accounts,
+            "scan_url": scan_url,
+            "save_invite_log": save_invite_log,
+            "get_automod": get_automod,
+            "check_account": check_account,
+            "get_xp_setting": get_xp_setting,
+            "get_xp_setting_dict": get_xp_setting_dict,
+            "get_xp": get_xp,
+            "load_warnings": load_warnings,
+            "set_warning": set_warning,
+            "ObsoleteFunctionError": ObsoleteFunctionError,
+            "get_all_xp": get_all_xp,
+            "update_month_xp": update_month_xp,
+            "get_all_anti_nuke_notify_channel": get_all_anti_nuke_notify_channel,
+            "enable_anti_nuke_button_temp": enable_anti_nuke_button_temp,
+        },
+    )
 
 
 @bot.tree.command(name = "해결처리", description = "특정 포스트를 해결 처리합니다.")
@@ -6519,37 +6226,17 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
     사유="해결 처리 사유",
 )
 async def 해결처리(interaction: discord.Interaction, 해결처리: bool = True, 사유: str = "*(사유 입력되지 않음)*"):
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-
-    if isinstance(interaction.channel, discord.Thread) and interaction.channel.parent.id == 1376043452411674706:
-        if 해결처리 : 
-            applied_tags = [interaction.channel.parent.get_tag(1376043660298162268)]
-        else : 
-            applied_tags = [interaction.channel.parent.get_tag(1376043604639744020)]
-        await interaction.channel.edit(applied_tags=applied_tags, reason=f"{interaction.user.display_name}({interaction.user.id})의 /해결처리 명령어 사용 (사유: {사유})")
-        embed = discord.Embed(
-            title = "완료",
-            color = int("a5f0ff", 16),
-        )
-        if 해결처리 : 
-            embed.description = f"{interaction.user.mention}님이 해당 이슈를 해결 상태로 수정했습니다. \n\n사유: {사유}"
-        else : 
-            embed.description = f"{interaction.user.mention}님이 해당 이슈를 답변 필요 상태로 수정했습니다. \n\n사유: {사유}"
-        await interaction.followup.send(embed=embed)
-    else : 
-        embed = discord.Embed(
-            title = "오류",
-            description = "이 명령어는 특정 채널에서만 사용 가능합니다.",
-            color = discord.Color.red(),
-        )
-        await interaction.followup.send(embed=embed)
-        return
+    await run_resolve_post_slash_command(
+        interaction,
+        resolved=해결처리,
+        reason_text=사유,
+        context={
+            "is_blocked": is_blocked,
+            "forum_parent_id": 1376043452411674706,
+            "resolved_tag_id": 1376043660298162268,
+            "unresolved_tag_id": 1376043604639744020,
+        },
+    )
 
 
 @bot.tree.command(name = "서버조언", description = "AI에게 현재 서버에 대해 조언 받고 싶은 부분을 조언받습니다.")
@@ -6959,285 +6646,52 @@ async def anti_nuke_settings(interaction: discord.Interaction, 유저: discord.U
 @bot.tree.command(name = "역할설명수정", description = "특정 역할에 대한 설명을 추가하거나 수정합니다.")
 @app_commands.describe(역할 = "수정할 역할", 설명 = "해당 역할에 대한 설명 (설명을 삭제하려는 경우 입력하지 않고 비워주세요.)")
 async def 역할설명수정(interaction: discord.Interaction, 역할: discord.Role, 설명: str = None):
-    await interaction.response.defer()
-    if not interaction.user.guild_permissions.manage_roles:
-        embed = discord.Embed(
-            title = "오류",
-            description = "권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
-            color = discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed)
-        return
-
-    status, until, reason = is_blocked(interaction.user)
-
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    if 설명 is not None and len(설명) > 500 : 
-        embed = discord.Embed(
-            title = "오류",
-            description = "설명의 길이가 너무 깁니다. 500자 이하로 입력해 주세요.",
-            color = discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed)
-        return
-    
-    update_role_description(interaction.guild.id, 역할.id, 설명)
-    
-    embed = discord.Embed(
-        title = "성공",
-        description = f"역할 설명이 수정되었습니다.",
-        color = int("a5f0ff", 16)
+    await run_update_role_description_slash_command(
+        interaction,
+        role=역할,
+        description=설명,
+        context={
+            "is_blocked": is_blocked,
+        },
     )
-    await interaction.followup.send(embed = embed)
-    return
 
 @bot.tree.command(name="역할정보", description="특정 역할에 대한 정보를 확인합니다.")
 @app_commands.describe(역할 = "정보를 확인할 역할을 입력해 주세요.")
 async def 역할_정보(interaction: discord.Interaction, 역할: discord.Role):
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    '''
-    if 역할.id == 1320308043350675497 : # 주인
-        des = "서버 주인만이 부여받는 역할입니다."
-    elif 역할.id == 1351884828219408386  : # 고마운 분
-        des = "이 서버 주인에게 또는 이 서버에 도움을 많이 주신 분께 감사의 의미로 부여되는 역할입니다."
-    elif 역할.id == 1331147542536126515 : # 최상위 제재방지
-        des = "서버 주인 및 주인이 개발하는 봇에게만 부여되는 역할로, 테러방지 화이트리스트 기능을 하는 역할입니다. 이 역할은 신뢰도와 무관하게 다른 유저들에게는 부여되지 않습니다."
-    elif 역할.id == 1325846757636047030 : # 제재 방지권 (상위)
-        des = "서버 주인과 마늘이, 솔이, Security 테러방지 처벌을 제외하고 대부분의 봇 검열을 피할 수 있는 역할이자 서버 주인을 제외한 모든 관리진(최고 관리자 포함)의 제재를 피할 수 있는 역할입니다. 서버 주인이 매우 신뢰할 수 있는 사용자에게만 부여되며, 서버 주인이 더 이상 신뢰할 수 없다고 판단하면 바로 회수됩니다."
-    elif 역할.id == 1334000829853728829 : # 제재 방지권 (일반)
-        des = "부관리자의 제재를 피할 수 있는 역할입니다. 관리자 이상부터는 이 역할이 있는 유저도 제재할 수 있으며, 봇 검열 및 테러방지도 이 역할에게 그대로 적용됩니다."
-    elif 역할.id == 1346047923460243507 : # 총관리자
-        des = "총관리자는 관리자를 대표하는 운영진이며, 이에 따라 `관리자`, `채널 관리하기`, `외부 앱 사용`을 제외한 모든 권한을 부여받습니다. 서버 주인 부재 시 서버 주인을 대신하여 권한을 행사할 수 있습니다. 권한이 많기 때문에 서버 주인이 매우매우매우매우매우매우매우매우매우매우 신뢰할 수 있어야 총관리자로 선출될 수 있습니다."
-    elif 역할.id == 1325762715867943004 : # 관리자
-        des = "관리자는 부관리자보다 더 많은 관리 권한을 부여 받습니다. 멤버 추방은 물론 차단 권한도 받으며, 별명 관리, 표현/이벤트/스레드 관리 권한도 부여 받습니다. 서버 주인이 매우 신뢰할 수 있고 서버 운영에 대한 중대한 문제를 서버 주인과 논의할 수 있는 사람이어야 합니다."
-    elif 역할.id == 1320303818004496430 : #부관리자
-        des = "부관리자는 이 디스코드 서버에서 관리 역할을 담당하는 관리진입니다. 멤버 타임아웃 및 메시지 관리 및 표현/이벤트 생성 권한을 가집니다."
-    elif 역할.id == 1320310204952219660 : #봇
-        des = "봇 역할은 봇에게만 부여되는 역할입니다."
-    elif 역할.id == 1320303229954953247 : # 이용자
-        des = "이 서버에서 활동 중인 이용자분들이십니다."
-    elif 역할.id == 1320308502723563560 : # 이메일 전송 허용
-        des = "</이메일전송:1316581354141519951>을 통해 서버 주인의 개인 이메일(단, 보낸 사람과 서버 주인의 메일이 공개되지는 않습니다)로 메일을 보낼 수 있도록 허가된 유저입니다."
-    elif 역할.id == 1327271093127483465 : #마늘봇
-        des = "마늘봇에게 부여되는 역할입니다. 서버 주인이 개발하는 봇입니다. <@&1325762715867943004>보다 상위 역할에 해당되는 몇 안 되는 역할입니다."
-    elif 역할.id == 1320309755008520195 : #하루
-        des = "하루 봇에게 부여되는 역할입니다."
-    elif 역할.id == 1320309826227798018 : #솔이
-        des = "디코 서버 보안 봇인 솔이 봇에게 부여되는 역할입니다. <@&1325762715867943004>보다 상위 역할에 해당되는 몇 안 되는 역할입니다."
-    elif 역할.id == 1342491277748605058: # 개발자
-        des = "개발 좀 하시는 분들이나 이 서버에 도입된 봇의 개발자분들에게 부여하는 역할입니다."
-    elif 역할.id == 1327145486192214119 : # 활동적 이용자
-        des = "이 서버에서 어느정도 활동을 하시는 분들께 부여해 드리는 역할입니다. 부여 기준이 낮으므로 활동을 진짜 조금만 해도 부여되지만, 기준이 낮은 대신 활동을 하지 않을 시 조용히 회수됩니다."
-    else :
-        des = "*(설명 없음)*"
-    '''
-    des = get_role_description(interaction.guild.id, 역할.id)
-    if des is None:
-        des = "*(설명 없음)*"
-
-    permissions = 역할.permissions  # 역할의 권한 객체 가져오기
-    enabled_permissions = [
-        PERMISSION_MAP.get(perm, perm)  # 한글로 매핑
-        for perm, value in permissions if value  # 활성화된 권한만 가져오기
-    ]
-
-    # 역할 관리 권한이 있는지 확인
-    cannot_moderate_roles = []
-    if 역할.permissions.manage_roles or 역할.permissions.administrator or 역할.permissions.moderate_members or 역할.permissions.kick_members or 역할.permissions.ban_members: 
-        # 역할 관리하기 권한이 있을 때만 실행
-        guild_roles = sorted(역할.guild.roles, key=lambda r: r.position, reverse=True)  # 역할 순서 기준 정렬
-        for r in guild_roles:
-            if r.position >= 역할.position:  # 상위 또는 동등한 역할
-                cannot_moderate_roles.append(f"{r.mention}")
-    else :
-        cannot_moderate_roles.append(f"*(관련 권한 없음)*")
-
-    cannot_moderate_roles_text = ", ".join(cannot_moderate_roles) if cannot_moderate_roles else "*(제재 불가능한 역할 없음)*"
-
-    members = 역할.members
-    # 서버 별명을 기준으로 정렬합니다.
-    sorted_members = sorted(members, key=lambda m: m.display_name)
-    # 멘션 리스트 생성
-    mentions = [member.mention for member in sorted_members]
-    # 출력 처리
-    if len(mentions) > 30:
-        displayed_mentions = mentions[:30]
-        remainder = len(mentions) - 30
-        membermsg = f"{', '.join(displayed_mentions)} 외 {remainder}명"
-    elif len(mentions) == 0:
-        membermsg = "*(멤버 없음)*"
-    else:
-        membermsg = ", ".join(mentions)
-
-    if len(enabled_permissions) > 0:
-        permissions_text = ", ".join(f"{perm}" for perm in enabled_permissions)
-    else : 
-        permissions_text = "*(권한 없음)*"
-    
-    embed = discord.Embed(
-        title=f"역할 정보",
-        description=f"""- 역할 이름: {역할.name}
-- 역할 멘션: {역할.mention}
-- 역할 ID: {역할.id}
-- 색상: {역할.color}
-- 멤버 수: {len(역할.members)}
-- 역할 설명: {des}
-- 부여된 권한: {permissions_text}
-- 멤버: {membermsg}
-- 관리가 불가능한 역할: {cannot_moderate_roles_text}""",
-        color=역할.color # color=discord.Color.green()
+    await run_role_info_slash_command(
+        interaction,
+        role=역할,
+        context={
+            "is_blocked": is_blocked,
+            "permission_map": PERMISSION_MAP,
+        },
     )
-    await interaction.followup.send(embed=embed)
 
-'''
-@bot.tree.command(name = "구분역할설정", description = "개발자용")
-@app_commands.default_permissions(administrator = True)
-@app_commands.describe(입력2 = "입력2")
-async def 구분역할설정(interaction: discord.Interaction, 입력1: discord.User, 입력2: str):
-    await interaction.response.defer(ephemeral=True)
-    유입경로 = 입력2
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    if interaction.user.id != developer : 
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 개발자만 사용할 수 있습니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-    
-    update_user_join_route(입력1.id, 유입경로)
-    
-    embed = discord.Embed(
-        title="완료",
-        description=f"{입력1.mention}님의 유입 경로가 성공적으로 설정되었습니다.",
-        color=int("a5f0ff", 16)
-    )
-    await interaction.followup.send(embed=embed)
-    return
-
-@구분역할설정.autocomplete("입력2")
-async def route_autocomplete(
-    interaction: discord.Interaction,
-        current: str
-):
-    return await join_route_autocomplete(interaction, current)
-
-@bot.tree.command(name = "구분역할확인", description = "개발자용")
-@app_commands.default_permissions(administrator = True)
-@app_commands.describe(입력1 = "입력1")
-async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.User):
-    await interaction.response.defer(ephemeral=True)
-
-    if interaction.user.id != developer : 
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 개발자만 사용할 수 있습니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed=embed)
-        return
-
-    join_route = get_user_join_route(입력1.id)
-    if join_route is None:
-        embed = discord.Embed(
-            title="오류",
-            description=f"{입력1.mention}님의 구분 역할은 설정되지 않았습니다.",
-            color=discord.Color.red()
-        )
-    else : 
-        embed = discord.Embed(
-            title="완료",
-            description=f"{입력1.mention}님의 구분 역할은 다음과 같습니다:\n\n{join_route}",
-            color=int("a5f0ff", 16)
-        )
-    await interaction.followup.send(embed=embed)
-    return
-'''
 
 @bot.tree.command(name = "초대링크메모", description = "특정 초대 링크에 대해 메모를 설정합니다.")
 @app_commands.default_permissions(administrator = True)
 @app_commands.describe(초대링크 = "생성한 초대 링크 (discord.gg/나 discord.com/invite/는 생략하고 입력)", 메모 = "메모 내용")
 async def 초대링크메모(interaction: discord.Interaction, 초대링크: str, 메모: str = None) : 
-    await interaction.response.defer(ephemeral=True)
-    status, until, reason = is_blocked(interaction.user)
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    await update_server_join_route_memo(interaction.guild.id, 초대링크, 메모)
-
-    embed = discord.Embed(
-        title = "완료",
-        description = f"완료되었습니다.",
-        color = int("a5f0ff", 16)
+    await run_set_invite_route_memo_slash_command(
+        interaction,
+        invite_code=초대링크,
+        memo=메모,
+        context={
+            "is_blocked": is_blocked,
+        },
     )
-    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name = "유입경로확인", description = "특정 사용자가 유입된 초대 링크를 확인하고, 해당 초대 링크에 메모가 설정된 경우 메모도 확인합니다.")
 @app_commands.default_permissions(administrator = True)
 @app_commands.describe(사용자 = "유입경로를 확인할 사용자를 입력해 주세요. (본인도 가능)")
 async def 유입경로확인(interaction: discord.Interaction, 사용자: discord.User):
-    await interaction.response.defer(ephemeral=True)
-    status, until, reason = is_blocked(interaction.user)
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-
-    way = import_invite_log(interaction.guild.id, 사용자.id)
-
-    if len(way) == 0 : 
-        embed = discord.Embed(
-            title = "완료",
-            description = f"**{사용자.mention}**님의 유입 경로는 다음과 같습니다:\n\n*(알 수 없음)*",
-            color = int("a5f0ff", 16)
-        )
-        await interaction.followup.send(embed=embed)
-        return
-
-    for i in range(len(way)) : 
-        if way[i] == None : 
-            way[i] = "*(알 수 없음)*"
-        else : 
-            way_memo = await get_server_join_route_memo(interaction.guild.id, way[i])
-            if way_memo is None : 
-                way[i] = f"링크 {way[i]}"
-            else : 
-                way[i] = f"링크 {way[i]} (유입 경로 메모: {way_memo})"
-    
-    if len(way) > 2: 
-        way_text = ", ".join(way)
-    else : 
-        way_text = way[0]
-    
-    embed = discord.Embed(
-        title = "완료",
-        description = f"**{사용자.mention}**님의 유입 경로는 다음과 같습니다:\n\n{way_text}",
-        color = int("a5f0ff", 16)
+    await run_check_invite_route_slash_command(
+        interaction,
+        target_user=사용자,
+        context={
+            "is_blocked": is_blocked,
+        },
     )
-    await interaction.followup.send(embed=embed)
 
 '''
 # 이메일 전송 명령어 (슬래시 명령어)
@@ -7361,111 +6815,6 @@ async def revoke_permissions(interaction: discord.Interaction, member: discord.U
             color=discord.Color.red()
         )
         await interaction.followup.send(embed = embed)
-'''
-# 구분     
-'''
-@bot.tree.command(name="채널백업", description="현재 채널을 백업합니다.")
-@app_commands.describe(백업이름="백업 파일 이름", 개수="백업할 메시지 개수")
-async def backup(interaction: discord.Interaction, 백업이름: str, 개수: int):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    if interaction.user.id != developer:
-        await interaction.response.send_message("**[오류!]** 권한이 부족합니다.", ephemeral = True)
-    await interaction.response.defer(ephemeral = True)
-    filename = 0
-    channel = interaction.channel
-    backup_path = os.path.join(BACKUP_FOLDER, 백업이름)
-    os.makedirs(backup_path, exist_ok=True)
-    messages = []
-
-    cnt = 0
-    server_name = interaction.guild.name
-    server_id = interaction.guild.id
-
-    channel_id = interaction.channel.id
-    
-    async for message in channel.history(limit=개수):
-        msg_data = {
-            "id": message.author.id,
-            "내용": message.content,
-            "첨부파일": []
-        }
-        
-        for attachment in message.attachments:
-            file_path = os.path.join(backup_path, str(filename) + "_" + attachment.filename)
-            msg_data["첨부파일"].append(str(filename) + "_" + attachment.filename)
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.get(attachment.url) as resp:
-                    if resp.status == 200:
-                        with open(file_path, "wb") as f:
-                            f.write(await resp.read())
-            filename += 1
-        
-        messages.append(msg_data)
-        cnt += 1
-        print(f"{server_name} ({server_id}) 채널 {channel_id} 백업 중: {cnt}/{개수} ({cnt / 개수 * 100:.3f}% 완료)")
-    
-    with open(os.path.join(backup_path, "messages.json"), "w", encoding="utf-8") as f:
-        json.dump(messages, f, ensure_ascii=False, indent=4)
-    
-    await interaction.user.send(f"`{백업이름}` 백업이 완료되었습니다.")
-    
-    await interaction.followup.send(f"`{백업이름}` 백업이 완료되었습니다.")
-
-@bot.tree.command(name="채널복원", description="백업된 채널에서의 대화를 현재 채널에 복원합니다.")
-@app_commands.describe(백업이름="복원할 백업 파일 이름")
-async def restore(interaction: discord.Interaction, 백업이름: str):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    if interaction.user.id != developer:
-        await interaction.response.send_message("**[오류!]** 권한이 부족합니다.", ephemeral = True)
-    await interaction.response.defer(ephemeral = True)
-    webhook = await interaction.channel.create_webhook(name="채널 복원용")
-    channel = interaction.channel
-    backup_path = os.path.join(BACKUP_FOLDER, 백업이름)
-    messages_file = os.path.join(backup_path, "messages.json")
-    
-    if not os.path.exists(messages_file):
-        await interaction.followup.send(f"`{백업이름}` 백업을 찾을 수 없습니다.")
-        return
-    
-    with open(messages_file, "r", encoding="utf-8") as f:
-        messages = json.load(f)
-    
-    for msg in reversed(messages):  # 오래된 메시지부터 순서대로 보냄
-        user = await bot.fetch_user(msg["id"])
-        if msg["내용"] != "" : 
-            await webhook.send(
-                content=msg["내용"],
-                username=user.display_name,
-                avatar_url=user.avatar.url if user.avatar else None,  # 사용자 아바타 URL
-            )
-        for filename in msg["첨부파일"]:
-            file_path = os.path.join(backup_path, filename)
-            if os.path.exists(file_path):
-                file = discord.File(file_path)
-                await webhook.send(
-                    content="",
-                    username=user.display_name,
-                    avatar_url=user.avatar.url if user.avatar else None,  # 사용자 아바타 URL
-                    file = file,
-                )
-    
-    await interaction.followup.send(f"`{백업이름}` 복원이 완료되었습니다.")
-'''
 
 @bot.tree.command(name = "익명채팅설정", description = "익명 채팅을 사용 여부와 로그 채널을 설정합니다.")
 @app_commands.default_permissions(administrator=True)
@@ -7773,40 +7122,29 @@ async def link_check(interaction: discord.Interaction, 링크: str, 세부정보
 
 @bot.tree.command(name="제재내역수동삭제", description = "개발 명령")
 async def 제재내역수동삭제(interaction: discord.Interaction, id: int):
-    if interaction.user.id != developer :
-        embed = discord.Embed(
-            title="오류",
-            description="권한이 부족합니다. 다음 권한이 필요합니다: `개발자`",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    await interaction.response.defer()
-    remove_blockhistory(id)
-    await interaction.followup.send(f"제재 내역 #{id} 삭제되었습니다.")
-    return
+    await run_delete_blockhistory_entry_slash_command(
+        interaction,
+        entry_id=id,
+        context={
+            "developer": developer,
+        },
+    )
 
 # add_blockhistory(user_id, admin_id, reason, blocktype, addinfo)
 @bot.tree.command(name="제재내역수동추가", description="개발 명령")
 @app_commands.describe(추가정보="경고의 경우, 경고 개수. 타임아웃의 경우 타임아웃 기간 (초)")
 async def 제재내역수동추가(interaction: discord.Interaction, 유저: discord.User, 관리자: discord.User, 사유: str, 종류: str, 추가정보: int) :
-    if interaction.user.id != developer :
-        embed = discord.Embed(
-            title="오류",
-            description="권한이 부족합니다. 다음 권한이 필요합니다: `개발자`",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    await interaction.response.defer(ephemeral=True)
-    add_blockhistory(유저.id, 관리자.id, 사유, 종류, 추가정보, interaction.guild.id)
-    embed = discord.Embed(
-        title="완료",
-        description="처리되었습니다.",
-        color=discord.Color.blue()
+    await run_add_blockhistory_entry_slash_command(
+        interaction,
+        target_user=유저,
+        admin_user=관리자,
+        reason_text=사유,
+        type_label=종류,
+        extra_value=추가정보,
+        context={
+            "developer": developer,
+        },
     )
-    await interaction.followup.send(embed=embed, ephemeral=True)
-    return
 
 '''
 @bot.tree.command(name="선로신설", description="해당 채널에 선로를 새로 건설합니다.")
@@ -8052,7 +7390,6 @@ async def info(interaction: discord.Interaction, 사용자: discord.Member):
         interaction,
         target_user=사용자,
     )
-'''
 register_log_events(
     bot,
     {

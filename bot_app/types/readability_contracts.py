@@ -38,6 +38,12 @@ XpShopPurchaseStatus = Literal["success", "unsupported_server", "manual_only_ite
 GambleOfferStatus = Literal["created", "amount_too_small", "amount_too_large"]
 GambleSettlementStatus = Literal["completed", "participant_insufficient_balance", "creator_insufficient_balance"]
 GambleBalanceStatus = Literal["ok", "participant_insufficient_balance", "creator_insufficient_balance"]
+RoleDescriptionUpdateStatus = Literal["updated"]
+InviteRouteMemoUpdateStatus = Literal["updated"]
+InviteRouteReportStatus = Literal["known", "unknown"]
+UserJoinRouteLookupStatus = Literal["found", "missing"]
+BlockHistoryMutationStatus = Literal["deleted", "added"]
+ChannelBackupLookupStatus = Literal["found", "missing"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,6 +262,87 @@ class GambleBalanceCheckResult:
     status: GambleBalanceStatus
     amount: int = 0
     unit: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class RoleDescriptionUpdateResult:
+    status: RoleDescriptionUpdateStatus
+    description: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RoleInfoSnapshot:
+    role_name: str
+    role_mention: str
+    role_id: int
+    color_label: object
+    member_count: int
+    description: str
+    enabled_permissions: tuple[str, ...]
+    member_mentions: tuple[str, ...]
+    cannot_moderate_role_mentions: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class InviteRouteMemoUpdateResult:
+    status: InviteRouteMemoUpdateStatus
+    invite_code: str
+    memo: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class InviteRouteEntry:
+    invite_code: str | None
+    memo: str | None
+    rendered_label: str
+
+
+@dataclass(frozen=True, slots=True)
+class InviteRouteReport:
+    status: InviteRouteReportStatus
+    entries: tuple[InviteRouteEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class UserJoinRouteLookupResult:
+    status: UserJoinRouteLookupStatus
+    join_route: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BlockHistoryMutationResult:
+    status: BlockHistoryMutationStatus
+    entry_id: int | None = None
+    user_id: int | None = None
+    admin_id: int | None = None
+    type_label: str | None = None
+    extra_value: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelBackupMessage:
+    author_id: int
+    content: str
+    attachment_filenames: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelBackupManifest:
+    messages: tuple[ChannelBackupMessage, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelBackupWriteResult:
+    status: Literal["written"]
+    backup_path: str
+    message_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelBackupLookupResult:
+    status: ChannelBackupLookupStatus
+    backup_path: str
+    manifest: ChannelBackupManifest | None = None
 
 
 @dataclass(frozen=True, slots=True)

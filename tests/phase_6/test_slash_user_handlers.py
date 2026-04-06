@@ -314,7 +314,7 @@ def test_main_uses_user_slash_helpers_instead_of_direct_body_logic():
     likeability_block_end = source.index('@bot.tree.command(name = "임베드출력"', likeability_block_start)
     likeability_block = source[likeability_block_start:likeability_block_end]
     info_block_start = source.index('@bot.tree.command(name="정보"')
-    info_block_end = source.index("'''", info_block_start)
+    info_block_end = source.index("register_log_events(", info_block_start)
     info_block = source[info_block_start:info_block_end]
 
     assert "from bot_app.commands.slash_user_handlers import (" in source
