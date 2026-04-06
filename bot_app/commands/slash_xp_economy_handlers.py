@@ -64,6 +64,14 @@ class GambleButtonView(discord.ui.View):
                 )
                 return
 
+            self.disable_all_buttons()
+            if self.already_played:
+                await interaction.response.send_message("**[오류!]** 이미 게임이 종료되었습니다.", ephemeral=True)
+                return
+
+            self.already_played = True
+            await interaction.response.defer()
+            await interaction.message.edit(view=self)
             settlement = resolve_gamble_round(
                 server_id=interaction.guild.id,
                 creator_user_id=self.author.id,
@@ -74,26 +82,17 @@ class GambleButtonView(discord.ui.View):
                 unit=self.unit,
             )
             if settlement.status == "participant_insufficient_balance":
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     f"**[오류!]** 게임 참가자의 {self.unit}이(가) 부족합니다.",
                     ephemeral=True,
                 )
                 return
             if settlement.status == "creator_insufficient_balance":
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     f"**[오류!]** 게임 생성자의 {self.unit}이(가) 부족합니다.",
                     ephemeral=True,
                 )
                 return
-
-            self.disable_all_buttons()
-            if self.already_played:
-                await interaction.response.send_message("**[오류!]** 이미 게임이 종료되었습니다.", ephemeral=True)
-                return
-
-            self.already_played = True
-            await interaction.response.defer()
-            await interaction.message.edit(view=self)
             await interaction.followup.send(
                 f"<@{settlement.winner_id}>님이 승리하고 <@{settlement.loser_id}>님이 패배하였습니다. "
                 f"정답은 **{settlement.correct_choice}**이었고 걸린 {settlement.unit}은(는) `{settlement.amount}`입니다."

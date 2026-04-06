@@ -221,8 +221,9 @@ async def test_gamble_view_handles_balance_failure(monkeypatch):
 
     await view.button_callback(interaction, "홀")
 
-    assert interaction.response.sent[0]["content"] == "**[오류!]** 게임 참가자의 XP이(가) 부족합니다."
-    assert interaction.response.sent[0]["ephemeral"] is True
+    assert interaction.response.deferred == [{"ephemeral": False}]
+    assert interaction.followup.sent[0]["content"] == "**[오류!]** 게임 참가자의 XP이(가) 부족합니다."
+    assert interaction.followup.sent[0]["ephemeral"] is True
 
 
 @pytest.mark.asyncio
@@ -252,6 +253,38 @@ async def test_gamble_view_settles_round_and_edits_message(monkeypatch):
     assert message.edited_views == [view]
     assert view.already_played is True
     assert interaction.followup.sent[0]["content"] == "<@20>님이 승리하고 <@10>님이 패배하였습니다. 정답은 **홀**이었고 걸린 XP은(는) `100`입니다."
+
+
+@pytest.mark.asyncio
+async def test_gamble_view_does_not_resettle_after_game_finishes(monkeypatch):
+    author = FakeUser(10)
+    first_participant = FakeUser(20)
+    second_participant = FakeUser(30)
+    view = GambleButtonView(author, xp_amount=100, choice="홀", unit="XP", context={"is_blocked": lambda user: (False, None, None)})
+    first_interaction = FakeButtonInteraction(user=first_participant, guild=FakeGuild(1), message=FakeMessage())
+    second_interaction = FakeButtonInteraction(user=second_participant, guild=FakeGuild(1), message=FakeMessage())
+    call_count = 0
+
+    def fake_resolve_gamble_round(**kwargs):
+        nonlocal call_count
+        call_count += 1
+        return GambleSettlementResult(
+            status="completed",
+            winner_id=20,
+            loser_id=10,
+            correct_choice="홀",
+            amount=100,
+            unit="XP",
+        )
+
+    monkeypatch.setattr(slash_xp_economy_handlers_module, "resolve_gamble_round", fake_resolve_gamble_round)
+
+    await view.button_callback(first_interaction, "홀")
+    await view.button_callback(second_interaction, "짝")
+
+    assert call_count == 1
+    assert second_interaction.response.sent[0]["content"] == "**[오류!]** 이미 게임이 종료되었습니다."
+    assert second_interaction.response.sent[0]["ephemeral"] is True
 
 
 def test_main_uses_xp_economy_helpers_instead_of_direct_logic():
