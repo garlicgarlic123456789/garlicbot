@@ -411,12 +411,11 @@ async def run_unrestrict_user_slash_command(
         await interaction.followup.send("개발자 전용 명령어입니다.")
         return _slash_result(status="rejected", reason_code="developer_only")
 
-    restriction_state = get_developer_restriction_state(user_id=target_user.id)
-    if restriction_state.status != "blocked":
+    remove_result = remove_developer_restriction(user_id=target_user.id)
+    if remove_result.status != "removed":
         await interaction.followup.send(f"{target_user.id}님은 차단되어 있지 않습니다.")
         return _slash_result(status="rejected", reason_code="restriction_not_found")
 
-    remove_developer_restriction(user_id=target_user.id)
     await interaction.followup.send(f"{target_user.id}님의 이용제한을 해제했습니다.")
     return _slash_result(status="completed", reason_code="restriction_removed")
 

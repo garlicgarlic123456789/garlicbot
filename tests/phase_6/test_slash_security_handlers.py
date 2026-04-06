@@ -18,6 +18,7 @@ from bot_app.commands.slash_security_handlers import (
     run_restrict_user_slash_command,
     run_security_action_slash_command,
     run_set_quarantine_role_slash_command,
+    run_unrestrict_user_slash_command,
 )
 from bot_app.types.readability_contracts import ErrorTrackedSlashCommandResult, SlashCommandResult
 
@@ -272,6 +273,50 @@ async def test_restrict_user_helper_requires_developer_and_persists(monkeypatch)
     assert result == SlashCommandResult(status="completed", reason_code="restriction_added")
     assert captured == {"user_id": 20, "reason_text": "도배", "until_date_label": "2099-01-01"}
     assert interaction.followup.sent[0]["content"] == "20님을 2099-01-01까지 `도배`로 인해 이용제한 처리했습니다."
+
+
+@pytest.mark.asyncio
+async def test_unrestrict_user_helper_removes_stale_record_when_delete_succeeds(monkeypatch):
+    actor = FakeUser(10)
+    interaction = FakeInteraction(user=actor, guild=FakeGuild(1))
+    target_user = FakeUser(20)
+
+    monkeypatch.setattr(
+        handlers_module,
+        "remove_developer_restriction",
+        lambda **kwargs: SimpleNamespace(status="removed", user_id=kwargs["user_id"]),
+    )
+
+    result = await run_unrestrict_user_slash_command(
+        interaction,
+        target_user=target_user,
+        context={"developer": 10},
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="restriction_removed")
+    assert interaction.followup.sent[0]["content"] == "20님의 이용제한을 해제했습니다."
+
+
+@pytest.mark.asyncio
+async def test_unrestrict_user_helper_rejects_when_no_record_exists(monkeypatch):
+    actor = FakeUser(10)
+    interaction = FakeInteraction(user=actor, guild=FakeGuild(1))
+    target_user = FakeUser(20)
+
+    monkeypatch.setattr(
+        handlers_module,
+        "remove_developer_restriction",
+        lambda **kwargs: SimpleNamespace(status="missing", user_id=kwargs["user_id"]),
+    )
+
+    result = await run_unrestrict_user_slash_command(
+        interaction,
+        target_user=target_user,
+        context={"developer": 10},
+    )
+
+    assert result == SlashCommandResult(status="rejected", reason_code="restriction_not_found")
+    assert interaction.followup.sent[0]["content"] == "20님은 차단되어 있지 않습니다."
 
 
 @pytest.mark.asyncio
