@@ -106,6 +106,12 @@ from bot_app.commands.slash_moderation_handlers import (
     run_warn_slash_command,
 )
 from bot_app.commands.slash_guild_settings_handlers import run_set_log_channel_slash_command
+from bot_app.commands.slash_user_handlers import (
+    run_add_likeability_slash_command,
+    run_check_likeability_slash_command,
+    run_info_slash_command,
+    run_user_profile_slash_command,
+)
 from bot_app.commands.slash_xp_handlers import (
     run_add_xp_slash_command,
     run_attendance_slash_command,
@@ -2517,118 +2523,14 @@ async def exp_ranking(interaction: discord.Interaction, 종류: str, 페이지: 
 @bot.tree.command(name="사용자정보", description="해당 유저의 정보를 확인합니다.")
 @app_commands.describe(사용자="정보를 조회할 사용자")
 async def 사용자정보(interaction: discord.Interaction, 사용자: discord.User):
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    kst = pytz.timezone('Asia/Seoul')
-
-    try : 
-        사용자 = await interaction.guild.fetch_member(사용자.id)
-
-        roles = [role.mention for role in 사용자.roles if role.name != "@everyone"]
-        roles = list(reversed(roles))
-        roles_text = ", ".join(roles) if roles else "*(부여된 역할 없음)*"
-        
-        # Embed 생성
-        embed = discord.Embed(
-            title=f"{사용자.display_name}님의 정보",
-            color=int("a5f0ff", 16)
-        )
-        embed.add_field(name="사용자 ID", value=f"`{str(사용자.id)}`", inline=False)
-        embed.add_field(name="별명", value=사용자.display_name, inline=False)
-        embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
-        embed.add_field(name="보유한 역할", value=roles_text, inline=False)
-        if interaction.guild.id in xp_setting and xp_setting[interaction.guild.id][0] == True :
-            exp = get_xp(interaction.guild.id, 사용자.id)
-            month_exp = get_xp(interaction.guild.id, 사용자.id)
-            unit = xp_setting[interaction.guild.id][5]
-
-            lvl = return_level(exp)
-            month_lvl = return_level(month_exp)
-
-            embed.add_field(name="레벨", value=f"{lvl} 레벨 (월간 레벨: {month_lvl} 레벨)", inline=False)
-            embed.add_field(name="보유한 경험치", value=f"{exp} {unit} (월간 경험치: {month_exp} {unit})", inline=False)
-        
-        embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
-        embed.add_field(name = "서버 참가일", value = f"{사용자.joined_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
-
-        warning_count = await load_warning(interaction.guild.id, 사용자.id)
-
-        if 사용자.timed_out_until:
-            now = discord.utils.utcnow()
-            if 사용자.timed_out_until > now:
-                kst = pytz.timezone('Asia/Seoul')
-                timeout_end_kst = 사용자.timed_out_until.astimezone(kst)
-                formatted_time = timeout_end_kst.strftime('%Y-%m-%d %H:%M:%S')
-                timeout_msg = f"타임아웃 중 ({formatted_time}까지)"
-            else : 
-                timeout_msg = "제한되지 않음"
-        else : 
-            timeout_msg = "제한되지 않음"
-
-        embed.add_field(name="제재 내역", value=f"자세한 제재 내역은 </제재내역확인:1343799676545138771>을 사용하여 확인해 주세요.\n- 부여된 경고: {warning_count}개\n- 제한 (타임아웃 또는 차단) 상태: {timeout_msg}", inline=False)
-        status, until, reason = is_blocked(사용자)
-        if status:
-            embed.add_field(name="유저 구분", value=f"이용제한 유저 ({until}까지, 사유: {reason})", inline=False)
-        else : 
-            if get_premium(사용자.id) :
-                embed.add_field(name="유저 구분", value="프리미엄 유저", inline=False)
-            else : 
-                embed.add_field(name="유저 구분", value="일반 유저", inline=False)
-
-        embed.set_thumbnail(url=사용자.display_avatar.url)
-    
-    except discord.NotFound:
-        embed = discord.Embed(
-            title=f"{사용자.display_name}님의 정보",
-            color=int("a5f0ff", 16)
-        )
-        embed.add_field(name="사용자 ID", value=f"`{str(사용자.id)}`", inline=False)
-        embed.add_field(name="별명", value=사용자.display_name, inline=False)
-        embed.add_field(name="멘션", value=f"<@{사용자.id}>", inline=False)
-        if interaction.guild.id in xp_setting and xp_setting[interaction.guild.id][0] == True :
-            exp = get_xp(interaction.guild.id, 사용자.id)
-            month_exp = get_xp(interaction.guild.id, 사용자.id)
-            unit = xp_setting[interaction.guild.id][5]
-
-            lvl = return_level(exp)
-            month_lvl = return_level(month_exp)
-
-            embed.add_field(name="레벨", value=f"{lvl} 레벨 (월간 레벨: {month_lvl} 레벨)", inline=False)
-            embed.add_field(name="보유한 경험치", value=f"{exp} {unit} (월간 경험치: {month_exp} {unit})", inline=False)
-        
-        embed.add_field(name = "계정 생성일", value = f"{사용자.created_at.astimezone(kst).strftime('%Y-%m-%d %H:%M:%S')}", inline=False)
-        
-        warning_count = await load_warning(interaction.guild.id, 사용자.id)
-
-        try:
-            ban_entry = await interaction.guild.fetch_ban(사용자)
-            reason = ban_entry.reason or "사유 없음"
-            ban_msg = f"차단 중 (사유: {reason})"
-        except discord.NotFound:
-            ban_msg = "제한되지 않음"
-
-        embed.add_field(name="제재 내역", value=f"자세한 제재 내역은 </제재내역확인:1343799676545138771>을 사용하여 확인해 주세요.\n- 부여된 경고: {warning_count}개\n- 제한 (타임아웃 또는 차단) 상태: {ban_msg}", inline=False)
-        status, until, reason = is_blocked(사용자)
-        if status:
-            embed.add_field(name="유저 구분", value=f"이용제한 유저 ({until}까지, 사유: {reason})", inline=False)
-        else : 
-            if get_premium(사용자.id) :
-                embed.add_field(name="유저 구분", value="프리미엄 유저", inline=False)
-            else : 
-                embed.add_field(name="유저 구분", value="일반 유저", inline=False)
-
-        embed.set_thumbnail(url=사용자.display_avatar.url)
-    
-    # 응답 전송
-    await interaction.followup.send(embed=embed)
+    await run_user_profile_slash_command(
+        interaction,
+        target_user=사용자,
+        context={
+            "is_blocked": is_blocked,
+            "xp_setting": xp_setting,
+        },
+    )
 
 @bot.tree.command(name = "경고한도설정", description = "경고 한도를 설정합니다. 설정된 한도에 도달하면 유저가 밴됩니다.")
 @app_commands.describe(한도="설정할 경고 한도 (한도 기능을 비활성화하려는 경우 0)")
@@ -7910,36 +7812,23 @@ async def chat1(interaction: discord.Interaction, 내용: str):
 
 @bot.tree.command(name = "호감도확인", description = "특정 사용자의 호감도를 확인합니다.")
 @app_commands.describe(사용자 = "호감도를 확인할 사용자")
-async def likeabilitycheck(interaction: discord.Interaction, 사용자: discord.User = None) :
-    await interaction.response.defer()
-    if 사용자 == None :
-        사용자 = interaction.user
-    embed = discord.Embed(
-        title = f"알림",
-        description = f"{사용자.mention}의 호감도는 {check_likeability(str(사용자.id))}입니다.",
-        color = int("a5f0ff", 16)
+async def check_likeability_command(interaction: discord.Interaction, 사용자: discord.User = None) :
+    await run_check_likeability_slash_command(
+        interaction,
+        target_user=사용자,
     )
-    await interaction.followup.send(embed = embed)
 
 @bot.tree.command(name = "호감도추가", description = "특정 사용자의 호감도를 수정합니다.")
 @app_commands.describe(사용자 = "호감도를 확인할 사용자", 호감도 = "값")
-async def likeabilitycheck(interaction: discord.Interaction, 사용자: discord.User, 호감도: int) :
-    await interaction.response.defer()
-    if interaction.user.id != developer :
-        embed = discord.Embed(
-            title = f"오류",
-            description = f"권한이 부족합니다. 다음 권한이 필요합니다: `개발자`",
-            color = discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed)
-        return
-    force_add_likeability(사용자.id, 호감도)
-    embed = discord.Embed(
-        title = f"알림",
-        description = f"{사용자.id}의 새 호감도는 {check_likeability(str(사용자.id))}({호감도}만큼 추가됨)입니다.",
-        color = int("a5f0ff", 16)
+async def add_likeability_command(interaction: discord.Interaction, 사용자: discord.User, 호감도: int) :
+    await run_add_likeability_slash_command(
+        interaction,
+        target_user=사용자,
+        amount=호감도,
+        context={
+            "developer": developer,
+        },
     )
-    await interaction.followup.send(embed = embed)
 
 @bot.tree.command(name = "임베드출력", description = "임베드 출력")
 @app_commands.describe(색상 = "임베드 색상 HEX 코드 (# 제외하고 입력)")
@@ -8382,18 +8271,10 @@ async def cal_subway_fair():
 
 @bot.tree.command(name="정보", description="특정 사용자의 정보를 확인합니다.")
 async def info(interaction: discord.Interaction, 사용자: discord.Member):
-    try:
-        # 데이터베이스에서 사용자 검색
-        c.execute("SELECT money FROM users WHERE user_id = ?", (사용자.id,))
-        result = c.fetchone()
-        
-        if result:
-            money = result[0]
-            await interaction.response.send_message(f"## {사용자.display_name} 정보\n사용자명: {사용자.name}\n돈 보유량: {money}")
-        else:
-            await interaction.response.send_message(f"**[오류!]** DB에서 해당 사용자를 찾을 수 없습니다.")
-    except Exception as e:
-        await interaction.response.send_message(f"**[오류!]** 알 수 없는 오류가 발생했습니다.")
+    await run_info_slash_command(
+        interaction,
+        target_user=사용자,
+    )
 '''
 register_log_events(
     bot,

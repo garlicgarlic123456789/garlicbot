@@ -31,6 +31,9 @@ AttendanceRewardStatus = Literal[
     "already_checked",
 ]
 XpTransferStatus = Literal["success", "insufficient_balance"]
+UserMoneyLookupStatus = Literal["found", "missing"]
+UserProfileSource = Literal["guild_member", "external_user"]
+UserClassificationStatus = Literal["blocked", "premium", "general"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -177,6 +180,49 @@ class XpRankingPage:
     total_pages: int
     unit: str
     entries: tuple[XpRankingEntry, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class LikeabilitySnapshot:
+    score: int
+
+
+@dataclass(frozen=True, slots=True)
+class LikeabilityAdjustmentResult:
+    delta: int
+    score: int
+
+
+@dataclass(frozen=True, slots=True)
+class UserMoneyLookupResult:
+    status: UserMoneyLookupStatus
+    money: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DisplayedXpSnapshot:
+    total_xp: int
+    displayed_month_xp: int
+    total_level: int
+    displayed_month_level: int
+    unit: str
+
+
+@dataclass(frozen=True, slots=True)
+class UserProfileSnapshot:
+    source: UserProfileSource
+    user_id: int
+    display_name: str
+    mention: str
+    role_mentions: tuple[str, ...]
+    xp_snapshot: DisplayedXpSnapshot | None
+    account_created_at_label: str
+    joined_at_label: str | None
+    warning_count: int
+    restriction_status_label: str
+    classification_status: UserClassificationStatus
+    classification_label: str
+    avatar_url: str
 
 
 @dataclass(frozen=True, slots=True)
