@@ -1,3 +1,6 @@
+import ast
+import copy
+import warnings
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -579,6 +582,43 @@ async def test_developer_command_helper_branch_11_handles_invalid_date_and_no_me
 
 
 @pytest.mark.asyncio
+async def test_developer_command_helper_branch_11_success_writes_csv_and_sends_file(tmp_path, monkeypatch):
+    import pandas as real_pd
+
+    monkeypatch.chdir(tmp_path)
+    user = FakeUser(999)
+    active_message = SimpleNamespace(
+        author=SimpleNamespace(bot=False),
+        created_at=datetime(2026, 4, 1, 3, 10, tzinfo=timezone.utc),
+    )
+    interaction = FakeInteraction(
+        user=user,
+        guild=SimpleNamespace(
+            id=1,
+            text_channels=[FakeDateRangeHistoryChannel("일반", [active_message])],
+        ),
+    )
+
+    result = await run_developer_command_slash_command(
+        interaction,
+        command_id=11,
+        input1="2026-04-01",
+        input2="2026-04-02",
+        input3=None,
+        context={
+            "developer": 999,
+            "KST": timezone(timedelta(hours=9)),
+            "pd": real_pd,
+        },
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="developer_command_11")
+    assert interaction.followup.sent[0]["content"] == "📊 `2026-04-01`부터 `2026-04-02`까지(KST 기준) 채팅 건수를 계산 중입니다..."
+    assert user.sent["file"].filename == "chat_counts_2026-04-01_2026-04-02_KST.csv"
+    assert (tmp_path / "chat_counts_2026-04-01_2026-04-02_KST.csv").exists()
+
+
+@pytest.mark.asyncio
 async def test_developer_command_helper_branches_18_20_and_26_cover_statistics_settings_and_warning_migration():
     stats_interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1))
     stats_result = await run_developer_command_slash_command(
@@ -710,6 +750,98 @@ async def test_backup_and_restore_helpers_cover_missing_and_success_paths(tmp_pa
     webhook = restore_interaction.channel.webhooks[0]["webhook"]
     assert webhook.sent[0]["content"] == "안녕"
     assert restore_interaction.followup.sent[0]["content"] == "`backup-one` 복원이 완료되었습니다."
+
+
+@pytest.mark.asyncio
+async def test_main_developer_command_wrapper_passes_runtime_context_to_helper():
+    source = Path("main.py").read_text(encoding="utf-8")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", SyntaxWarning)
+        module_ast = ast.parse(source)
+    function_node = next(
+        node for node in module_ast.body if isinstance(node, ast.AsyncFunctionDef) and node.name == "개발명령"
+    )
+    function_copy = copy.deepcopy(function_node)
+    function_copy.decorator_list = []
+    wrapper_module = ast.Module(body=[function_copy], type_ignores=[])
+    ast.fix_missing_locations(wrapper_module)
+
+    captured = {}
+
+    async def fake_helper(interaction, *, command_id, input1, input2, input3, context):
+        captured.update(
+            {
+                "interaction": interaction,
+                "command_id": command_id,
+                "input1": input1,
+                "input2": input2,
+                "input3": input3,
+                "context": context,
+            }
+        )
+
+    sentinels = {
+        "developer": 999,
+        "bot": object(),
+        "normal_channel": 1010,
+        "add_or_remove": object(),
+        "ExpButton": object(),
+        "ExpRemoveButton": object(),
+        "오리실험": object(),
+        "genai": object(),
+        "cute_model4": object(),
+        "develop_chat_dict2": {},
+        "add_likeability": object(),
+        "get_anti_nuke_option": object(),
+        "get_anti_nuke_log_channel": object(),
+        "get_anti_nuke_whitelist": object(),
+        "get_asos_data_current": object(),
+        "weather_api_key": "weather-key",
+        "get_block_log_channel": object(),
+        "KST": timezone(timedelta(hours=9)),
+        "pd": object(),
+        "migrate_blockhistory": object(),
+        "get_related_accounts": object(),
+        "scan_url": object(),
+        "save_invite_log": object(),
+        "get_automod": object(),
+        "check_account": object(),
+        "get_xp_setting": object(),
+        "get_xp_setting_dict": object(),
+        "get_xp": object(),
+        "load_warnings": object(),
+        "set_warning": object(),
+        "ObsoleteFunctionError": RuntimeError,
+        "get_all_xp": object(),
+        "update_month_xp": object(),
+        "get_all_anti_nuke_notify_channel": object(),
+        "enable_anti_nuke_button_temp": object(),
+    }
+
+    namespace = {
+        "discord": SimpleNamespace(Interaction=object),
+        "run_developer_command_slash_command": fake_helper,
+        **sentinels,
+    }
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", SyntaxWarning)
+        exec(compile(wrapper_module, "main.py", "exec"), namespace)
+
+    interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1))
+    await namespace["개발명령"](interaction, 26, "True", "둘", "셋")
+
+    assert captured["interaction"] is interaction
+    assert captured["command_id"] == 26
+    assert captured["input1"] == "True"
+    assert captured["input2"] == "둘"
+    assert captured["input3"] == "셋"
+    assert captured["context"]["developer"] == 999
+    assert captured["context"]["develop_chat_dict2"] is sentinels["develop_chat_dict2"]
+    assert captured["context"]["KST"] is sentinels["KST"]
+    assert captured["context"]["pd"] is sentinels["pd"]
+    assert captured["context"]["load_warnings"] is sentinels["load_warnings"]
+    assert captured["context"]["set_warning"] is sentinels["set_warning"]
+    assert captured["context"]["enable_anti_nuke_button_temp"] is sentinels["enable_anti_nuke_button_temp"]
 
 
 def test_main_uses_admin_support_helpers_instead_of_direct_wave3_bodies():
