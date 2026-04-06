@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from bot_app.repositories.xp_repository import xp_repository
 from bot_app.types.readability_contracts import (
+    GambleBalanceCheckResult,
     GambleOfferResult,
     GambleSettlementResult,
     XpShopItemSpec,
@@ -74,12 +75,7 @@ def resolve_gamble_round(
     unit: str,
     repository=xp_repository,
 ) -> GambleSettlementResult:
-    """Apply the legacy gamble settlement and report the winner/loser contract."""
-    if repository.get_xp(server_id, participant_user_id) < amount:
-        return GambleSettlementResult(status="participant_insufficient_balance", amount=amount, unit=unit)
-    if repository.get_xp(server_id, creator_user_id) < amount:
-        return GambleSettlementResult(status="creator_insufficient_balance", amount=amount, unit=unit)
-
+    """Apply the legacy gamble settlement after the caller has locked the round."""
     winner_id = participant_user_id if selected_choice == correct_choice else creator_user_id
     loser_id = creator_user_id if winner_id == participant_user_id else participant_user_id
     repository.add_xp(server_id, winner_id, amount)
@@ -94,3 +90,20 @@ def resolve_gamble_round(
         amount=amount,
         unit=unit,
     )
+
+
+def check_gamble_balance(
+    *,
+    server_id: int,
+    creator_user_id: int,
+    participant_user_id: int,
+    amount: int,
+    unit: str,
+    repository=xp_repository,
+) -> GambleBalanceCheckResult:
+    """Check whether both players can afford the gamble without mutating XP."""
+    if repository.get_xp(server_id, participant_user_id) < amount:
+        return GambleBalanceCheckResult(status="participant_insufficient_balance", amount=amount, unit=unit)
+    if repository.get_xp(server_id, creator_user_id) < amount:
+        return GambleBalanceCheckResult(status="creator_insufficient_balance", amount=amount, unit=unit)
+    return GambleBalanceCheckResult(status="ok", amount=amount, unit=unit)

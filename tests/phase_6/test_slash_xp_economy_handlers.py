@@ -211,19 +211,21 @@ async def test_gamble_view_handles_balance_failure(monkeypatch):
     author = FakeUser(10)
     participant = FakeUser(20)
     view = GambleButtonView(author, xp_amount=100, choice="홀", unit="XP", context={"is_blocked": lambda user: (False, None, None)})
-    interaction = FakeButtonInteraction(user=participant, guild=FakeGuild(1), message=FakeMessage())
+    message = FakeMessage()
+    interaction = FakeButtonInteraction(user=participant, guild=FakeGuild(1), message=message)
 
     monkeypatch.setattr(
         slash_xp_economy_handlers_module,
-        "resolve_gamble_round",
-        lambda **kwargs: GambleSettlementResult(status="participant_insufficient_balance", amount=100, unit="XP"),
+        "check_gamble_balance",
+        lambda **kwargs: SimpleNamespace(status="participant_insufficient_balance", amount=100, unit="XP"),
     )
 
     await view.button_callback(interaction, "홀")
 
-    assert interaction.response.deferred == [{"ephemeral": False}]
-    assert interaction.followup.sent[0]["content"] == "**[오류!]** 게임 참가자의 XP이(가) 부족합니다."
-    assert interaction.followup.sent[0]["ephemeral"] is True
+    assert interaction.response.sent[0]["content"] == "**[오류!]** 게임 참가자의 XP이(가) 부족합니다."
+    assert interaction.response.sent[0]["ephemeral"] is True
+    assert view.already_played is False
+    assert message.edited_views == []
 
 
 @pytest.mark.asyncio
@@ -234,6 +236,11 @@ async def test_gamble_view_settles_round_and_edits_message(monkeypatch):
     message = FakeMessage()
     interaction = FakeButtonInteraction(user=participant, guild=FakeGuild(1), message=message)
 
+    monkeypatch.setattr(
+        slash_xp_economy_handlers_module,
+        "check_gamble_balance",
+        lambda **kwargs: SimpleNamespace(status="ok", amount=100, unit="XP"),
+    )
     monkeypatch.setattr(
         slash_xp_economy_handlers_module,
         "resolve_gamble_round",
@@ -277,6 +284,11 @@ async def test_gamble_view_does_not_resettle_after_game_finishes(monkeypatch):
             unit="XP",
         )
 
+    monkeypatch.setattr(
+        slash_xp_economy_handlers_module,
+        "check_gamble_balance",
+        lambda **kwargs: SimpleNamespace(status="ok", amount=100, unit="XP"),
+    )
     monkeypatch.setattr(slash_xp_economy_handlers_module, "resolve_gamble_round", fake_resolve_gamble_round)
 
     await view.button_callback(first_interaction, "홀")
@@ -285,6 +297,51 @@ async def test_gamble_view_does_not_resettle_after_game_finishes(monkeypatch):
     assert call_count == 1
     assert second_interaction.response.sent[0]["content"] == "**[오류!]** 이미 게임이 종료되었습니다."
     assert second_interaction.response.sent[0]["ephemeral"] is True
+
+
+@pytest.mark.asyncio
+async def test_gamble_view_keeps_game_open_after_balance_failure(monkeypatch):
+    author = FakeUser(10)
+    first_participant = FakeUser(20)
+    second_participant = FakeUser(30)
+    view = GambleButtonView(author, xp_amount=100, choice="홀", unit="XP", context={"is_blocked": lambda user: (False, None, None)})
+    first_interaction = FakeButtonInteraction(user=first_participant, guild=FakeGuild(1), message=FakeMessage())
+    second_message = FakeMessage()
+    second_interaction = FakeButtonInteraction(user=second_participant, guild=FakeGuild(1), message=second_message)
+    balance_results = iter(
+        [
+            SimpleNamespace(status="participant_insufficient_balance", amount=100, unit="XP"),
+            SimpleNamespace(status="ok", amount=100, unit="XP"),
+        ]
+    )
+    settlement_call_count = 0
+
+    def fake_check_gamble_balance(**kwargs):
+        return next(balance_results)
+
+    def fake_resolve_gamble_round(**kwargs):
+        nonlocal settlement_call_count
+        settlement_call_count += 1
+        return GambleSettlementResult(
+            status="completed",
+            winner_id=30,
+            loser_id=10,
+            correct_choice="홀",
+            amount=100,
+            unit="XP",
+        )
+
+    monkeypatch.setattr(slash_xp_economy_handlers_module, "check_gamble_balance", fake_check_gamble_balance)
+    monkeypatch.setattr(slash_xp_economy_handlers_module, "resolve_gamble_round", fake_resolve_gamble_round)
+
+    await view.button_callback(first_interaction, "홀")
+    await view.button_callback(second_interaction, "홀")
+
+    assert first_interaction.response.sent[0]["content"] == "**[오류!]** 게임 참가자의 XP이(가) 부족합니다."
+    assert settlement_call_count == 1
+    assert second_interaction.response.deferred == [{"ephemeral": False}]
+    assert second_interaction.followup.sent[0]["content"] == "<@30>님이 승리하고 <@10>님이 패배하였습니다. 정답은 **홀**이었고 걸린 XP은(는) `100`입니다."
+    assert second_message.edited_views == [view]
 
 
 def test_main_uses_xp_economy_helpers_instead_of_direct_logic():

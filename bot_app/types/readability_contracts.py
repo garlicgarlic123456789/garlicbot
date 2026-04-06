@@ -37,6 +37,7 @@ UserClassificationStatus = Literal["blocked", "premium", "general"]
 XpShopPurchaseStatus = Literal["success", "unsupported_server", "manual_only_item", "invalid_item", "already_owned", "insufficient_balance"]
 GambleOfferStatus = Literal["created", "amount_too_small", "amount_too_large"]
 GambleSettlementStatus = Literal["completed", "participant_insufficient_balance", "creator_insufficient_balance"]
+GambleBalanceStatus = Literal["ok", "participant_insufficient_balance", "creator_insufficient_balance"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,6 +249,13 @@ class GambleOfferResult:
     amount: int = 0
     unit: str = ""
     choice: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class GambleBalanceCheckResult:
+    status: GambleBalanceStatus
+    amount: int = 0
+    unit: str = ""
 
 
 @dataclass(frozen=True, slots=True)

@@ -5,7 +5,7 @@ from typing import Any, Mapping
 
 import discord
 
-from bot_app.services.xp_economy_service import create_gamble_offer, purchase_shop_item, resolve_gamble_round
+from bot_app.services.xp_economy_service import check_gamble_balance, create_gamble_offer, purchase_shop_item, resolve_gamble_round
 from bot_app.types.readability_contracts import SlashCommandResult, UserBlockState
 
 
@@ -64,6 +64,26 @@ class GambleButtonView(discord.ui.View):
                 )
                 return
 
+            balance_check = check_gamble_balance(
+                server_id=interaction.guild.id,
+                creator_user_id=self.author.id,
+                participant_user_id=interaction.user.id,
+                amount=self.xp_amount,
+                unit=self.unit,
+            )
+            if balance_check.status == "participant_insufficient_balance":
+                await interaction.response.send_message(
+                    f"**[오류!]** 게임 참가자의 {self.unit}이(가) 부족합니다.",
+                    ephemeral=True,
+                )
+                return
+            if balance_check.status == "creator_insufficient_balance":
+                await interaction.response.send_message(
+                    f"**[오류!]** 게임 생성자의 {self.unit}이(가) 부족합니다.",
+                    ephemeral=True,
+                )
+                return
+
             self.disable_all_buttons()
             if self.already_played:
                 await interaction.response.send_message("**[오류!]** 이미 게임이 종료되었습니다.", ephemeral=True)
@@ -81,18 +101,6 @@ class GambleButtonView(discord.ui.View):
                 selected_choice=user_choice,
                 unit=self.unit,
             )
-            if settlement.status == "participant_insufficient_balance":
-                await interaction.followup.send(
-                    f"**[오류!]** 게임 참가자의 {self.unit}이(가) 부족합니다.",
-                    ephemeral=True,
-                )
-                return
-            if settlement.status == "creator_insufficient_balance":
-                await interaction.followup.send(
-                    f"**[오류!]** 게임 생성자의 {self.unit}이(가) 부족합니다.",
-                    ephemeral=True,
-                )
-                return
             await interaction.followup.send(
                 f"<@{settlement.winner_id}>님이 승리하고 <@{settlement.loser_id}>님이 패배하였습니다. "
                 f"정답은 **{settlement.correct_choice}**이었고 걸린 {settlement.unit}은(는) `{settlement.amount}`입니다."

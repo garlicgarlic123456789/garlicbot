@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-from bot_app.services.xp_economy_service import create_gamble_offer, purchase_shop_item, resolve_gamble_round
-from bot_app.types.readability_contracts import GambleOfferResult, GambleSettlementResult, XpShopItemSpec, XpShopPurchaseResult
+from bot_app.services.xp_economy_service import check_gamble_balance, create_gamble_offer, purchase_shop_item, resolve_gamble_round
+from bot_app.types.readability_contracts import GambleBalanceCheckResult, GambleOfferResult, GambleSettlementResult, XpShopItemSpec, XpShopPurchaseResult
 
 
 class FakeXpRepository:
@@ -79,31 +79,36 @@ def test_create_gamble_offer_validates_amount_and_resolves_unit():
     assert created == GambleOfferResult(status="created", amount=500, unit="XP", choice="짝")
 
 
-def test_resolve_gamble_round_reports_balance_failures_and_success():
+def test_check_gamble_balance_reports_failures_without_mutation():
     insufficient_participant_repository = FakeXpRepository(xp_by_user={1: 1000, 2: 100})
     insufficient_creator_repository = FakeXpRepository(xp_by_user={1: 100, 2: 1000})
-    success_repository = FakeXpRepository(xp_by_user={1: 1000, 2: 1000})
 
-    participant_fail = resolve_gamble_round(
+    participant_fail = check_gamble_balance(
         server_id=1,
         creator_user_id=1,
         participant_user_id=2,
         amount=300,
-        correct_choice="홀",
-        selected_choice="홀",
         unit="XP",
         repository=insufficient_participant_repository,
     )
-    creator_fail = resolve_gamble_round(
+    creator_fail = check_gamble_balance(
         server_id=1,
         creator_user_id=1,
         participant_user_id=2,
         amount=300,
-        correct_choice="홀",
-        selected_choice="짝",
         unit="XP",
         repository=insufficient_creator_repository,
     )
+
+    assert participant_fail == GambleBalanceCheckResult(status="participant_insufficient_balance", amount=300, unit="XP")
+    assert creator_fail == GambleBalanceCheckResult(status="creator_insufficient_balance", amount=300, unit="XP")
+    assert insufficient_participant_repository.xp_by_user == {1: 1000, 2: 100}
+    assert insufficient_creator_repository.xp_by_user == {1: 100, 2: 1000}
+
+
+def test_resolve_gamble_round_applies_successful_settlement():
+    success_repository = FakeXpRepository(xp_by_user={1: 1000, 2: 1000})
+
     success_result = resolve_gamble_round(
         server_id=1,
         creator_user_id=1,
@@ -115,8 +120,6 @@ def test_resolve_gamble_round_reports_balance_failures_and_success():
         repository=success_repository,
     )
 
-    assert participant_fail == GambleSettlementResult(status="participant_insufficient_balance", amount=300, unit="XP")
-    assert creator_fail == GambleSettlementResult(status="creator_insufficient_balance", amount=300, unit="XP")
     assert success_result == GambleSettlementResult(
         status="completed",
         winner_id=2,
