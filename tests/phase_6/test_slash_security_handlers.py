@@ -12,11 +12,15 @@ from bot_app.commands.slash_security_handlers import (
     run_anti_nuke_setting_slash_command,
     run_anti_nuke_whitelist_slash_command,
     run_automod_setup_slash_command,
+    run_automod_exception_channel_slash_command,
     run_bulk_delete_slash_command,
+    run_check_restriction_slash_command,
     run_channel_command_permission_slash_command,
+    run_delete_invites_slash_command,
     run_quarantine_user_slash_command,
     run_restrict_user_slash_command,
     run_security_action_slash_command,
+    run_server_command_permission_slash_command,
     run_set_quarantine_role_slash_command,
     run_unrestrict_user_slash_command,
 )
@@ -347,6 +351,101 @@ async def test_channel_permission_helper_requires_target_and_calls_service(monke
         "role_id": 40,
         "user_id": None,
     }
+
+
+@pytest.mark.asyncio
+async def test_delete_invites_helper_deletes_matching_invites(monkeypatch):
+    actor = FakeUser(10)
+    target_user = FakeUser(20)
+    guild = FakeGuild(1)
+    invite_a = FakeInvite(inviter_id=20)
+    invite_b = FakeInvite(inviter_id=30)
+    invite_c = FakeInvite(inviter_id=20)
+    guild._invites = [invite_a, invite_b, invite_c]
+    interaction = FakeInteraction(user=actor, guild=guild)
+
+    result = await run_delete_invites_slash_command(
+        interaction,
+        target_user=target_user,
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="invite_delete_completed")
+    assert invite_a.deleted is True
+    assert invite_b.deleted is False
+    assert invite_c.deleted is True
+    assert interaction.followup.sent[0]["content"] == "20가 만든 초대 링크 2개를 삭제했습니다."
+
+
+@pytest.mark.asyncio
+async def test_check_restriction_helper_reports_blocked_state(monkeypatch):
+    actor = FakeUser(10)
+    target_user = FakeUser(20)
+    interaction = FakeInteraction(user=actor, guild=FakeGuild(1))
+
+    monkeypatch.setattr(
+        handlers_module,
+        "get_developer_restriction_state",
+        lambda **kwargs: SimpleNamespace(status="blocked", reason="도배", blocked_until_label="2099-01-01"),
+    )
+
+    result = await run_check_restriction_slash_command(
+        interaction,
+        target_user=target_user,
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="restriction_checked_blocked")
+    assert interaction.followup.sent[0]["content"] == "20님은 `도배` 사유로 2099-01-01까지 이용 제한 중입니다."
+
+
+@pytest.mark.asyncio
+async def test_server_permission_helper_requires_role_management_and_calls_service(monkeypatch):
+    actor = FakeUser(10, permissions=FakePermissions(manage_channels=True, manage_roles=True))
+    interaction = FakeInteraction(user=actor, guild=FakeGuild(1))
+    role = FakeRole(41)
+    captured = {}
+
+    monkeypatch.setattr(handlers_module, "update_server_command_permission", lambda **kwargs: captured.update(kwargs))
+
+    result = await run_server_command_permission_slash_command(
+        interaction,
+        command_name="마느라",
+        permission="limit",
+        role=role,
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="server_permission_updated")
+    assert captured == {
+        "server_id": 1,
+        "command_name": "마느라",
+        "permission": "limit",
+        "role_id": 41,
+    }
+    assert interaction.followup.sent[0]["embed"].description == "서버별 명령어 권한이 설정되었습니다."
+
+
+@pytest.mark.asyncio
+async def test_automod_exception_helper_updates_channel_setting(monkeypatch):
+    actor = FakeUser(10, permissions=FakePermissions(administrator=True))
+    interaction = FakeInteraction(user=actor, guild=FakeGuild(1))
+    channel = SimpleNamespace(id=123, mention="<#123>")
+    captured = {}
+
+    monkeypatch.setattr(
+        handlers_module,
+        "update_automod_exception_channel_setting",
+        lambda **kwargs: captured.update(kwargs),
+    )
+
+    result = await run_automod_exception_channel_slash_command(
+        interaction,
+        channel=channel,
+        enabled=True,
+        context={"is_blocked": lambda user: (False, None, None)},
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="automod_exception_updated")
+    assert captured == {"server_id": 1, "channel_id": 123, "enabled": True}
+    assert interaction.followup.sent[0]["embed"].description == "채널 <#123>의 자동 검열 예외 설정이 완료되었습니다."
 
 
 @pytest.mark.asyncio
