@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -128,6 +129,24 @@ class FakeRestoreChannel:
         webhook = FakeWebhook()
         self.webhooks.append({"name": name, "webhook": webhook})
         return webhook
+
+
+class FakeSendChannel:
+    def __init__(self):
+        self.sent = []
+
+    async def send(self, content=None, *, embed=None, view=None):
+        self.sent.append({"content": content, "embed": embed, "view": view})
+
+
+class FakeDateRangeHistoryChannel:
+    def __init__(self, name: str, messages):
+        self.name = name
+        self._messages = list(messages)
+
+    async def history(self, *, after, before, oldest_first, limit):
+        for message in self._messages:
+            yield message
 
 
 @pytest.mark.asyncio
@@ -372,6 +391,253 @@ async def test_developer_command_helper_covers_gate_and_known_branches(monkeypat
     )
     assert result == SlashCommandResult(status="completed", reason_code="developer_command_15")
     assert captured == {"user_id": 20, "invite_code": "invite-code", "server_id": 1}
+
+
+@pytest.mark.asyncio
+async def test_developer_command_helper_branch_2_reuses_chat_session_and_updates_likeability(monkeypatch):
+    async def fake_to_thread(func, *args, **kwargs):
+        return func(*args, **kwargs)
+
+    class FakeGenerationConfig:
+        def __init__(self, *, temperature):
+            self.temperature = temperature
+
+    class FakeChatSession:
+        def __init__(self, responses):
+            self.responses = list(responses)
+            self.prompts = []
+
+        def send_message(self, prompt, generation_config=None):
+            self.prompts.append({"prompt": prompt, "temperature": generation_config.temperature})
+            return SimpleNamespace(text=self.responses.pop(0))
+
+    class FakeCuteModel:
+        def __init__(self, session):
+            self.session = session
+            self.start_chat_calls = 0
+
+        def start_chat(self):
+            self.start_chat_calls += 1
+            return self.session
+
+    monkeypatch.setattr(handlers_module.asyncio, "to_thread", fake_to_thread)
+    likeability_changes = []
+    chat_session = FakeChatSession(["응답: 첫 응답\n호감도: 3", "응답: 두 번째 응답\n호감도: -1"])
+    cute_model = FakeCuteModel(chat_session)
+    context = {
+        "developer": 999,
+        "develop_chat_dict2": {},
+        "cute_model4": cute_model,
+        "genai": SimpleNamespace(types=SimpleNamespace(GenerationConfig=FakeGenerationConfig)),
+        "add_likeability": lambda user_id, delta: likeability_changes.append((user_id, delta)),
+    }
+
+    first_interaction = FakeInteraction(user=FakeUser(999, display_name="개발자"), guild=SimpleNamespace(id=1))
+    first_result = await run_developer_command_slash_command(
+        first_interaction,
+        command_id=2,
+        input1="안녕",
+        input2=None,
+        input3=None,
+        context=context,
+    )
+    second_interaction = FakeInteraction(user=FakeUser(999, display_name="개발자"), guild=SimpleNamespace(id=1))
+    second_result = await run_developer_command_slash_command(
+        second_interaction,
+        command_id=2,
+        input1="또 질문",
+        input2=None,
+        input3=None,
+        context=context,
+    )
+
+    assert first_result == SlashCommandResult(status="completed", reason_code="developer_command_2")
+    assert second_result == SlashCommandResult(status="completed", reason_code="developer_command_2")
+    assert cute_model.start_chat_calls == 1
+    assert context["develop_chat_dict2"][999] is chat_session
+    assert [entry["content"] for entry in first_interaction.followup.sent] == ["첫 응답"]
+    assert [entry["content"] for entry in second_interaction.followup.sent] == ["두 번째 응답"]
+    assert likeability_changes == [(999, 3), (999, -1)]
+    assert chat_session.prompts[0]["prompt"].endswith("안녕")
+    assert chat_session.prompts[1]["prompt"].endswith("또 질문")
+
+
+@pytest.mark.asyncio
+async def test_developer_command_helper_branch_3_uses_default_channel_and_button_variant():
+    channel = FakeSendChannel()
+    received_channel_ids = []
+
+    class ExpButton:
+        pass
+
+    class ExpRemoveButton:
+        pass
+
+    interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1))
+    result = await run_developer_command_slash_command(
+        interaction,
+        command_id=3,
+        input1=None,
+        input2=None,
+        input3=None,
+        context={
+            "developer": 999,
+            "normal_channel": 1234,
+            "bot": SimpleNamespace(
+                get_channel=lambda channel_id: received_channel_ids.append(channel_id) or channel
+            ),
+            "add_or_remove": lambda: False,
+            "ExpButton": ExpButton,
+            "ExpRemoveButton": ExpRemoveButton,
+        },
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="developer_command_3")
+    assert received_channel_ids == [1234]
+    assert channel.sent[0]["embed"].description.endswith("무료로 150~1000마늘(XP)를 잃으세요!")
+    assert isinstance(channel.sent[0]["view"], ExpRemoveButton)
+    assert interaction.followup.sent[0]["content"] == "처리되었습니다."
+
+
+@pytest.mark.asyncio
+async def test_developer_command_helper_branch_6_reports_anti_nuke_settings():
+    interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1))
+
+    result = await run_developer_command_slash_command(
+        interaction,
+        command_id=6,
+        input1="321",
+        input2=None,
+        input3=None,
+        context={
+            "developer": 999,
+            "get_anti_nuke_option": lambda server_id: f"option:{server_id}",
+            "get_anti_nuke_log_channel": lambda server_id: 777,
+        },
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="developer_command_6")
+    assert interaction.response.deferred == [{"ephemeral": False}]
+    assert interaction.followup.sent[0]["content"] == "서버 321: option:321, <#777>"
+
+
+@pytest.mark.asyncio
+async def test_developer_command_helper_branch_11_handles_invalid_date_and_no_messages():
+    invalid_interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1, text_channels=[]))
+    invalid_result = await run_developer_command_slash_command(
+        invalid_interaction,
+        command_id=11,
+        input1="2026/04/01",
+        input2="2026-04-02",
+        input3=None,
+        context={"developer": 999, "KST": timezone(timedelta(hours=9))},
+    )
+
+    assert invalid_result == SlashCommandResult(status="rejected", reason_code="developer_command_invalid_date")
+    assert "날짜 형식이 잘못되었습니다" in invalid_interaction.followup.sent[0]["content"]
+
+    quiet_user = FakeUser(999)
+    quiet_interaction = FakeInteraction(
+        user=quiet_user,
+        guild=SimpleNamespace(
+            id=1,
+            text_channels=[
+                FakeDateRangeHistoryChannel(
+                    "조용한채널",
+                    [
+                        SimpleNamespace(
+                            author=SimpleNamespace(bot=True),
+                            created_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+                        )
+                    ],
+                )
+            ],
+        ),
+    )
+
+    class FakePD:
+        @staticmethod
+        def DataFrame(data):
+            return SimpleNamespace(empty=(len(data) == 0))
+
+    no_messages_result = await run_developer_command_slash_command(
+        quiet_interaction,
+        command_id=11,
+        input1="2026-04-01",
+        input2="2026-04-02",
+        input3=None,
+        context={
+            "developer": 999,
+            "KST": timezone(timedelta(hours=9)),
+            "pd": FakePD,
+        },
+    )
+
+    assert no_messages_result == SlashCommandResult(status="completed", reason_code="developer_command_no_messages")
+    assert "채팅 건수를 계산 중입니다" in quiet_interaction.followup.sent[0]["content"]
+    assert quiet_user.sent["content"] == "📭 지정된 기간 동안 수집된 유효한 메시지가 없습니다."
+
+
+@pytest.mark.asyncio
+async def test_developer_command_helper_branches_18_20_and_26_cover_statistics_settings_and_warning_migration():
+    stats_interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1))
+    stats_result = await run_developer_command_slash_command(
+        stats_interaction,
+        command_id=18,
+        input1=None,
+        input2=None,
+        input3=None,
+        context={
+            "developer": 999,
+            "bot": SimpleNamespace(guilds=[SimpleNamespace(member_count=10), SimpleNamespace(member_count=20), SimpleNamespace(member_count=None)]),
+        },
+    )
+
+    assert stats_result == SlashCommandResult(status="completed", reason_code="developer_command_18")
+    assert "총합: 30명" in stats_interaction.followup.sent[0]["content"]
+    assert "평균: 15.00명" in stats_interaction.followup.sent[0]["content"]
+    assert "표준편차: 7.07명" in stats_interaction.followup.sent[0]["content"]
+
+    settings_interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=55))
+    settings_result = await run_developer_command_slash_command(
+        settings_interaction,
+        command_id=20,
+        input1=None,
+        input2=None,
+        input3=None,
+        context={
+            "developer": 999,
+            "get_xp_setting": lambda guild_id: ("legacy", guild_id),
+            "get_xp_setting_dict": lambda guild_id: {"enabled": True, "guild_id": guild_id},
+        },
+    )
+
+    assert settings_result == SlashCommandResult(status="completed", reason_code="developer_command_20")
+    assert "db: ('legacy', 55)" in settings_interaction.followup.sent[0]["content"]
+    assert "딕셔너리: {'enabled': True, 'guild_id': 55}" in settings_interaction.followup.sent[0]["content"]
+
+    migrated = []
+
+    async def fake_set_warning(server_id, user_id, warning_value):
+        migrated.append((server_id, user_id, warning_value))
+
+    migration_interaction = FakeInteraction(user=FakeUser(999), guild=SimpleNamespace(id=1))
+    migration_result = await run_developer_command_slash_command(
+        migration_interaction,
+        command_id=26,
+        input1="True",
+        input2=None,
+        input3=None,
+        context={
+            "developer": 999,
+            "load_warnings": lambda include_private: {"1/2": 3, "invalid": 9, "3/4": 5},
+            "set_warning": fake_set_warning,
+        },
+    )
+
+    assert migration_result == SlashCommandResult(status="completed", reason_code="developer_command_26")
+    assert migrated == [(1, 2, 3), (3, 4, 5)]
+    assert migration_interaction.followup.sent[0]["content"] == "처리되었습니다."
 
 
 @pytest.mark.asyncio
