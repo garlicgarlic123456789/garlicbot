@@ -2,11 +2,14 @@ from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import discord
+import pytest
 
 from bot_app.services.ai_support_service import (
     clear_summary_cooldown,
     load_moderation_log_snapshot,
     reset_chat_history,
+    scan_link_safety,
+    validate_embed_output,
 )
 from bot_app.types.readability_contracts import ModerationLogEntry
 from bot_app.ui.moderation_log_view import ModerationLogView
@@ -99,6 +102,62 @@ def test_clear_summary_cooldown_reports_cleared_and_missing_states():
     assert 10 not in cooldown_store
     assert missing_result.status == "missing"
     assert missing_result.removed is False
+
+
+def test_validate_embed_output_returns_named_reason_codes():
+    whitelist_result = validate_embed_output(
+        title_text="안전한 제목",
+        body_text="안전한 내용",
+        guild_id=1,
+        using_server_id=1,
+        requester_role_ids=(100,),
+        spam_whitelist_role_ids=(100,),
+        raid_keywords=("금지",),
+        automod_keywords=("차단",),
+    )
+    discord_link_result = validate_embed_output(
+        title_text="제목",
+        body_text="discord.gg/test",
+        guild_id=1,
+        using_server_id=1,
+        requester_role_ids=(),
+        spam_whitelist_role_ids=(),
+        raid_keywords=(),
+        automod_keywords=(),
+    )
+    reserved_word_result = validate_embed_output(
+        title_text="제목",
+        body_text="이 내용은 완료 문구를 포함합니다.",
+        guild_id=2,
+        using_server_id=1,
+        requester_role_ids=(),
+        spam_whitelist_role_ids=(),
+        raid_keywords=(),
+        automod_keywords=(),
+    )
+
+    assert whitelist_result.status == "ok"
+    assert discord_link_result.status == "discord_link"
+    assert reserved_word_result.status == "reserved_word"
+
+
+@pytest.mark.asyncio
+async def test_scan_link_safety_normalizes_scan_result():
+    async def fake_scan_url(_link: str):
+        return {
+            "malicious": 0,
+            "suspicious": 2,
+            "harmless": 5,
+            "undetected": 1,
+        }
+
+    discord_link_snapshot = await scan_link_safety("discord.gg/test", scan_url=fake_scan_url)
+    scan_snapshot = await scan_link_safety("https://example.com", scan_url=fake_scan_url)
+
+    assert discord_link_snapshot.status == "discord_link"
+    assert scan_snapshot.status == "ok"
+    assert scan_snapshot.severity == "suspicious"
+    assert scan_snapshot.stats.total_engines == 8
 
 
 def test_moderation_log_view_renders_named_entries_without_magic_index():

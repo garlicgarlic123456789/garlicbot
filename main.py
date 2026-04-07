@@ -141,6 +141,8 @@ from bot_app.commands.slash_security_handlers import (
 )
 from bot_app.commands.slash_ai_support_handlers import (
     run_check_moderation_log_slash_command,
+    run_embed_output_slash_command,
+    run_link_check_slash_command,
     run_remove_summary_cooldown_slash_command,
     run_reset_chat_slash_command,
     run_server_advice_slash_command,
@@ -5918,166 +5920,44 @@ async def add_likeability_command(interaction: discord.Interaction, 사용자: d
 @bot.tree.command(name = "임베드출력", description = "임베드 출력")
 @app_commands.describe(색상 = "임베드 색상 HEX 코드 (# 제외하고 입력)")
 async def embed(interaction: discord.Interaction, 제목: str, 내용: str, 색상: str = "a5f0ff") :
-    await interaction.response.defer()
-
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-
-    pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-    if re.search(pattern1, 내용) or re.search(pattern1, 제목) : 
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"discord_link",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed, ephemeral=False)
-        return
-    
-    if len(제목) > 256 : 
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"제목이 256자를 초과합니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed, ephemeral=False)
-        return
-    
-    if len(내용) > 4096 : 
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"내용이 4096자를 초과합니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed, ephemeral=False)
-        return
-    
-    if interaction.guild.id != using_server :
-        pass
-    else: 
-        global automod_keyword
-        global automod_keyword2
-        global automod_keyword3
-        global automod_keyword4
-        global automod_keyword5
-        global automod_keyword6
-        global automod_keyword7
-        global automod_keyword8
-        global automod_keyword9
-        global automod_keyword10
-        global raid_keyword1
-        
-        message_content = re.sub(r"[^가-힣a-zA-Z]", "", 제목)
-        message_content2 = re.sub(r"[^가-힣a-zA-Z]", "", 내용)
-        
-        for i in raid_keyword1 :
-            if i in message_content or i in message_content2 :
-                embed = discord.Embed(
-                    title=f"오류", # name
-                    description=f"automod_keyword",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed = embed, ephemeral=False)
-                return
-        if any(role.id in spamming_filter_whitelist for role in interaction.user.roles):
-            embed = discord.Embed(
-                title=f"{제목}", # name
-                description=f"{내용}",
-                color=int(색상, 16)
-            )
-            await interaction.followup.send(embed = embed, ephemeral=False)
-            return
-        for i in automod_keyword + automod_keyword2 + automod_keyword3 + automod_keyword4 + automod_keyword5 + automod_keyword6 + automod_keyword7 + automod_keyword8 + automod_keyword9 + automod_keyword10 :
-            if i in message_content or i in message_content2 :
-                embed = discord.Embed(
-                    title=f"오류", # name
-                    description=f"임베드에 출력할 수 없는 문구가 포함되어 있습니다.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed = embed, ephemeral=False)
-                return
-    for i in ["오류", "경고", "주의", "완료", "성공"] :
-        if i in 내용 :
-            embed = discord.Embed(
-                title=f"오류", # name
-                description=f"임베드에 출력할 수 없는 문구가 포함되어 있습니다.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed = embed, ephemeral=False)
-            return
-    embed = discord.Embed(
-        title=f"{제목}", # name
-        description=f"{내용}",
-        color=int(색상, 16)
+    await run_embed_output_slash_command(
+        interaction,
+        title_text=제목,
+        body_text=내용,
+        color_hex=색상,
+        context={
+            "is_blocked": is_blocked,
+            "using_server": using_server,
+            "spam_whitelist_role_ids": tuple(spamming_filter_whitelist),
+            "raid_keywords": tuple(raid_keyword1),
+            "automod_keywords": tuple(
+                automod_keyword
+                + automod_keyword2
+                + automod_keyword3
+                + automod_keyword4
+                + automod_keyword5
+                + automod_keyword6
+                + automod_keyword7
+                + automod_keyword8
+                + automod_keyword9
+                + automod_keyword10
+            ),
+        },
     )
-    await interaction.followup.send(embed = embed, ephemeral=False)
 
 @bot.tree.command(name = "링크검사", description = "특정 링크가 악성 링크인지 여부를 검사합니다.")
 @app_commands.describe(링크 = "검사할 링크", 세부정보 = "검사 결과 출력 방식")
 @app_commands.choices(세부정보 = [app_commands.Choice(name = "간단", value = "simple"), app_commands.Choice(name = "상세", value = "detail")])
 async def link_check(interaction: discord.Interaction, 링크: str, 세부정보: str = "detail"):
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    pattern1 = r"(?:d|%64)(?:i|%69)(?:s|%73)(?:c|%63)(?:o|%6f)(?:r|%72)(?:d|%64)(?:app\.com\/invite|(?:\.|%2e)(?:gg|%67%67|com(?::|%3a)?443(?:\/|%2f)?invite))(?:[\/:0-9A-Za-z%\-]*)?"
-    if re.search(pattern1, 링크) :
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"discord_link",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed, ephemeral=False)
-        return
-    
-    result = await scan_url(링크)
-
-    if result is None : 
-        embed = discord.Embed(
-            title=f"오류", # name
-            description=f"링크 검사 중 오류가 발생했습니다.",
-            color=discord.Color.red()
-        )
-        await interaction.followup.send(embed = embed, ephemeral=False)
-        return
-    else : 
-        malicious = result["malicious"]
-        suspicious = result["suspicious"]
-        harmless = result["harmless"]
-        undetected = result["undetected"]
-        
-        embed = discord.Embed(
-            title=f"링크 검사 결과", # name
-        )
-        if malicious == 0 and suspicious == 0 : 
-            embed.description = "검사 결과, 위험하지 않은 링크입니다."
-            embed.color = int("a5f0ff", 16)
-        elif malicious > 0 :
-            embed.description = "검사 결과, 매우 위험한 링크입니다."
-            embed.color = discord.Color.red()
-        elif suspicious >= 3 : 
-            embed.description = "검사 결과, 위험한 링크입니다."
-            embed.color = discord.Color.red()
-        elif suspicious > 0 : 
-            embed.description = "검사 결과, 의심스러운 링크입니다."
-            embed.color = discord.Color.yellow()
-        
-        if 세부정보 == "detail" :
-            embed.add_field(name = "판단에 사용된 엔진 수", value = f"{malicious + suspicious + harmless + undetected}개")
-            embed.add_field(name = "악성 링크로 판단한 엔진 수", value = f"{malicious}개")
-            embed.add_field(name = "의심스러운 링크로 판단한 엔진 수", value = f"{suspicious}개")
-            embed.add_field(name = "안전한 링크로 판단한 엔진 수", value = f"{harmless}개")
-            embed.add_field(name = "알 수 없다고 판단한 엔진 수", value = f"{undetected}개")
-        
-        embed.set_footer(text = "검사 결과는 100% 정확하지 않을 수 있습니다. 이 검사 결과를 신뢰하여 생기는 모든 피해에 대한 책임은 사용자에게 있습니다.")
-        await interaction.followup.send(embed = embed)
+    await run_link_check_slash_command(
+        interaction,
+        link=링크,
+        detail_level=세부정보,
+        context={
+            "is_blocked": is_blocked,
+            "scan_url": scan_url,
+        },
+    )
 
 @bot.tree.command(name="제재내역수동삭제", description = "개발 명령")
 async def 제재내역수동삭제(interaction: discord.Interaction, id: int):

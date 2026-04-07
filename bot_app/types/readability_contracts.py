@@ -47,6 +47,17 @@ ChannelBackupLookupStatus = Literal["found", "missing"]
 ChatResetStatus = Literal["completed"]
 ModerationLogSnapshotStatus = Literal["found", "missing"]
 SummaryCooldownResetStatus = Literal["cleared", "missing"]
+EmbedOutputValidationStatus = Literal[
+    "ok",
+    "discord_link",
+    "title_too_long",
+    "description_too_long",
+    "raid_keyword",
+    "automod_keyword",
+    "reserved_word",
+]
+LinkScanSnapshotStatus = Literal["ok", "discord_link", "scan_error"]
+LinkScanSeverity = Literal["safe", "suspicious", "dangerous", "critical"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -399,6 +410,34 @@ class SummaryCooldownResetResult:
     status: SummaryCooldownResetStatus
     user_id: int
     removed: bool
+
+
+@dataclass(frozen=True, slots=True)
+class EmbedOutputValidationResult:
+    """Validation result for slash-command embed rendering requests."""
+
+    status: EmbedOutputValidationStatus
+
+
+@dataclass(frozen=True, slots=True)
+class LinkScanStats:
+    malicious: int
+    suspicious: int
+    harmless: int
+    undetected: int
+
+    @property
+    def total_engines(self) -> int:
+        return self.malicious + self.suspicious + self.harmless + self.undetected
+
+
+@dataclass(frozen=True, slots=True)
+class LinkScanSnapshot:
+    """VirusTotal-like link scan result exposed without raw dict indexing."""
+
+    status: LinkScanSnapshotStatus
+    severity: LinkScanSeverity | None = None
+    stats: LinkScanStats | None = None
 
 
 @dataclass(frozen=True, slots=True)

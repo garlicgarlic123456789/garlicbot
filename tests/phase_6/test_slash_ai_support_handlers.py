@@ -9,6 +9,8 @@ import pytest
 import bot_app.commands.slash_ai_support_handlers as handlers_module
 from bot_app.commands.slash_ai_support_handlers import (
     run_check_moderation_log_slash_command,
+    run_embed_output_slash_command,
+    run_link_check_slash_command,
     run_remove_summary_cooldown_slash_command,
     run_reset_chat_slash_command,
     run_server_advice_slash_command,
@@ -45,12 +47,13 @@ class FakeDisplayAvatar:
 
 
 class FakeUser:
-    def __init__(self, user_id: int, *, display_name: str = "사용자"):
+    def __init__(self, user_id: int, *, display_name: str = "사용자", roles=None):
         self.id = user_id
         self.display_name = display_name
         self.name = display_name
         self.mention = f"<@{user_id}>"
         self.display_avatar = FakeDisplayAvatar(f"https://example.com/{user_id}.png")
+        self.roles = list(roles or [])
 
 
 class FakeInteraction:
@@ -70,7 +73,9 @@ def _extract_main_wrapper(function_name: str):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SyntaxWarning)
         module_ast = ast.parse(source)
-    function_node = next(node for node in module_ast.body if isinstance(node, ast.AsyncFunctionDef) and node.name == function_name)
+    function_node = next(
+        node for node in ast.walk(module_ast) if isinstance(node, ast.AsyncFunctionDef) and node.name == function_name
+    )
     function_copy = copy.deepcopy(function_node)
     function_copy.decorator_list = []
     wrapper_module = ast.Module(body=[function_copy], type_ignores=[])
@@ -216,6 +221,74 @@ async def test_server_advice_helper_checks_permission_and_calls_handler():
 
 
 @pytest.mark.asyncio
+async def test_embed_output_helper_delegates_validation_and_sends_embed():
+    blocked_interaction = FakeInteraction(user=FakeUser(10, roles=[SimpleNamespace(id=1)]), guild=SimpleNamespace(id=1))
+
+    blocked_result = await run_embed_output_slash_command(
+        blocked_interaction,
+        title_text="제목",
+        body_text="본문",
+        color_hex="a5f0ff",
+        context={
+            "is_blocked": lambda user: (True, "2099-01-01", "도배"),
+            "using_server": 1,
+            "spam_whitelist_role_ids": (),
+            "raid_keywords": (),
+            "automod_keywords": (),
+        },
+    )
+
+    assert blocked_result == SlashCommandResult(status="rejected", reason_code="blocked_user")
+
+    allowed_interaction = FakeInteraction(user=FakeUser(10, roles=[SimpleNamespace(id=99)]), guild=SimpleNamespace(id=1))
+    allowed_result = await run_embed_output_slash_command(
+        allowed_interaction,
+        title_text="안전한 제목",
+        body_text="안전한 본문",
+        color_hex="a5f0ff",
+        context={
+            "is_blocked": lambda user: (False, None, None),
+            "using_server": 1,
+            "spam_whitelist_role_ids": (99,),
+            "raid_keywords": ("금지",),
+            "automod_keywords": ("차단",),
+        },
+    )
+
+    assert allowed_result == SlashCommandResult(status="completed", reason_code="embed_rendered")
+    assert allowed_interaction.followup.sent[0]["embed"].title == "안전한 제목"
+    assert allowed_interaction.followup.sent[0]["embed"].description == "안전한 본문"
+
+
+@pytest.mark.asyncio
+async def test_link_check_helper_uses_named_scan_snapshot():
+    interaction = FakeInteraction(user=FakeUser(10), guild=SimpleNamespace(id=1))
+
+    async def fake_scan_url(_link: str):
+        return {
+            "malicious": 1,
+            "suspicious": 0,
+            "harmless": 4,
+            "undetected": 2,
+        }
+
+    result = await run_link_check_slash_command(
+        interaction,
+        link="https://example.com",
+        detail_level="detail",
+        context={
+            "is_blocked": lambda user: (False, None, None),
+            "scan_url": fake_scan_url,
+        },
+    )
+
+    assert result == SlashCommandResult(status="completed", reason_code="link_scan_critical")
+    embed = interaction.followup.sent[0]["embed"]
+    assert embed.description == "검사 결과, 매우 위험한 링크입니다."
+    assert embed.fields[0].value == "7개"
+
+
+@pytest.mark.asyncio
 async def test_main_wave6_wrappers_delegate_to_ai_support_helpers():
     source = Path("main.py").read_text(encoding="utf-8")
     wrappers = {
@@ -270,6 +343,27 @@ async def test_main_wave6_wrappers_delegate_to_ai_support_helpers():
     assert "await run_check_moderation_log_slash_command(" in source
     assert "await run_remove_summary_cooldown_slash_command(" in source
     assert "await run_server_advice_slash_command(" in source
+
+
+def test_phase6_inactive_legacy_ai_support_commands_are_not_runtime_active():
+    source = Path("main.py").read_text(encoding="utf-8")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", SyntaxWarning)
+        module_ast = ast.parse(source)
+
+    function_names = {node.name for node in ast.walk(module_ast) if isinstance(node, ast.AsyncFunctionDef)}
+
+    assert "이메일전송" not in function_names
+    assert "revoke_permissions" not in function_names
+    assert "update_anonymous_setting_command" not in function_names
+    assert "chat1" not in function_names
+    assert "check_likeability_command" not in function_names
+    assert "add_likeability_command" not in function_names
+    assert "embed" not in function_names
+    assert "link_check" not in function_names
+
+    for command_name in ("이메일전송", "권한회수", "익명채팅설정", "익명채팅", "호감도확인", "호감도추가", "임베드출력", "링크검사"):
+        assert command_name in source
 
 
 @pytest.mark.asyncio

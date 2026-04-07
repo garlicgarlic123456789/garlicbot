@@ -8,6 +8,8 @@ from bot_app.services.ai_support_service import (
     clear_summary_cooldown,
     load_moderation_log_snapshot,
     reset_chat_history,
+    scan_link_safety,
+    validate_embed_output,
 )
 from bot_app.types.readability_contracts import ErrorTrackedSlashCommandResult, SlashCommandResult, UserBlockState
 from bot_app.ui.moderation_log_view import ModerationLogView
@@ -43,6 +45,38 @@ def _build_error_embed(description: str) -> discord.Embed:
 
 def _build_done_embed(description: str) -> discord.Embed:
     return discord.Embed(title="완료", description=description, color=int("a5f0ff", 16))
+
+
+def _build_embed_output_embed(*, title_text: str, body_text: str, color_hex: str) -> discord.Embed:
+    return discord.Embed(title=title_text, description=body_text, color=int(color_hex, 16))
+
+
+def _build_link_scan_embed(*, severity: str, stats, detail_level: str) -> discord.Embed:
+    embed = discord.Embed(title="링크 검사 결과")
+    if severity == "safe":
+        embed.description = "검사 결과, 위험하지 않은 링크입니다."
+        embed.color = int("a5f0ff", 16)
+    elif severity == "critical":
+        embed.description = "검사 결과, 매우 위험한 링크입니다."
+        embed.color = discord.Color.red()
+    elif severity == "dangerous":
+        embed.description = "검사 결과, 위험한 링크입니다."
+        embed.color = discord.Color.red()
+    else:
+        embed.description = "검사 결과, 의심스러운 링크입니다."
+        embed.color = discord.Color.yellow()
+
+    if detail_level == "detail":
+        embed.add_field(name="판단에 사용된 엔진 수", value=f"{stats.total_engines}개")
+        embed.add_field(name="악성 링크로 판단한 엔진 수", value=f"{stats.malicious}개")
+        embed.add_field(name="의심스러운 링크로 판단한 엔진 수", value=f"{stats.suspicious}개")
+        embed.add_field(name="안전한 링크로 판단한 엔진 수", value=f"{stats.harmless}개")
+        embed.add_field(name="알 수 없다고 판단한 엔진 수", value=f"{stats.undetected}개")
+
+    embed.set_footer(
+        text="검사 결과는 100% 정확하지 않을 수 있습니다. 이 검사 결과를 신뢰하여 생기는 모든 피해에 대한 책임은 사용자에게 있습니다."
+    )
+    return embed
 
 
 async def run_show_help_slash_command(interaction: discord.Interaction) -> SlashCommandResult:
@@ -190,3 +224,84 @@ async def run_server_advice_slash_command(
         role_label,
     )
     return _slash_result(status="completed", reason_code="server_advice_started")
+
+
+async def run_embed_output_slash_command(
+    interaction: discord.Interaction,
+    *,
+    title_text: str,
+    body_text: str,
+    color_hex: str,
+    context: Mapping[str, Any],
+) -> SlashCommandResult:
+    await interaction.response.defer()
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _slash_result(status="rejected", reason_code="blocked_user")
+
+    validation_result = validate_embed_output(
+        title_text=title_text,
+        body_text=body_text,
+        guild_id=interaction.guild.id,
+        using_server_id=context["using_server"],
+        requester_role_ids=tuple(role.id for role in interaction.user.roles),
+        spam_whitelist_role_ids=context["spam_whitelist_role_ids"],
+        raid_keywords=context["raid_keywords"],
+        automod_keywords=context["automod_keywords"],
+    )
+    if validation_result.status == "discord_link":
+        await interaction.followup.send(embed=_build_error_embed("discord_link"), ephemeral=False)
+        return _slash_result(status="rejected", reason_code="discord_link")
+    if validation_result.status == "title_too_long":
+        await interaction.followup.send(embed=_build_error_embed("제목이 256자를 초과합니다."), ephemeral=False)
+        return _slash_result(status="rejected", reason_code="title_too_long")
+    if validation_result.status == "description_too_long":
+        await interaction.followup.send(embed=_build_error_embed("내용이 4096자를 초과합니다."), ephemeral=False)
+        return _slash_result(status="rejected", reason_code="description_too_long")
+    if validation_result.status == "raid_keyword":
+        await interaction.followup.send(embed=_build_error_embed("automod_keyword"), ephemeral=False)
+        return _slash_result(status="rejected", reason_code="raid_keyword")
+    if validation_result.status in {"automod_keyword", "reserved_word"}:
+        await interaction.followup.send(
+            embed=_build_error_embed("임베드에 출력할 수 없는 문구가 포함되어 있습니다."),
+            ephemeral=False,
+        )
+        return _slash_result(status="rejected", reason_code=validation_result.status)
+
+    await interaction.followup.send(
+        embed=_build_embed_output_embed(title_text=title_text, body_text=body_text, color_hex=color_hex),
+        ephemeral=False,
+    )
+    return _slash_result(status="completed", reason_code="embed_rendered")
+
+
+async def run_link_check_slash_command(
+    interaction: discord.Interaction,
+    *,
+    link: str,
+    detail_level: str,
+    context: Mapping[str, Any],
+) -> SlashCommandResult:
+    await interaction.response.defer()
+    block_state = _resolve_user_block_state(context["is_blocked"], interaction.user)
+    if block_state.status == "blocked":
+        await interaction.followup.send(_format_blocked_message(interaction.user.id, block_state))
+        return _slash_result(status="rejected", reason_code="blocked_user")
+
+    link_scan_snapshot = await scan_link_safety(link, scan_url=context["scan_url"])
+    if link_scan_snapshot.status == "discord_link":
+        await interaction.followup.send(embed=_build_error_embed("discord_link"), ephemeral=False)
+        return _slash_result(status="rejected", reason_code="discord_link")
+    if link_scan_snapshot.status == "scan_error":
+        await interaction.followup.send(embed=_build_error_embed("링크 검사 중 오류가 발생했습니다."), ephemeral=False)
+        return _slash_result(status="failed", reason_code="scan_error")
+
+    await interaction.followup.send(
+        embed=_build_link_scan_embed(
+            severity=link_scan_snapshot.severity,
+            stats=link_scan_snapshot.stats,
+            detail_level=detail_level,
+        )
+    )
+    return _slash_result(status="completed", reason_code=f"link_scan_{link_scan_snapshot.severity}")
