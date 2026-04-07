@@ -5380,7 +5380,7 @@ async def 개발명령(interaction: discord.Interaction, 아이디: int, 입력1
             "add_or_remove": add_or_remove,
             "ExpButton": ExpButton,
             "ExpRemoveButton": ExpRemoveButton,
-            "오리실험": 오리실험,
+            "오리실험": _legacy_same_person_check,
             "genai": genai,
             "cute_model4": cute_model4,
             "develop_chat_dict2": develop_chat_dict2,

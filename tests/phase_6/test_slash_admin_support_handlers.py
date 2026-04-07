@@ -787,7 +787,7 @@ async def test_main_developer_command_wrapper_passes_runtime_context_to_helper()
         "add_or_remove": object(),
         "ExpButton": object(),
         "ExpRemoveButton": object(),
-        "오리실험": object(),
+        "_legacy_same_person_check": object(),
         "genai": object(),
         "cute_model4": object(),
         "develop_chat_dict2": {},
@@ -837,6 +837,7 @@ async def test_main_developer_command_wrapper_passes_runtime_context_to_helper()
     assert captured["input3"] == "셋"
     assert captured["context"]["developer"] == 999
     assert captured["context"]["develop_chat_dict2"] is sentinels["develop_chat_dict2"]
+    assert captured["context"]["오리실험"] is sentinels["_legacy_same_person_check"]
     assert captured["context"]["KST"] is sentinels["KST"]
     assert captured["context"]["pd"] is sentinels["pd"]
     assert captured["context"]["load_warnings"] is sentinels["load_warnings"]
