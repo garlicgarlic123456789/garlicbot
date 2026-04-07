@@ -364,7 +364,6 @@ def test_phase6_inactive_legacy_commands_are_not_runtime_active():
     assert "minecraft" not in function_names
 
     for command_name in (
-        "이메일전송",
         "권한회수",
         "익명채팅설정",
         "익명채팅",
@@ -372,7 +371,6 @@ def test_phase6_inactive_legacy_commands_are_not_runtime_active():
         "호감도추가",
         "임베드출력",
         "링크검사",
-        "광질",
     ):
         assert command_name in source
 

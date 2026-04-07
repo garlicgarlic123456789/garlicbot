@@ -498,29 +498,6 @@ def save_data(data):
         with open(LIKEABILITY_FILE, "w", encoding="utf-8") as file:
             json.dump(data, file, indent=4, ensure_ascii=False)
 
-import json
-import time
-from threading import Lock
-
-LIKEABILITY_FILE = "likeability.json"
-COOLDOWN_TIME = 60  # 1 minute in seconds
-last_updated = {}  # Dictionary to track cooldown per ID
-lock = Lock()
-
-def load_data():
-    """Load likeability data from the JSON file."""
-    try:
-        with open(LIKEABILITY_FILE, "r", encoding="utf-8") as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_data(data):
-    """Save likeability data to the JSON file."""
-    with lock:  # Ensure thread safety
-        with open(LIKEABILITY_FILE, "w", encoding="utf-8") as file:
-            json.dump(data, file, indent=4, ensure_ascii=False)
-
 def add_likeability(id, amount):
     """Add likeability to the given ID with cooldown."""
     current_time = time.time()
@@ -549,46 +526,7 @@ def check_likeability(id):
     data = load_data()
     return data.get(id, 0)
 
-def load_mentions():
-    return load_mentions_data(MENTION_FILE)
-
-def save_mentions(data):
-    save_mentions_data(MENTION_FILE, data)
-
-mentions = load_mentions()
-
-async def read_confidential_messages():
-    return await read_confidential_message_ids(secret_file_name)
-
-async def write_confidential_messages(messages):
-    await write_confidential_message_ids(secret_file_name, messages)
-
-def read_denial_list():
-    """소명거부리스트.txt 파일에서 사용자 ID 읽기"""
-    if not os.path.exists(DENIAL_LIST_FILE):
-        return set()
-    
-    with open(DENIAL_LIST_FILE, 'r', encoding='utf-8') as f:
-        return set(line.strip() for line in f if line.strip())
-
-
-FILE_PATH = "auto_verify.txt"
-
-# 파일 상태를 변경하는 함수
-def update_file(content):
-    write_auto_verify_state(FILE_PATH, content)
-
-# 파일 상태를 읽는 함수
-def read_file():
-    return read_auto_verify_state(FILE_PATH)
-
-def hash_user_id(user_id):
-    """사용자 ID를 해시화합니다."""
-    return hashlib.sha256(str(user_id).encode()).hexdigest()
-
-def load_suggestions():
-    """JSON 파일에서 의견 목록을 불러옵니다."""
-    return load_suggestions_data("suggestions.json")
+mentions = load_mentions_data(MENTION_FILE)
 
 # 경고 데이터 로드 및 저장 함수
 def load_warnings(old_warning: bool = False):
@@ -601,23 +539,6 @@ def load_warnings(old_warning: bool = False):
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-
-def save_suggestions(suggestions):
-    """의견 목록을 JSON 파일에 저장합니다."""
-    save_suggestions_data("suggestions.json", suggestions)
-
-def load_blocked_users():
-    """차단된 사용자 목록을 불러옵니다."""
-    if not os.path.exists('blocked_users.json'):
-        return []
-    with open('blocked_users.json', 'r', encoding='utf-8') as f:
-        return json.load(f)
-
-def save_blocked_users(blocked_users):
-    """차단된 사용자 목록을 저장합니다."""
-    with open('blocked_users.json', 'w', encoding='utf-8') as f:
-        json.dump(blocked_users, f, ensure_ascii=False, indent=2)
-
 
 def get_message_link(message):
     return f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
@@ -2358,35 +2279,6 @@ async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Me
         error_count=error,
     )
     error = remove_timeout_result.error_count
-
-'''
-VOICE_CHANNEL_IDS = [1325835990014754946, 1337017098974531696, 1360922829268455464] # 경치 주는 음성채널
-
-
-@tasks.loop(minutes=3)
-async def check_voice_channels():
-    for guild in bot.guilds:
-        if guild.id == using_server : 
-            user_list = []
-
-            for channel_id in VOICE_CHANNEL_IDS:
-                channel = guild.get_channel(channel_id)
-                if isinstance(channel, discord.VoiceChannel):
-                    members = channel.members
-                    user_list.extend(members)
-
-            exp_data = load_exp()
-
-            for i in members :
-                user_id = str(i.id)
-                
-                if user_id not in exp_data:
-                    exp_data[user_id] = 0
-                
-                exp_data[user_id] += 150
-
-            save_exp(exp_data)
-'''
 
 @bot.tree.command(name="동일인여부확인", description = "두 유저의 말투 비교를 통해 두 유저 간 말투를 비교하여 두 유저가 동일인일 가능성을 분석합니다.")
 async def oritest(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
@@ -4523,129 +4415,6 @@ async def _legacy_generative_ai_command(interaction: discord.Interaction, 프롬
     )
     await interaction.followup.send(embed = embed)
 
-'''
-async def 로그전송(embed):
-    """특정 채널 ID에 메시지를 보내는 함수"""
-    # 채널 객체 가져오기
-    channel = bot.get_channel(record_channel)
-    # 메시지 전송
-    await channel.send(embed = embed)
-
-async def 제재처리(user, admin, bantype, cnt, reason, userid) :
-    if bantype == "warn" :
-        # user_id, warn 각각 유저 ID, 경고 개수
-        c.execute('SELECT warn FROM warn WHERE user_id = ?', (userid,))
-        row = c.fetchone()
-        
-        if row:  # 이미 존재하는 경우
-            current_warn = row[0]
-            new_warn = current_warn + cnt
-            
-            # warn 값이 0 미만인지 확인
-            if new_warn < 0:
-                return False
-            
-            # warn 값 업데이트
-            c.execute("UPDATE warn SET warn = ? WHERE user_id = ?", (new_warn, userid))
-        else:  # 존재하지 않는 경우
-            if cnt < 0:  # warn 값을 줄이는 것은 불가능
-                return False
-            
-            # 새 레코드 삽입
-            c.execute("INSERT INTO warn (user_id, warn) VALUES (?, ?)", (userid, cnt))
-    elif bantype == "ban" :
-        # 경고 있으면 경고 다 소멸시키기
-        c.execute('SELECT warn FROM warn WHERE user_id = ?', (userid,))
-        row = c.fetchone()
-        
-        if row:  # 이미 존재하는 경우
-            c.execute("UPDATE warn SET warn = ? WHERE user_id = ?", (0, userid))
-
-        await user.ban(reason=reason)
-    elif bantype == "kick" :
-        # 경고 있으면 경고 다 소멸시키기
-        c.execute('SELECT warn FROM warn WHERE user_id = ?', (userid,))
-        row = c.fetchone()
-        
-        if row:  # 이미 존재하는 경우
-            c.execute("UPDATE warn SET warn = ? WHERE user_id = ?", (0, userid))
-        await user.kick(reason=reason)
-    c.execute("""
-        INSERT INTO records (user_id, admin_id, reason, type, warncnt)
-        VALUES (?, ?, ?, ?, ?)
-    """, (user, admin, reason, bantype, cnt))
-    return True
-
-# 제재 내역 테이블 이름 record, 구조 id INTEGER PRIMARY KEY AUTOINCREMENT, user_id integar, admin_id integar, reason text, type text, warncnt integar
-@bot.tree.command(name = "경고", description = "특정 사용자에게 경고를 부여하거나 회수합니다.")
-async def 경고(interaction: discord.Interaction, 사용자: discord.User, 개수: int, 사유: str) : 
-    if type(개수) is not int or type(사유) is not str :
-        embed = discord.Embed(
-            title=f"처리 실패", # name
-            description=f"오류가 발생했습니다.\n* 입력값이 올바르지 않습니다.\n위 사항 확인 후에도 오류가 지속되는 경우, 개발자에게 문의해 주세요.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    if 개수 > 100 or 개수 < -100 :
-        embed = discord.Embed(
-            title=f"처리 실패", # name
-            description=f"오류가 발생했습니다.\n* 경고는 한 번에 100개씩만 조정 가능합니다.\n위 사항 확인 후에도 오류가 지속되는 경우, 개발자에게 문의해 주세요.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-    
-    author = interaction.user
-    if discord.utils.get(author.roles, id=admin_id) is None:
-        embed = discord.Embed(
-            title=f"처리 실패", # name
-            description=f"오류가 발생했습니다.\n* <@&{admin_id}> 역할을 보유한 사용자만 제재할 수 있습니다.\n위 사항 확인 후에도 오류가 지속되는 경우, 개발자에게 문의해 주세요.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    if discord.utils.get(사용자.roles, id=super_admin_id) is not None:
-        embed = discord.Embed(
-            title=f"처리 실패", # name
-            description=f"오류가 발생했습니다.\n* <@&{super_admin_id}>를 제재할 수 없습니다.\n위 사항 확인 후에도 오류가 지속되는 경우, 개발자에게 문의해 주세요.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-    if await 제재처리(사용자, author, "warn", 개수, 사유, 사용자.id) :
-        c.execute('SELECT warn FROM warn WHERE user_id = ?', (사용자.id,))
-        row = c.fetchone()
-        current_warn = row[0]
-        embed = discord.Embed(
-            title=f"처리 완료", # name
-            description=f"**사용자**: {사용자.mention}\n"
-                        f"**관리자**: {author.mention}\n"
-                        f"**제재 종류**: 경고\n"
-                        f"**추가된 경고 개수**: {개수}개\n"
-                        f"**총 경고 개수**: {current_warn}개\n"
-                        f"**제재 사유**: {사유}",
-            color=discord.Color.green()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        if current_warn > 10 :
-            await 제재처리(사용자, 1313691066624643195, "ban", 개수, "경고 한도 도달", 사용자.id)
-            
-        return
-    else :
-        embed = discord.Embed(
-            title=f"처리 실패", # name
-            description=f"오류가 발생했습니다.\n* 경고의 값은 항상 0 이상이어야 합니다.\n위 사항 확인 후에도 오류가 지속되는 경우,  개발자에게 문의해 주세요.",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        return
-
-'''
-
 @bot.tree.command(name="제재내역확인", description="이 서버의 제재 내역을 확인합니다.")
 @app_commands.describe(사용자="제재 내역 필터링 조건 (선택사항, 입력 시 이 사용자가 제재된 내역만 조회됨)", 관리자="제재 내역 필터링 조건 (선택사항, 입력 시 이 관리자가 제재한 내역만 조회됨)")
 async def check_moderation_log(interaction: discord.Interaction, 사용자: discord.User = None, 관리자: discord.User = None):
@@ -4724,89 +4493,6 @@ async def 차단확인(interaction: discord.Interaction, 유저: discord.User):
         interaction,
         target_user=유저,
     )
-
-'''
-@bot.tree.command(name = "광질", description = "마인크래프트 광질을 시작합니다.")
-@app_commands.describe(일자굴길이 = "일자굴 길이. 일자굴 1블록 당 20 경험치 필요.")
-async def minecraft(interaction: discord.Interaction, 일자굴길이: int) :
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    if 일자굴길이 < 5 :
-        await interaction.followup.send(f"**[오류!]** 일자굴길이의 값은 5 이상이여야 합니다.")
-        return
-    if 일자굴길이 > 100 :
-        await interaction.followup.send(f"**[오류!]** 일자굴길이의 값은 100 이하여야 합니다.")
-        return
-    exp_data = load_exp()
-    user_id = str(interaction.user.id)
-    
-    if user_id not in exp_data:
-        exp_data[user_id] = 0
-    save_exp(exp_data)
-
-    if exp_data[user_id] < 20 * 일자굴길이 :
-        await interaction.followup.send(f"**[오류!]** 경험치가 부족합니다. 다시 시도하세요. 필요한 경험치: {20 * 일자굴길이}")
-        return
-
-    exp_data = load_exp()
-    user_id = str(interaction.user.id)
-    
-    if user_id not in exp_data:
-        exp_data[user_id] = 0
-    
-    exp_data[user_id] -= 20 * 일자굴길이
-    save_exp(exp_data)
-
-    diamond = 0
-    emerald = 0
-    iron = 0
-    gold = 0
-    lava = 0
-
-    for i in range(일자굴길이) :
-        temp = random.randint(1, 100)
-        if temp == 1 : # 1%확률로 다이아
-            diamond += 1
-        elif temp == 2 or temp == 3 : # 2%확률로 에메랄드
-            emerald += 1
-        elif temp > 3 and temp <= 50 : # 47% 확률로 금
-            gold += 1
-        elif temp <= 99 : # 49% 확률로 철
-            iron += 1
-        else :
-            lava += 1
-
-    if lava > 0 :
-        await interaction.followup.send(f"다이아몬드 {diamond}개, 에메랄드 {emerald}개, 철 {iron}개, 금 {gold}개를 채굴하였으나, 용암에 불 타 죽었습니다! 총 {20 * 일자굴길이} 마늘(XP)을 낭비했어요.")
-        return
-
-    exp_data = load_exp()
-    user_id = str(interaction.user.id)
-    
-    if user_id not in exp_data:
-        exp_data[user_id] = 0
-    
-    exp_data[user_id] += diamond * 500
-    exp_data[user_id] += emerald * 200
-    exp_data[user_id] += iron * 10
-    exp_data[user_id] += gold * 30
-    save_exp(exp_data)
-    await interaction.followup.send(f"다이아몬드 {diamond}개, 에메랄드 {emerald}개, 철 {iron}개, 금 {gold}개를 채굴했습니다! 총 {20 * 일자굴길이} 마늘(XP)를 소비했고 {diamond*500 + emerald * 200 + iron*10+gold*30} 마늘(XP)을 획득했어요.")
-'''
 
 @bot.tree.command(name = "도움말광질")
 async def mine_help(interaction: discord.Interaction) :
@@ -5481,41 +5167,6 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
             "is_blocked": is_blocked,
         },
     )
-
-'''
-# 이메일 전송 명령어 (슬래시 명령어)
-@bot.tree.command(name="이메일전송", description="봇 개발자에게 이메일을 전송합니다. (양 측 모두의 이메일은 공개되지 않습니다.)")
-async def 이메일전송(interaction: discord.Interaction, 내용: str):
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.response.send_message(msg, ephemeral = True)
-        return
-    if email_role_limit:
-        member = interaction.guild.get_member(interaction.user.id)
-        if not any(role.id in email_role_id for role in member.roles):
-            await interaction.response.send_message("**[오류!]** 권한이 부족합니다. 다음 권한이 필요합니다: `이메일 명령어 허용`", ephemeral=True)
-            return
-    await interaction.response.send_message("**[알림]** 마늘봇 개발자(마늘 서버 주인)에게 이메일 전송 중... 잠시만 기다려주세요.", ephemeral=True)
-    sender_name = interaction.user.display_name
-    sender_display_name = interaction.user.display_name
-    sender_id = interaction.user.id
-    email_sent = send_email(sender_name, sender_display_name, sender_id, 내용)
-    if email_sent:
-        await interaction.followup.send("**[알림]** 마늘봇 개발자(마늘 서버 주인)에게 이메일이 성공적으로 전송되었습니다.")
-    else:
-        await interaction.followup.send("**[오류!]** 이메일 전송에 실패했습니다.")
-'''
 
 '''
 # /권한회수 명령어 정의
