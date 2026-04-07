@@ -90,20 +90,6 @@ class AutomodConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class LogChannelConfig:
-    editdelete: int | None
-    reaction: int | None
-    role: int | None
-    image: int | None
-
-
-@dataclass(frozen=True, slots=True)
-class AnonymousSetting:
-    enabled: bool | None
-    log_channel_id: int | None
-
-
-@dataclass(frozen=True, slots=True)
 class ModerationCommandResult:
     status: ModerationCommandStatus
     error_count: int

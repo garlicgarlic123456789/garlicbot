@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Mapping
 
 import discord
@@ -178,10 +178,6 @@ def _build_done_embed(description: str) -> discord.Embed:
 
 def _normalize_optional_reason(reason_text: str | None) -> str | None:
     return None if reason_text in (None, "None") else reason_text
-
-
-def _normalize_reason_label(reason_text: str | None) -> str:
-    return "*(사유 입력되지 않음)*" if reason_text is None else reason_text
 
 
 def _parse_duration_to_seconds(duration_text: str) -> int | None:
