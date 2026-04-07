@@ -81,18 +81,12 @@ from commands import close_threads
 from commands import remove_all_roles
 from commands import xp_setup
 from commands.invite_log_check import *
-from commands.train_command import *
-from commands.summarize_command import *
 from commands import security_check
 from commands.database import *
 from commands import weather
 from commands import slowmode
 from commands import server_info
-from commands.mention_delay import *
-from commands.autorole import *
 from commands import rules
-from commands.phrase import *
-from commands.chat_analyze import *
 from commands import anti_raid_command
 from commands import compatibility
 
