@@ -44,6 +44,9 @@ InviteRouteReportStatus = Literal["known", "unknown"]
 UserJoinRouteLookupStatus = Literal["found", "missing"]
 BlockHistoryMutationStatus = Literal["deleted", "added"]
 ChannelBackupLookupStatus = Literal["found", "missing"]
+ChatResetStatus = Literal["completed"]
+ModerationLogSnapshotStatus = Literal["found", "missing"]
+SummaryCooldownResetStatus = Literal["cleared", "missing"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -329,6 +332,73 @@ class ChannelBackupMessage:
 @dataclass(frozen=True, slots=True)
 class ChannelBackupManifest:
     messages: tuple[ChannelBackupMessage, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ChatResetResult:
+    """Outcome of clearing one user's stored chat thread state."""
+
+    status: ChatResetStatus
+    user_id: int
+    cleared: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class ModerationLogEntry:
+    """One moderation log row normalized away from legacy tuple indexing."""
+
+    entry_id: int
+    target_user_id: int | None
+    admin_user_id: int | None
+    reason: str | None
+    type_label: str
+    extra_value: int | None
+    source_table: Literal["blockhistory", "blockhistory_old"] = "blockhistory"
+
+    @property
+    def user_id(self) -> int | None:
+        """Compatibility alias for legacy callers that still expect user_id."""
+
+        return self.target_user_id
+
+    @property
+    def admin_id(self) -> int | None:
+        """Compatibility alias for legacy callers that still expect admin_id."""
+
+        return self.admin_user_id
+
+    @property
+    def addinfo(self) -> int | None:
+        """Compatibility alias for legacy callers that still expect addinfo."""
+
+        return self.extra_value
+
+
+@dataclass(frozen=True, slots=True)
+class ModerationLogSnapshot:
+    """Moderation log query result packaged for helpers and views."""
+
+    status: ModerationLogSnapshotStatus
+    server_id: int
+    entries: tuple[ModerationLogEntry, ...]
+    target_user_id: int | None = None
+    admin_id: int | None = None
+    include_legacy: bool = False
+    current_entry_count: int = 0
+    legacy_entry_count: int = 0
+
+    @property
+    def total_entries(self) -> int:
+        return len(self.entries)
+
+
+@dataclass(frozen=True, slots=True)
+class SummaryCooldownResetResult:
+    """Outcome of clearing a stored summary cooldown entry."""
+
+    status: SummaryCooldownResetStatus
+    user_id: int
+    removed: bool
 
 
 @dataclass(frozen=True, slots=True)
