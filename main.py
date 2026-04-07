@@ -153,6 +153,12 @@ from bot_app.commands.slash_ai_high_risk_handlers import (
     run_mining_help_slash_command,
     run_same_person_check_slash_command,
 )
+from bot_app.commands.slash_rail_handlers import (
+    run_delete_route_slash_command,
+    run_make_rail_slash_command,
+    run_make_route_slash_command,
+    run_update_route_dispatch_interval_slash_command,
+)
 from bot_app.commands.slash_user_handlers import (
     run_add_likeability_slash_command,
     run_check_likeability_slash_command,
@@ -5989,115 +5995,39 @@ async def 제재내역수동추가(interaction: discord.Interaction, 유저: dis
 @bot.tree.command(name="선로신설", description="해당 채널에 선로를 새로 건설합니다.")
 @app_commands.describe(name = "노선명", rail_cnt="선로 수 (예: 1은 단선, 2는 복선, 4는 복복선)")
 async def make_rail(interaction: discord.Interaction, name: str, rail_cnt: int):
-    channel_id = interaction.channel_id
-    user_id = interaction.user.id
-    if not check_user_exists(user_id) :
-        c.execute("INSERT INTO users (user_id, money) VALUES (?, ?)", (user_id, 0))
-    # 선로 건설
-    if type(rail_cnt) is int : 
-        if rail_cnt <= 4 :
-            try : 
-                c.execute("INSERT INTO rails (owner_id, channel_id, rail_cnt, name) VALUES (?, ?, ?, ?)", (user_id, channel_id, rail_cnt, name))
-                await interaction.response.send_message(f"**[알림]** 선로 개수가 {rail_cnt}인 {name} 선로를 건설했습니다!")
-            except sqlite3.IntegrityError as e:
-                await interaction.response.send_message(f"**[오류!]** 오류가 발생했습니다! 이 오류는 일반적으로 이미 선로가 건설되어 있는 경우에 표시됩니다.")
-        else :
-            await interaction.response.send_message(f"**[오류!]** 복복선보다 많은 선로를 가진 노선을 건설할 수 없습니다.")
-    else :
-        await interaction.response.send_message(f"**[오류!]** 입력값이 올바르지 않습니다.")
+    await run_make_rail_slash_command(
+        interaction,
+        rail_name=name,
+        rail_count=rail_cnt,
+    )
 
 @bot.tree.command(name = "운행계통신설", description = "해당 선로에 운행계통을 신설합니다.")
 @app_commands.choices(train = [app_commands.Choice(name = "중전철", value = "중전철"), app_commands.Choice(name = "경전철", value = "경전철")])
 @app_commands.describe(name = "노선명", train = "운행할 열차", dispatch_interval = "배차 간격 (분)")
 async def make_route(interaction: discord.Interaction, name: str, train: app_commands.Choice[str], dispatch_interval: int) :
-    channel_id = interaction.channel_id
-    user_id = interaction.user.id
-
-    await interaction.response.defer()
-    
-    if not check_user_exists(user_id) :
-        c.execute("INSERT INTO users (user_id, money) VALUES (?, ?)", (user_id, 0))
-    
-    if not check_rail_exists(channel_id) :
-        await interaction.followup.send(f"**[오류!]** 선로가 건설되어 있지 않은 채널입니다. 선로를 먼저 건설해 주세요.")
-    else :
-        if type(dispatch_interval) is int :
-            if train.value == "중전철" or train.value == "경전철" :
-                query = "SELECT rail_cnt FROM rails WHERE channel_id = ?"
-                c.execute(query, (channel_id,))
-                rail_cnt = c.fetchone()
-                rail_cnt = rail_cnt[0] # 선로 개수
-
-                query = "SELECT COUNT(*) FROM routes WHERE channel_id = ?"
-                c.execute(query, (channel_id,))
-                route_cnt = c.fetchone()
-                route_cnt = route_cnt[0] # 현재 운행계통 수
-                
-                # if int((rail_cnt - 0.3) * 1.6) >= route_cnt + 1 :
-                if route_cnt == 0 : 
-                    try :
-                        c.execute("INSERT INTO routes (owner_id, channel_id, dispatch_interval, name, train) VALUES (?, ?, ?, ?, ?)", (user_id, channel_id, dispatch_interval, name, train.value))
-                        await interaction.followup.send(f"**[알림]** 운행계통을 신설했습니다.")
-                    except sqlite3.IntegrityError as e:
-                        await interaction.followup.send(f"**[오류!]** 오류가 발생했습니다! 이 오류는 일반적으로 이미 같은 이름의 운행계통이 있는 경우 표시됩니다.")
-                else :
-                    # await interaction.followup.send(f"**[오류!]** 선로용량 포화로 인해 운행계통을 신설할 수 없습니다.")
-                    await interaction.followup.send(f"**[오류!]** 하나의 노선에는 하나의 운행계통만 신설할 수 있도록 임시로 개발되었습니다. 추후 업데이트를 통해 수정될 예정입니다.")
-            else :
-                await interaction.followup.send(f"**[오류!]** 입력값이 올바르지 않습니다.")
+    await run_make_route_slash_command(
+        interaction,
+        route_name=name,
+        train_choice=train,
+        dispatch_interval=dispatch_interval,
+    )
 
 @bot.tree.command(name = "운행계통폐지", description = "특정 운행계통을 폐지합니다.")
 @app_commands.describe(name = "노선명")
 async def del_route(interaction: discord.Interaction, name: str) :
-    channel_id = interaction.channel_id
-    user_id = interaction.user.id
-
-    await interaction.response.defer()
-    
-    c.execute("SELECT id, owner_id FROM routes WHERE channel_id = ? AND name = ?", (channel_id, name))
-    row = c.fetchone()
-    
-    if row :
-        row_id, owner_id = row
-        if owner_id == user_id : 
-            # owner_id가 일치하는 경우 행 삭제
-            c.execute("DELETE FROM routes WHERE id = ?", (row_id,))
-            await interaction.followup.send(f"**[알림]** 운행계통을 삭제했습니다.")
-        else:
-            await interaction.followup.send(f"**[오류!]** 운행계통 삭제 권한이 부족합니다. 운행계통 소유자(이)여야 합니다.")
-    else:
-        await interaction.followup.send(f"**[오류!]** 입력값이 올바르지 않습니다.")
+    await run_delete_route_slash_command(
+        interaction,
+        route_name=name,
+    )
 
 @bot.tree.command(name = "운행계통배차간격변경", description = "특정 운행계통의 배차 간격을 변경합니다.")
 @app_commands.describe(name = "노선명", dispatch_interval = "배차 간격 (분)")
 async def dispatch_interval_change(interaction: discord.Interaction, name: str, dispatch_interval: int) :
-    channel_id = interaction.channel_id
-    user_id = interaction.user.id
-
-    await interaction.response.defer()
-    
-    c.execute("SELECT id, owner_id FROM routes WHERE channel_id = ? AND name = ?", (channel_id, name))
-    row = c.fetchone()
-    
-    if row :
-        row_id, owner_id = row
-        if type(dispatch_interval) is int :
-            if dispatch_interval >= 2 : 
-                if owner_id == user_id : 
-                    c.execute("""
-                        UPDATE routes 
-                        SET dispatch_interval = ? 
-                        WHERE id = ?
-                    """, (dispatch_interval, row_id))
-                    await interaction.followup.send(f"**[알림]** 운행계통 배차 간격을 수정했습니다.")
-                else:
-                    await interaction.followup.send(f"**[오류!]** 운행계통 편집 권한이 부족합니다. 운행계통 소유자(이)여야 합니다.")
-            else :
-                await interaction.followup.send(f"**[오류!]** 입력값이 올바르지 않습니다. dispatch_interval의 값은 2 이상(이)어야 합니다.")
-        else :
-            await interaction.followup.send(f"**[오류!]** 입력값이 올바르지 않습니다.")
-    else:
-        await interaction.followup.send(f"**[오류!]** 입력값이 올바르지 않습니다.")
+    await run_update_route_dispatch_interval_slash_command(
+        interaction,
+        route_name=name,
+        dispatch_interval=dispatch_interval,
+    )
 
 
 

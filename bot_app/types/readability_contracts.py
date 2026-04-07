@@ -58,6 +58,10 @@ EmbedOutputValidationStatus = Literal[
 ]
 LinkScanSnapshotStatus = Literal["ok", "discord_link", "scan_error"]
 LinkScanSeverity = Literal["safe", "suspicious", "dangerous", "critical"]
+RailCreationStatus = Literal["created", "too_many_tracks", "already_exists", "invalid_input"]
+RouteCreationStatus = Literal["created", "rail_missing", "duplicate_name", "temporary_single_route_limit", "invalid_input"]
+RouteDeletionStatus = Literal["deleted", "route_missing", "permission_denied"]
+RouteDispatchIntervalUpdateStatus = Literal["updated", "route_missing", "permission_denied", "interval_too_small", "invalid_input"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -438,6 +442,40 @@ class LinkScanSnapshot:
     status: LinkScanSnapshotStatus
     severity: LinkScanSeverity | None = None
     stats: LinkScanStats | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RailCreationResult:
+    status: RailCreationStatus
+    rail_count: int | None = None
+    rail_name: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RouteCreationResult:
+    status: RouteCreationStatus
+    route_name: str | None = None
+    train_name: str | None = None
+    dispatch_interval: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RouteRecord:
+    route_id: int
+    owner_id: int
+
+
+@dataclass(frozen=True, slots=True)
+class RouteDeletionResult:
+    status: RouteDeletionStatus
+    route_name: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RouteDispatchIntervalUpdateResult:
+    status: RouteDispatchIntervalUpdateStatus
+    route_name: str | None = None
+    dispatch_interval: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

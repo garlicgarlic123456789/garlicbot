@@ -345,7 +345,7 @@ async def test_main_wave6_wrappers_delegate_to_ai_support_helpers():
     assert "await run_server_advice_slash_command(" in source
 
 
-def test_phase6_inactive_legacy_ai_support_commands_are_not_runtime_active():
+def test_phase6_inactive_legacy_commands_are_not_runtime_active():
     source = Path("main.py").read_text(encoding="utf-8")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SyntaxWarning)
@@ -361,8 +361,19 @@ def test_phase6_inactive_legacy_ai_support_commands_are_not_runtime_active():
     assert "add_likeability_command" not in function_names
     assert "embed" not in function_names
     assert "link_check" not in function_names
+    assert "minecraft" not in function_names
 
-    for command_name in ("이메일전송", "권한회수", "익명채팅설정", "익명채팅", "호감도확인", "호감도추가", "임베드출력", "링크검사"):
+    for command_name in (
+        "이메일전송",
+        "권한회수",
+        "익명채팅설정",
+        "익명채팅",
+        "호감도확인",
+        "호감도추가",
+        "임베드출력",
+        "링크검사",
+        "광질",
+    ):
         assert command_name in source
 
 
