@@ -151,6 +151,12 @@ from bot_app.commands.slash_ai_support_handlers import (
     run_reset_chat_slash_command,
     run_server_advice_slash_command,
 )
+from bot_app.commands.slash_ai_high_risk_handlers import (
+    run_generative_ai_slash_command,
+    run_judge_slash_command,
+    run_mining_help_slash_command,
+    run_same_person_check_slash_command,
+)
 from bot_app.commands.slash_user_handlers import (
     run_add_likeability_slash_command,
     run_check_likeability_slash_command,
@@ -2529,9 +2535,16 @@ async def check_voice_channels():
 
 @bot.tree.command(name="동일인여부확인", description = "두 유저의 말투 비교를 통해 두 유저 간 말투를 비교하여 두 유저가 동일인일 가능성을 분석합니다.")
 async def oritest(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
-    await 오리실험(interaction, 유저명1, 유저명2)
+    await run_same_person_check_slash_command(
+        interaction,
+        first_user=유저명1,
+        second_user=유저명2,
+        context={
+            "same_person_handler": _legacy_same_person_check,
+        },
+    )
 
-async def 오리실험(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
+async def _legacy_same_person_check(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
     if interaction.user.id != developer : 
         await interaction.response.send_message("권한이 부족합니다. 다음 권한이 필요합니다: `개발자`")
         return
@@ -2865,6 +2878,18 @@ def create_judge4_chain2(message, rule, rule_guide) :
     ]
 )
 async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v4"):
+    await run_judge_slash_command(
+        interaction,
+        start_message_link=시작,
+        end_message_link=끝,
+        private_reply=개인응답,
+        version=버전,
+        context={
+            "judge_handler": _legacy_judgement_command,
+        },
+    )
+
+async def _legacy_judgement_command(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v4"):
     if 개인응답 == "False" : 
         await interaction.response.defer()
     else :
@@ -3956,6 +3981,18 @@ gpt_4_1_cooldowns_d = 60 * 15
     사고깊이 = "이 값은 모델이 얼마나 사고하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
 )
 async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, 사고깊이: str = "medium"):
+    await run_generative_ai_slash_command(
+        interaction,
+        prompt_text=프롬프트,
+        model_name=모델,
+        attachment=파일,
+        reasoning_effort=사고깊이,
+        context={
+            "generative_ai_handler": _legacy_generative_ai_command,
+        },
+    )
+
+async def _legacy_generative_ai_command(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, 사고깊이: str = "medium"):
     # API 요청 보내기
     await interaction.response.defer()
     status, until, reason = is_blocked(interaction.user)
@@ -4926,23 +4963,13 @@ async def minecraft(interaction: discord.Interaction, 일자굴길이: int) :
 
 @bot.tree.command(name = "도움말광질")
 async def mine_help(interaction: discord.Interaction) :
-    if interaction.guild.id != using_server :
-        embed = discord.Embed(
-            title="오류",
-            description="이 기능은 아직 여러 서버들에서 지원되지 않습니다. [도움말 바로가기](https://asdfasdfqwer.notion.site/1aa4a653ce01808ea2c0c18f7e0ee0d0?pvs=4)",
-            color=discord.Color.red()
-        )
-        await interaction.response.send_message(embed=embed)
-        return
-    await interaction.response.defer()
-    status, until, reason = is_blocked(interaction.user)
-    
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    await interaction.followup.send("광질 확률: 다이아몬드 1%, 에메랄드 2%, 금 47%, 철 49%, 용암 1%\n광질 시 소모 경험치: 일자굴 1블록 당 20 XP\n광질 시 지급 경험치: 다이아몬드 500 XP, 에메랄드 200 XP, 철 10 XP, 금 30 XP. 단, 용암 발견 시 지급하지 아니함.")
+    await run_mining_help_slash_command(
+        interaction,
+        context={
+            "using_server": using_server,
+            "is_blocked": is_blocked,
+        },
+    )
 
 @bot.tree.context_menu(name="티켓 생성")
 async def message_info(interaction: discord.Interaction, message: discord.Message):
