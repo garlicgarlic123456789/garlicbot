@@ -21,20 +21,37 @@ def _format_timeout_duration(duration_seconds: int | None) -> str:
 
     if duration_seconds is None:
         return "*(알 수 없음)*"
-    if duration_seconds <= 0:
+    if duration_seconds < 0:
         return f"{duration_seconds}초"
 
-    minutes, seconds = divmod(duration_seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    days, hours = divmod(hours, 24)
+    days = duration_seconds // 86400
+    hours = (duration_seconds % 86400) // 3600
+    minutes = (duration_seconds % 3600) // 60
+    seconds = duration_seconds % 60
     parts: list[str] = []
-    if days:
-        parts.append(f"{days}일")
-    if hours or days:
-        parts.append(f"{hours}시간")
-    if minutes or hours or days:
-        parts.append(f"{minutes}분")
-    if seconds or not parts:
+
+    if hours == 0 and minutes == 0 and seconds == 0:
+        if days > 0:
+            parts.append(f"{days}일")
+    elif minutes == 0 and seconds == 0:
+        if days > 0:
+            parts.append(f"{days}일")
+        if hours > 0 or days > 0:
+            parts.append(f"{hours}시간")
+    elif seconds == 0:
+        if days > 0:
+            parts.append(f"{days}일")
+        if hours > 0 or days > 0:
+            parts.append(f"{hours}시간")
+        if minutes > 0 or hours > 0 or days > 0:
+            parts.append(f"{minutes}분")
+    else:
+        if days > 0:
+            parts.append(f"{days}일")
+        if hours > 0 or days > 0:
+            parts.append(f"{hours}시간")
+        if minutes > 0 or hours > 0 or days > 0:
+            parts.append(f"{minutes}분")
         parts.append(f"{seconds}초")
     return " ".join(parts)
 

@@ -129,3 +129,32 @@ def test_moderation_log_view_renders_named_entries_without_magic_index():
     assert "개수: +2" in embed.fields[0].value
     assert embed.fields[1].name == "타임아웃 - #2"
     assert "기간: 3분" in embed.fields[1].value
+
+
+def test_moderation_log_view_preserves_legacy_timeout_boundary_format():
+    entries = (
+        ModerationLogEntry(
+            entry_id=3,
+            target_user_id=22,
+            admin_user_id=32,
+            reason="정확히 한 시간",
+            type_label="timeout",
+            extra_value=3600,
+        ),
+        ModerationLogEntry(
+            entry_id=4,
+            target_user_id=23,
+            admin_user_id=33,
+            reason="정확히 하루",
+            type_label="timeout",
+            extra_value=86400,
+        ),
+    )
+    view = ModerationLogView(entries, "테스트", SimpleNamespace(id=10))
+
+    embed = view.get_embed()
+
+    assert "기간: 1시간" in embed.fields[0].value
+    assert "0분" not in embed.fields[0].value
+    assert "기간: 1일" in embed.fields[1].value
+    assert "0시간" not in embed.fields[1].value
