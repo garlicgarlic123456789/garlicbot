@@ -310,24 +310,15 @@ def test_main_uses_user_slash_helpers_instead_of_direct_body_logic():
     user_info_block_start = source.index('@bot.tree.command(name="사용자정보"')
     user_info_block_end = source.index('@bot.tree.command(name = "경고한도설정"', user_info_block_start)
     user_info_block = source[user_info_block_start:user_info_block_end]
-    likeability_block_start = source.index('@bot.tree.command(name = "호감도확인"')
-    likeability_block_end = source.index('@bot.tree.command(name = "임베드출력"', likeability_block_start)
-    likeability_block = source[likeability_block_start:likeability_block_end]
     info_block_start = source.index('@bot.tree.command(name="정보"')
     info_block_end = source.index("register_log_events(", info_block_start)
     info_block = source[info_block_start:info_block_end]
 
     assert "from bot_app.commands.slash_user_handlers import (" in source
     assert "run_user_profile_slash_command," in source
-    assert "run_check_likeability_slash_command," in source
-    assert "run_add_likeability_slash_command," in source
     assert "run_info_slash_command," in source
     assert "await run_user_profile_slash_command(" in user_info_block
-    assert "await run_check_likeability_slash_command(" in likeability_block
-    assert "await run_add_likeability_slash_command(" in likeability_block
     assert "await run_info_slash_command(" in info_block
     assert "SELECT money FROM users WHERE user_id = ?" not in info_block
     assert "load_warning(" not in user_info_block
     assert "get_premium(" not in user_info_block
-    assert "check_likeability(" not in likeability_block
-    assert "force_add_likeability(" not in likeability_block

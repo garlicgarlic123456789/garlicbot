@@ -15,8 +15,6 @@ from threading import Lock
 import email
 from email.header import decode_header
 import re
-import dkim  # DKIM 검증에 필요한 라이브러리
-import dns.resolver  # DKIM 공개 키를 DNS에서 조회하기 위한 라이브러리
 import re
 import asyncio
 from langchain_core.prompts import ChatPromptTemplate
@@ -63,32 +61,15 @@ from selenium.webdriver.common.by import By
 
 from openai import AsyncOpenAI
 
-from commands import encode
 from commands import manage_timeout
-from commands import bulk_cancel
 from commands.define import *
 from commands import define
 from commands.fuction_collect_message import *
 from commands.return_level import *
-from commands import turn_off
 from commands.weather_api import *
 from commands.advice import advice_main
-from commands import suggest_random
-from commands import chat_time
-from commands import timestamp
-from commands import ping
-from commands import close_threads
-from commands import remove_all_roles
-from commands import xp_setup
 from commands.invite_log_check import *
-from commands import security_check
 from commands.database import *
-from commands import weather
-from commands import slowmode
-from commands import server_info
-from commands import rules
-from commands import anti_raid_command
-from commands import compatibility
 
 from bot_app.commands.registry import register_known_commands
 from bot_app.commands.slash_moderation_handlers import (
@@ -107,16 +88,12 @@ from bot_app.commands.slash_moderation_handlers import (
 from bot_app.commands.slash_guild_settings_handlers import run_set_log_channel_slash_command
 from bot_app.commands.slash_admin_support_handlers import (
     run_add_blockhistory_entry_slash_command,
-    run_backup_channel_slash_command,
     run_check_invite_route_slash_command,
-    run_check_user_join_route_slash_command,
     run_delete_blockhistory_entry_slash_command,
     run_developer_command_slash_command,
     run_resolve_post_slash_command,
-    run_restore_channel_slash_command,
     run_role_info_slash_command,
     run_set_invite_route_memo_slash_command,
-    run_set_user_join_route_slash_command,
     run_update_role_description_slash_command,
 )
 from bot_app.commands.slash_xp_economy_handlers import (
@@ -141,8 +118,6 @@ from bot_app.commands.slash_security_handlers import (
 )
 from bot_app.commands.slash_ai_support_handlers import (
     run_check_moderation_log_slash_command,
-    run_embed_output_slash_command,
-    run_link_check_slash_command,
     run_remove_summary_cooldown_slash_command,
     run_reset_chat_slash_command,
     run_server_advice_slash_command,
@@ -160,8 +135,6 @@ from bot_app.commands.slash_rail_handlers import (
     run_update_route_dispatch_interval_slash_command,
 )
 from bot_app.commands.slash_user_handlers import (
-    run_add_likeability_slash_command,
-    run_check_likeability_slash_command,
     run_info_slash_command,
     run_user_profile_slash_command,
 )
@@ -191,15 +164,6 @@ from bot_app.services.storage_service import (
     write_auto_verify_state,
     write_confidential_message_ids,
 )
-from bot_app.services.moderation_service import (
-    add_warning_action,
-    finalize_warn_limit_ban,
-    parse_timeout_duration,
-    record_timeout_action,
-    record_untimeout_action,
-    remove_warning_action,
-)
-from bot_app.services.settings_service import get_block_log_channel_for_guild
 from bot_app.services.xp_service import (
     apply_message_xp,
 )
@@ -232,41 +196,6 @@ weather_api_key = os.getenv("WEATHER_API_KEY")  # 기상청 API 키
 gpt_client = AsyncOpenAI()
 
 ban_nuke_cnt = 3 # 이 횟수를 초과해야 테러로 감지
-'''
-PERMISSION_MAP = {
-    "add_reactions": "반응 추가",
-    "administrator": "관리자",
-    "attach_files": "파일 첨부",
-    "ban_members": "멤버 차단",
-    "change_nickname": "닉네임 변경",
-    "connect": "음성 채널 접속",
-    "create_instant_invite": "초대 생성",
-    "deafen_members": "멤버 음소거",
-    "embed_links": "링크 첨부",
-    "kick_members": "멤버 강퇴",
-    "manage_channels": "채널 관리",
-    "manage_emojis": "이모지 관리",
-    "manage_guild": "서버 관리",
-    "manage_messages": "메시지 관리",
-    "manage_nicknames": "닉네임 관리",
-    "manage_roles": "역할 관리",
-    "manage_webhooks": "웹훅 관리",
-    "mention_everyone": "모두 태그 허용",
-    "move_members": "멤버 이동",
-    "mute_members": "멤버 음소거",
-    "priority_speaker": "우선 발언",
-    "read_message_history": "메시지 기록 보기",
-    "send_messages": "메시지 보내기",
-    "send_tts_messages": "TTS 메시지 보내기",
-    "speak": "음성 채팅",
-    "stream": "스트리밍",
-    "use_external_emojis": "외부 이모지 사용",
-    "use_slash_commands": "슬래시 커맨드 사용",
-    "view_audit_log": "감사 로그 보기",
-    "view_channel": "채널 보기",
-    "view_guild_insights": "서버 통계 보기",
-}
-'''
 PERMISSION_MAP = {
     "create_instant_invite": "초대 링크 생성하기",
     "kick_members": "멤버 추방하기",
@@ -643,12 +572,6 @@ def read_denial_list():
         return set(line.strip() for line in f if line.strip())
 
 
-'''
-def to_markdown(text):
-    text = text.replace('•', '  *')
-    return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
-'''
-
 FILE_PATH = "auto_verify.txt"
 
 # 파일 상태를 변경하는 함수
@@ -678,12 +601,6 @@ def load_warnings(old_warning: bool = False):
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
-
-'''
-def save_warnings(warnings):
-    with open(WARNINGS_FILE, "w") as file:
-        json.dump(warnings, file, indent=4)
-'''
 
 def save_suggestions(suggestions):
     """의견 목록을 JSON 파일에 저장합니다."""
@@ -1298,15 +1215,6 @@ async def handle_remaining_message_flow(message):
         if True : 
             await message.reply("네?", mention_author=False)
             add_likeability(str(message.author.id), 1)
-            '''
-            temp = random.randint(1, 10)
-            if temp == 1 : # and message.author.id == 1315970767204388888 : 
-                await message.channel.send("왜")
-            elif temp == 2 :
-                await message.channel.send("뭐")
-            elif temp >= 3 and temp <= 8 :
-                await message.channel.send("왜")
-            '''
             return
 
     if message.content.startswith("마느라 ") :
@@ -1785,16 +1693,6 @@ async def handle_remaining_message_flow(message):
                     msg = f"**[오류!]** {message.author.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
                     await message.reply(msg, mention_author=False)
                     return
-                '''
-                if message.author.id not in friendly_list :
-                    embed = discord.Embed(
-                        title = f"알림",
-                        description = f"현재 특정 문제로 인해 `마늘아 <할 말>`을 이용한 AI 답변에 대한 지원이 일시 중단되었습니다. </생성형인공지능:1317038904876204072>을 이용해 주세요.",
-                        color = int("a5f0ff", 16)
-                    )
-                    await message.reply(embed = embed, mention_author=False)
-                    return
-                '''
                 if get_premium(message.author.id) == False :
                     user_id = message.author.id
                     now = datetime.utcnow()
@@ -1877,33 +1775,10 @@ async def handle_remaining_message_flow(message):
                 await message.reply(embed = embed, mention_author=False)
                 print(f"마늘이 (GPT-5 nano) 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response.output_text}\n----------")
                 add_likeability(str(message.author.id), 1)
-            '''
-            elif match2 is not None :
-                await message.channel.send(f"\'{match2[4:]}\' 창당은 음..")
-                await asyncio.sleep(1)
-                await message.channel.send("잘 모르겠네요.. 문의 게시판 가 보세요.")
-            elif "특례시" in message.content :
-                await message.channel.send(warn_law + "\n\n지방자치법 제198조\n\n① 서울특별시ㆍ광역시 및 특별자치시를 제외한 인구 50만 이상 대도시의 행정, 재정 운영 및 국가의 지도ㆍ감독에 대해서는 그 특성을 고려하여 관계 법률로 정하는 바에 따라 특례를 둘 수 있다.\n② 제1항에도 불구하고 서울특별시ㆍ광역시 및 특별자치시를 제외한 다음 각 호의 어느 하나에 해당하는 대도시 및 시ㆍ군ㆍ구의 행정, 재정 운영 및 국가의 지도ㆍ감독에 대해서는 그 특성을 고려하여 관계 법률로 정하는 바에 따라 추가로 특례를 둘 수 있다.\n1. 인구 100만 이상 대도시(이하 “특례시”라 한다)\n2. 실질적인 행정수요, 지역균형발전 및 지방소멸위기 등을 고려하여 대통령령으로 정하는 기준과 절차에 따라 행정안전부장관이 지정하는 시ㆍ군ㆍ구\n③ 제1항에 따른 인구 50만 이상 대도시와 제2항제1호에 따른 특례시의 인구 인정기준은 대통령령으로 정한다.\n\n특례시 관련 법률입니다.\n\n")
-            elif "헌법" in message.content :
-                await message.channel.send(warn_law + "\n\n헌법 전문\n\n유구한 역사와 전통에 빛나는 우리 대한국민은 3ㆍ1운동으로 건립된 대한민국임시정부의 법통과 불의에 항거한 4ㆍ19민주이념을 계승하고, 조국의 민주개혁과 평화적 통일의 사명에 입각하여 정의ㆍ인도와 동포애로써 민족의 단결을 공고히 하고, 모든 사회적 폐습과 불의를 타파하며, 자율과 조화를 바탕으로 자유민주적 기본질서를 더욱 확고히 하여 정치ㆍ경제ㆍ사회ㆍ문화의 모든 영역에 있어서 각인의 기회를 균등히 하고, 능력을 최고도로 발휘하게 하며, 자유와 권리에 따르는 책임과 의무를 완수하게 하여, 안으로는 국민생활의 균등한 향상을 기하고 밖으로는 항구적인 세계평화와 인류공영에 이바지함으로써 우리들과 우리들의 자손의 안전과 자유와 행복을 영원히 확보할 것을 다짐하면서 1948년 7월 12일에 제정되고 8차에 걸쳐 개정된 헌법을 이제 국회의 의결을 거쳐 국민투표에 의하여 개정한다.\n\n헌법 전문입니다. [헌법 보러가기](https://www.law.go.kr/lsEfInfoP.do?lsiSeq=61603#)")
-            elif "인터넷 민주주의" in message.content :
-                await message.channel.send("음.. 개인적으로 \'인터넷\' 민주주의에 대해서는 약간 부정적입니다.")
-            '''
     else :
         global mentions
         asyncio.create_task(handle_user_mentions(message))  # 비동기 처리
         await bot.process_commands(message)
-        
-        '''
-        if message.guild.id == using_server and ("<@1305492487137267722>" in message.content or "<@!1305492487137267722>" in message.content) : 
-            if message.author.id not in maneul_mention_no_warn : 
-                embed = discord.Embed(
-                    title = f"마늘요리님 멘션 관련 안내",
-                    description = f"아래 경우를 모두 만족하는 경우가 아니고 마늘요리님과 친하지 않다면 마늘요리님 멘션은 자제해 주세요.\n- 반드시 처리에 마늘요리님이 필요함\n- **지금 당장** 마늘요리님께 말해야 함 (지금 당장 말하진 않아도 되지만, 말은 해야 되는 내용은 </멘션지연:1335877607152943106> 이용 바랍니다.)\n혹시나 마늘요리님을 잘못 멘션했더라도 멘션한 메시지를 삭제하지는 마시기 바랍니다. 삭제할 경우, 나중에 마늘요리님이 누가 본인을 멘션했는지 알기 힘들어집니다.",
-                    color = int("a5f0ff", 16)
-                )
-                await message.reply(embed = embed, mention_author=False)
-                '''
         
         status, until, reason = is_blocked(message.author)
     
@@ -2034,17 +1909,6 @@ def format_duration(duration):
         
     return " ".join(duration_parts) if duration_parts else "0초"
 
-@tasks.loop(minutes=50)
-async def refresh_invite_cache():
-    guild = bot.get_guild(using_server)
-    if guild:
-        try:
-            invite_cache[guild.id] = await guild.invites()
-            print(f"[초대 캐시 갱신] {guild.name} 서버의 초대 캐시를 갱신했습니다.")
-        except discord.Forbidden:
-            invite_cache[guild.id] = []
-            print(f"[초대 캐시 갱신 실패] 초대 링크 접근 권한이 없습니다.")
-
 async def create_check_account_chain(display_name, name) : 
     prompt = ChatPromptTemplate.from_messages([
         ("system", """입력에서 제시된 특정 디스코드 서버에 참가한 사용자의 정보를 바탕으로, 아래 조건을 잘 확인하여 해당 계정이 깡통계정일 가능성을 %로 출력하고, 근거도 작성하세요. (출력 양식 참고 바람)
@@ -2162,17 +2026,6 @@ async def gift_exp(interaction: discord.Interaction, member: discord.User, amoun
             "xp_setting": xp_setting,
         },
     )
-
-'''
-exp_shop = [
-    {"item": "파일 첨부 권한", "description": "파일 첨부를 위해 구입해야 하는 권한입니다.", "price": 5000, "role": 1333390128072232980},
-    {"item": "투표 생성 권한", "description": "투표 생성을 위해 구입해야 하는 권한입니다.", "price": 7000, "role": 1320315949005537310},
-    {"item": "비공개 스레드 생성 권한", "description": "비공개 스레드 생성을 위해 구입해야 하는 권한입니다.", "price": 7000, "role": 1320600850082693172},
-    {"item": "마늘이 답변 추가권", "description": "`마늘아 <할 말>`에 대한 답변을 추가해주는 상품입니다. <#1327116951805493279>에서 자세히 알아보세요.", "price": 30000, "role": 0},
-    {"item": "경고 차감권", "description": "경고 1개를 차감해주는 상품입니다. <#1327116951805493279>에서 자세히 알아보세요.", "price": 50000, "role": 0},
-    {"item": "메시지 고정권", "description": "채팅 채널에 특정 메시지를 고정해주는 상품입니다. <#1327116951805493279>에서 자세히 알아보세요.", "price": 100000, "role": 0},
-]
-'''
 
 @bot.tree.command(name = "경험치샵구매", description = "경험치로 특정 상품을 구매합니다.")
 @app_commands.choices(상품명 = [app_commands.Choice(name = "파일 첨부 권한", value = "file"), app_commands.Choice(name = "투표 생성 권한", value = "vote"), app_commands.Choice(name = "비공개 스레드 생성 권한", value = "private_thread"), app_commands.Choice(name = "사운드보드 사용 권한", value = "soundboard")])
@@ -4806,14 +4659,6 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
         },
     )
 
-def split_text(text, chunk_size=3000):
-    result = []
-    i = 0
-    while i < len(text):
-        result.append(text[i:i+chunk_size])
-        i += chunk_size
-    return result
-
 @bot.tree.command(name="일괄삭제", description = "범위를 지정하여 메시지를 일괄적으로 삭제합니다. 필요한 경우 특정 사용자의 메시지만 삭제할 수도 있습니다.")
 @app_commands.describe(시작 = "시작 메시지 링크", 끝 = "끝 메시지 링크 (선택사항)", 유저 = "특정 유저의 메시지만 삭제하려는 경우 해당되는 유저 (선택사항)", 사유 = "삭제 사유 (선택사항)")
 @app_commands.default_permissions(manage_messages=True)
@@ -5534,29 +5379,6 @@ async def automod_setup(
         context={"is_blocked": is_blocked, "using_server": using_server, "developer": developer},
     )
 
-'''
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    user_id = message.author.id
-    if user_id in slowmode_users:
-        last_message_time = getattr(message.author, 'last_message_time', None)
-        cooldown = slowmode_users[user_id]
-
-        if last_message_time:
-            elapsed_time = (message.created_at - last_message_time).total_seconds()
-            if elapsed_time < cooldown:
-                await message.delete()
-                return
-
-        # 마지막 메시지 시간을 업데이트
-        setattr(message.author, 'last_message_time', message.created_at)
-
-    await bot.process_commands(message)
-'''
-
 @bot.tree.command(name="격리역할설정", description="격리 역할을 설정합니다.")
 @app_commands.describe(격리역할 = "격리 역할 입력")
 async def 격리역할설정(interaction: discord.Interaction, 격리역할: discord.Role):
@@ -5694,28 +5516,6 @@ async def 이메일전송(interaction: discord.Interaction, 내용: str):
     else:
         await interaction.followup.send("**[오류!]** 이메일 전송에 실패했습니다.")
 '''
-
-# 명령어를 처리하여 메시지를 전송하는 함수
-async def parse_command(command):
-    match = re.match(r'^\/send_message (\S+) (.+)', command, re.DOTALL)
-    if not match:
-        return
-    channel_name, message_content = match.groups()
-    for guild in bot.guilds:
-        channel = discord.utils.get(guild.text_channels, name=channel_name)
-        if channel:
-            await channel.send(f"서버 소유자가 이 채널에 아래와 같은 메시지를 보냈습니다.\n\n{message_content}")
-
-# DKIM 서명 검증 함수
-def verify_dkim_signature(msg):
-    raw_email = msg.as_bytes()  # 이메일을 바이트로 변환하여 서명 확인
-    try:
-        # DKIM 검증
-        dkim_verified = dkim.verify(raw_email)
-        return dkim_verified
-    except Exception as e:
-        print(f"DKIM 검증 오류: {e}")
-        return False
 
 '''
 # /권한회수 명령어 정의
