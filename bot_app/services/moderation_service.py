@@ -60,12 +60,12 @@ async def add_warning_action(
     normalized_reason = normalize_reason(reason)
     repository.add_blockhistory(user_id, admin_id, normalized_reason, "warn", amount, server_id)
     return WarningActionResult(
-        old_count=result[0],
-        delta=result[1],
-        new_count=result[2],
+        old_count=result.old_count,
+        delta=result.delta,
+        new_count=result.new_count,
         warn_max=warn_max,
         reason=normalized_reason,
-        reached_limit=warn_max is not None and result[2] >= warn_max,
+        reached_limit=warn_max is not None and result.new_count >= warn_max,
     )
 
 
@@ -83,9 +83,9 @@ async def remove_warning_action(
     normalized_reason = normalize_reason(reason)
     repository.add_blockhistory(user_id, admin_id, normalized_reason, "unwarn", amount, server_id)
     return WarningActionResult(
-        old_count=result[0],
-        delta=result[1],
-        new_count=result[2],
+        old_count=result.old_count,
+        delta=result.delta,
+        new_count=result.new_count,
         warn_max=warn_max,
         reason=normalized_reason,
         reached_limit=False,

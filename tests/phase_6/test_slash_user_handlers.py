@@ -13,7 +13,13 @@ from bot_app.commands.slash_user_handlers import (
     run_info_slash_command,
     run_user_profile_slash_command,
 )
-from bot_app.types.readability_contracts import DisplayedXpSnapshot, LikeabilityAdjustmentResult, LikeabilitySnapshot, SlashCommandResult
+from bot_app.types.readability_contracts import (
+    DisplayedXpSnapshot,
+    LikeabilityAdjustmentResult,
+    LikeabilitySnapshot,
+    SlashCommandResult,
+    UserClassificationResult,
+)
 
 
 class FakeUser:
@@ -252,7 +258,7 @@ async def test_user_profile_helper_builds_member_profile_embed(monkeypatch):
     monkeypatch.setattr(
         slash_user_handlers_module,
         "get_user_classification",
-        lambda **kwargs: ("premium", "프리미엄 유저"),
+        lambda **kwargs: UserClassificationResult(status="premium", label="프리미엄 유저"),
     )
 
     result = await run_user_profile_slash_command(
@@ -284,7 +290,7 @@ async def test_user_profile_helper_falls_back_to_ban_lookup_for_external_user(mo
     monkeypatch.setattr(
         slash_user_handlers_module,
         "get_user_classification",
-        lambda **kwargs: ("general", "일반 유저"),
+        lambda **kwargs: UserClassificationResult(status="general", label="일반 유저"),
     )
 
     result = await run_user_profile_slash_command(

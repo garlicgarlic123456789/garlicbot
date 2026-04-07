@@ -14,7 +14,9 @@ from bot_app.services.xp_service import (
     transfer_xp,
 )
 from bot_app.types.readability_contracts import (
+    AttendanceProcessResult,
     AttendanceRewardResult,
+    AttendanceSettings,
     MessageXpApplyResult,
     XpAdjustmentResult,
     XpRankingEntry,
@@ -31,7 +33,7 @@ class FakeXpRepository:
         *,
         xp_setting=None,
         attendance_settings=None,
-        attendance_result=(True, 1),
+        attendance_result=None,
         xp_values=None,
         month_xp_values=None,
         old_xp_values=None,
@@ -39,13 +41,13 @@ class FakeXpRepository:
         all_month_xp=None,
     ):
         self._xp_setting = xp_setting or XpSetting(True, 15, 30, None, None, "XP")
-        self._attendance_settings = attendance_settings or {
-            "on_off": True,
-            "minimum": 100,
-            "maximum": 200,
-            "step": 10,
-        }
-        self._attendance_result = attendance_result
+        self._attendance_settings = attendance_settings or AttendanceSettings(
+            on_off=True,
+            minimum=100,
+            maximum=200,
+            step=10,
+        )
+        self._attendance_result = attendance_result or AttendanceProcessResult(checked=True, streak=1)
         self.xp_values = dict(xp_values or {})
         self.month_xp_values = dict(month_xp_values or {})
         self.old_xp_values = dict(old_xp_values or {})
@@ -185,7 +187,7 @@ async def test_process_attendance_reward_handles_disabled_xp():
 
 @pytest.mark.asyncio
 async def test_process_attendance_reward_handles_already_checked():
-    repository = FakeXpRepository(attendance_result=(False, 3))
+    repository = FakeXpRepository(attendance_result=AttendanceProcessResult(checked=False, streak=3))
 
     result = await process_attendance_reward(
         server_id=1,
@@ -203,7 +205,7 @@ async def test_process_attendance_reward_handles_already_checked():
 
 @pytest.mark.asyncio
 async def test_process_attendance_reward_awards_expected_bonus_flow():
-    repository = FakeXpRepository(attendance_result=(True, 8))
+    repository = FakeXpRepository(attendance_result=AttendanceProcessResult(checked=True, streak=8))
     rng = FakeRandom([60, 120, 150, 700])
 
     result = await process_attendance_reward(
@@ -367,7 +369,7 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
 
     async def fake_get_attendance_settings(server_id):
         calls.append(("get_attendance_settings", server_id))
-        return {"on_off": True}
+        return {"on_off": True, "minimum": 100, "maximum": 200, "step": 10}
 
     def fake_process_attendance(server_id, user_id):
         calls.append(("process_attendance", server_id, user_id))
@@ -413,8 +415,13 @@ async def test_xp_repository_delegates_to_database_helpers(monkeypatch):
     repository = XpRepository()
 
     assert repository.get_xp_setting(1) == XpSetting(True, 15, 30, None, None, "XP")
-    assert await repository.get_attendance_settings(1) == {"on_off": True}
-    assert repository.process_attendance(1, 2) == (True, 2)
+    assert await repository.get_attendance_settings(1) == AttendanceSettings(
+        on_off=True,
+        minimum=100,
+        maximum=200,
+        step=10,
+    )
+    assert repository.process_attendance(1, 2) == AttendanceProcessResult(checked=True, streak=2)
     repository.add_xp(1, 2, 30)
     repository.add_month_xp(1, 2, 40)
     assert repository.get_xp(1, 2) == 120

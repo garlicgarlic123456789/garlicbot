@@ -120,9 +120,6 @@ def test_main_and_define_use_storage_service_boundaries():
 
     assert "from bot_app.services.storage_service import (" in main_source
     assert "load_mentions_data" in main_source
-    assert "read_confidential_message_ids" in main_source
-    assert "write_auto_verify_state" in main_source
-    assert "load_suggestions_data" in main_source
     assert 'with open(MENTION_FILE, "r"' not in main_source
     assert 'with open(MENTION_FILE, "w"' not in main_source
     assert "aiofiles.open(secret_file_name" not in main_source

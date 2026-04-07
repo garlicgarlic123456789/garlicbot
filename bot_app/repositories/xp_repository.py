@@ -10,7 +10,7 @@ from commands.database import (
     update_month_xp,
     update_xp,
 )
-from bot_app.types.readability_contracts import XpSetting
+from bot_app.types.readability_contracts import AttendanceProcessResult, AttendanceSettings, XpSetting
 
 
 def _build_xp_setting(raw_setting: list | tuple) -> XpSetting:
@@ -29,11 +29,18 @@ class XpRepository:
     def get_xp_setting(self, server_id: int) -> XpSetting:
         return _build_xp_setting(get_xp_setting_dict(server_id))
 
-    async def get_attendance_settings(self, server_id: int):
-        return await get_attendance_settings(server_id)
+    async def get_attendance_settings(self, server_id: int) -> AttendanceSettings:
+        settings = await get_attendance_settings(server_id)
+        return AttendanceSettings(
+            on_off=bool(settings["on_off"]),
+            minimum=settings["minimum"],
+            maximum=settings["maximum"],
+            step=settings["step"],
+        )
 
-    def process_attendance(self, server_id: int, user_id: int):
-        return process_attendance(server_id, user_id)
+    def process_attendance(self, server_id: int, user_id: int) -> AttendanceProcessResult:
+        checked, streak = process_attendance(server_id, user_id)
+        return AttendanceProcessResult(checked=checked, streak=streak)
 
     def add_xp(self, server_id: int, user_id: int, amount: int):
         update_xp(server_id, user_id, amount)

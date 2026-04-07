@@ -9,6 +9,7 @@ from bot_app.repositories.xp_repository import xp_repository
 from bot_app.services.xp_service import get_effective_xp_setting
 from bot_app.types.readability_contracts import (
     DisplayedXpSnapshot,
+    UserClassificationResult,
     UserMoneyLookupResult,
     UserProfileSnapshot,
 )
@@ -36,14 +37,17 @@ def get_user_classification(
     user,
     block_checker,
     repository=user_repository,
-) -> tuple[str, str]:
+) -> UserClassificationResult:
     """Resolve the displayed user classification while preserving legacy wording."""
     status, until, reason = block_checker(user)
     if status:
-        return "blocked", f"이용제한 유저 ({until}까지, 사유: {reason})"
+        return UserClassificationResult(
+            status="blocked",
+            label=f"이용제한 유저 ({until}까지, 사유: {reason})",
+        )
     if repository.has_premium(user.id):
-        return "premium", "프리미엄 유저"
-    return "general", "일반 유저"
+        return UserClassificationResult(status="premium", label="프리미엄 유저")
+    return UserClassificationResult(status="general", label="일반 유저")
 
 
 def get_displayed_profile_xp_snapshot(

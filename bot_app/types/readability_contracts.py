@@ -144,6 +144,20 @@ class MessageXpApplyResult:
 
 
 @dataclass(frozen=True, slots=True)
+class AttendanceSettings:
+    on_off: bool
+    minimum: int
+    maximum: int
+    step: int
+
+
+@dataclass(frozen=True, slots=True)
+class AttendanceProcessResult:
+    checked: bool
+    streak: int
+
+
+@dataclass(frozen=True, slots=True)
 class AttendanceRewardResult:
     status: AttendanceRewardStatus
     streak: int = 0
@@ -211,6 +225,12 @@ class LikeabilityAdjustmentResult:
 class UserMoneyLookupResult:
     status: UserMoneyLookupStatus
     money: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class UserClassificationResult:
+    status: UserClassificationStatus
+    label: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -492,6 +512,13 @@ class GambleSettlementResult:
 class WarningStatusSnapshot:
     warning_count: int
     warn_max: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class WarningMutationSnapshot:
+    old_count: int
+    delta: int
+    new_count: int
 
 
 @dataclass(frozen=True, slots=True)

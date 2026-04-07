@@ -7,9 +7,7 @@ import bot_app.commands.slash_moderation_handlers as slash_moderation_handlers_m
 from bot_app.events import message_handlers as message_handlers_module
 from bot_app.events.message_handlers import handle_moderation_text_commands
 from bot_app.commands.slash_moderation_handlers import (
-    run_check_warning_slash_command,
     run_remove_timeout_slash_command,
-    run_set_warn_limit_slash_command,
     run_timeout_slash_command,
     run_unwarn_slash_command,
     run_warn_slash_command,
@@ -27,6 +25,7 @@ from bot_app.services.moderation_service import (
     set_warn_limit,
 )
 from bot_app.types.readability_contracts import (
+    WarningMutationSnapshot,
     ErrorTrackedSlashCommandResult,
     ModerationCommandResult,
     SlashCommandResult,
@@ -131,10 +130,10 @@ class FakeSlashInteraction:
 
 
 class FakeModerationRepository:
-    def __init__(self, *, warn_max=None, add_warning_result=(0, 1, 1), remove_warning_result=(3, 1, 2)):
+    def __init__(self, *, warn_max=None, add_warning_result=None, remove_warning_result=None):
         self.warn_max = warn_max
-        self.add_warning_result = add_warning_result
-        self.remove_warning_result = remove_warning_result
+        self.add_warning_result = add_warning_result or WarningMutationSnapshot(old_count=0, delta=1, new_count=1)
+        self.remove_warning_result = remove_warning_result or WarningMutationSnapshot(old_count=3, delta=1, new_count=2)
         self.calls = []
 
     def get_warn_max(self, server_id: int):
@@ -165,7 +164,10 @@ class FakeModerationRepository:
 
 @pytest.mark.asyncio
 async def test_add_warning_action_records_history_and_limit_state():
-    repository = FakeModerationRepository(warn_max=3, add_warning_result=(2, 1, 3))
+    repository = FakeModerationRepository(
+        warn_max=3,
+        add_warning_result=WarningMutationSnapshot(old_count=2, delta=1, new_count=3),
+    )
 
     result = await add_warning_action(
         server_id=10,
@@ -189,7 +191,10 @@ async def test_add_warning_action_records_history_and_limit_state():
 
 @pytest.mark.asyncio
 async def test_remove_warning_action_records_unwarn_history():
-    repository = FakeModerationRepository(warn_max=5, remove_warning_result=(4, 2, 2))
+    repository = FakeModerationRepository(
+        warn_max=5,
+        remove_warning_result=WarningMutationSnapshot(old_count=4, delta=2, new_count=2),
+    )
 
     result = await remove_warning_action(
         server_id=10,
@@ -657,8 +662,8 @@ async def test_moderation_repository_delegates_to_database_helpers(monkeypatch):
     repository = ModerationRepository()
 
     assert repository.get_warn_max(1) == 5
-    assert await repository.add_warning(1, 2, 3) == [0, 3, 3]
-    assert await repository.remove_warning(1, 2, 3) == [3, 3, 0]
+    assert await repository.add_warning(1, 2, 3) == WarningMutationSnapshot(old_count=0, delta=3, new_count=3)
+    assert await repository.remove_warning(1, 2, 3) == WarningMutationSnapshot(old_count=3, delta=3, new_count=0)
     assert await repository.reset_warning(1, 2) == 0
     assert await repository.get_warning_count(1, 2) == 4
     repository.update_warn_max(1, 7)

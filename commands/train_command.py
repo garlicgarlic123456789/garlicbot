@@ -36,7 +36,7 @@ class train_command(app_commands.Group) :
 
         try : 
             transfer_info = fast_transfer[노선]
-        except Exception as e :
+        except Exception:
             await interaction.followup.send("**[오류!]** 노선 정보를 가져오는 도중 오류가 발생했습니다. 등록되지 않은 노선이거나 노선명이 유효하지 않은 경우 일반적으로 이 오류가 표시됩니다.")
             return
 
@@ -54,7 +54,7 @@ class train_command(app_commands.Group) :
             error += 1
             return
     
-    '''
+    r'''
     @app_commands.command(name = "도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
     @app_commands.describe(역명 = "역명 (뒤에 \'역\' 자 제외)", 열차종류 = "확인할 열차의 종류 (선택 사항)", 행선지 = "확인할 열차의 행선지 (선택 사항)")
     @app_commands.choices(열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")])
@@ -539,7 +539,6 @@ class train_command(app_commands.Group) :
             기준시각 = await today_to_text2()
             위치, 지연, 지연업데이트시각 = await get_train_info_railblue(열차번호, 날짜, interaction.user.id)
             timetable, delay = await get_train_timetable_railblue(열차번호, 날짜, interaction.user.id)
-            delay_old = 지연 # 레거시 방식의 지연시분 표시 방식대로 지연 정보 저장 (except문에서 사용)
             try : 
                 if delay is not None : 
                     timetable_delay_input_type = delay[1]
@@ -593,7 +592,7 @@ class train_command(app_commands.Group) :
                         정보출처 = f"레일블루 - {timetable_delay_input_type} (약 {str(int(total_minutes // 60))}시간 전 업데이트됨)"
                 else : 
                     정보출처 = "레일블루 - *(알 수 없음)*"
-            except Exception as e : 
+            except Exception:
                 embed2 = discord.Embed(
                     title = f"열차 #{열차번호} 정보",
                     description = f"오류: 새로 업데이트된 열차 정보 표시 방식대로 열차 정보를 표시하는 도중 문제가 발생하여 레거시 방식으로 표시합니다.\n\n**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
@@ -1087,8 +1086,6 @@ async def get_train_info_railblue(train, date, user_id):
         else : 
             pattern = r'(\d+)(분|시간)'
             match = re.search(pattern, default_page_delay)
-            result_seconds_int = 0
-
             amount = match.group(1)
             unit = match.group(2)
 

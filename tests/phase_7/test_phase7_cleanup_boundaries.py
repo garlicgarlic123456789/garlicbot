@@ -141,6 +141,27 @@ def test_phase7_main_collapses_duplicate_helpers_to_single_definition():
     assert source.count("def save_blocked_users(blocked_users):") == 1
 
 
+def test_phase7_main_avoids_magic_index_for_call_limit_state():
+    source = Path("main.py").read_text(encoding="utf-8")
+
+    assert "class CallLimitState" in source
+    assert "check_call_limit(message.author.id)[0]" not in source
+    assert "check_call_limit(message.author.id)[1]" not in source
+    assert "call_limit_state.allowed" in source
+    assert "call_limit_state.limit_label" in source
+
+
+def test_phase7_main_keeps_single_active_on_message_handler():
+    module_ast = _parse_main_module()
+    event_named_functions = [
+        node
+        for node in module_ast.body
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "on_message"
+    ]
+
+    assert len(event_named_functions) == 1
+
+
 def test_phase7_archives_high_value_inactive_legacy_blocks_outside_main():
     source = Path("main.py").read_text(encoding="utf-8")
     archive = Path("bot_app/legacy/main_inactive_archive.md").read_text(encoding="utf-8")

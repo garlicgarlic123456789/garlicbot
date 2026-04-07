@@ -1,65 +1,29 @@
 import argparse
+from dataclasses import dataclass
+
 import discord
-import subprocess
-import statistics
 import aiocron
-from discord.ui import Button
-from discord.ext import commands, tasks
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import imaplib
+from discord.ext import tasks
 import time
-from discord import abc
 from threading import Lock
-import email
-from email.header import decode_header
-import re
 import re
 import asyncio
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import OpenAIEmbeddings
-from langchain_core.prompts import FewShotChatMessagePromptTemplate
-from langchain_core.example_selectors import SemanticSimilarityExampleSelector
-from langchain_chroma import Chroma
 import random
-from discord import Role, app_commands
-from google.genai import types
-from cryptography.fernet import Fernet
-import datetime
+from discord import app_commands
 import pytz
 from datetime import timedelta
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime
 import os
 import json
-import hashlib
 import requests
-import pathlib
-import textwrap
 import pandas as pd
-import time
-import google.generativeai as genai
-from typing import Optional
 from collections import defaultdict, deque
-import time
-import sys
-import aiofiles
-import aiohttp
-import matplotlib.pyplot as plt
-import io
-import matplotlib.dates as mdates
-from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 from openai import AsyncOpenAI
-from discord.ui import View, Button
-import pytz
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-
-from openai import AsyncOpenAI
+from discord.ui import View
 
 from commands import manage_timeout
 from commands.define import *
@@ -87,9 +51,7 @@ from bot_app.commands.slash_moderation_handlers import (
 )
 from bot_app.commands.slash_guild_settings_handlers import run_set_log_channel_slash_command
 from bot_app.commands.slash_admin_support_handlers import (
-    run_add_blockhistory_entry_slash_command,
     run_check_invite_route_slash_command,
-    run_delete_blockhistory_entry_slash_command,
     run_developer_command_slash_command,
     run_resolve_post_slash_command,
     run_role_info_slash_command,
@@ -156,13 +118,6 @@ from bot_app.events.message_pipeline import (
 )
 from bot_app.services.storage_service import (
     load_mentions_data,
-    load_suggestions_data,
-    read_auto_verify_state,
-    read_confidential_message_ids,
-    save_mentions_data,
-    save_suggestions_data,
-    write_auto_verify_state,
-    write_confidential_message_ids,
 )
 from bot_app.services.xp_service import (
     apply_message_xp,
@@ -883,11 +838,18 @@ normal_chat_dict = {}
 
 kst = pytz.timezone('Asia/Seoul')
 
+
+@dataclass(frozen=True, slots=True)
+class CallLimitState:
+    allowed: bool
+    limit_label: str | int
+
+
 def check_call_limit(user_id):
     today = datetime.now(kst).date()
 
     if get_premium(user_id) :
-        return [True, "무제한"]
+        return CallLimitState(allowed=True, limit_label="무제한")
     
     user_data = call_limit.get(user_id)
 
@@ -895,16 +857,16 @@ def check_call_limit(user_id):
         last_call_date, call_count = user_data
         if last_call_date == today:
             if call_count >= MAX_CALLS_PER_DAY:
-                return [False, MAX_CALLS_PER_DAY]  # 제한 초과
+                return CallLimitState(allowed=False, limit_label=MAX_CALLS_PER_DAY)
             else:
                 call_limit[user_id][1] += 1  # 호출 횟수 증가
-                return [True, MAX_CALLS_PER_DAY]
+                return CallLimitState(allowed=True, limit_label=MAX_CALLS_PER_DAY)
         else:
             call_limit[user_id] = [today, 1]  # 날짜 바뀜 → 리셋
-            return [True, MAX_CALLS_PER_DAY]
+            return CallLimitState(allowed=True, limit_label=MAX_CALLS_PER_DAY)
     else:
         call_limit[user_id] = [today, 1]  # 처음 호출
-        return [True, MAX_CALLS_PER_DAY]
+        return CallLimitState(allowed=True, limit_label=MAX_CALLS_PER_DAY)
 
 @bot.event
 async def on_message(message):
@@ -1145,8 +1107,12 @@ async def handle_remaining_message_flow(message):
             await message.reply(embed = embed, view = legacy_maneul_chat_info(), mention_author=False)
             return
 
-        if not check_call_limit(message.author.id)[0]:
-            await message.reply(f"**[오류!]** 일일 사용량 한도에 도달하였습니다. 사용 한도를 확인하고 다시 시도하세요.\n\n사용 한도: {check_call_limit(message.author.id)[1]}", mention_author=False)
+        call_limit_state = check_call_limit(message.author.id)
+        if not call_limit_state.allowed:
+            await message.reply(
+                f"**[오류!]** 일일 사용량 한도에 도달하였습니다. 사용 한도를 확인하고 다시 시도하세요.\n\n사용 한도: {call_limit_state.limit_label}",
+                mention_author=False,
+            )
             return
         
         if True : 
@@ -4969,27 +4935,6 @@ async def dispatch_interval_change(interaction: discord.Interaction, name: str, 
         route_name=name,
         dispatch_interval=dispatch_interval,
     )
-
-
-
-@bot.event
-async def on_message(message):
-    # 봇이 보낸 메시지는 무시합니다.
-    if message.author.bot:
-        return
-
-    user_id = message.author.id
-    channel_id = message.channel.id
-
-    if user_id in chattime :
-        if channel_id in chattime[user_id] : 
-            chattime[user_id][channel_id][1] = datetime.now()
-        else :
-            chattime[user_id][channel_id] = [datetime.now(), datetime.now()]
-    else :
-        chattime[user_id] = {}
-        chattime[user_id][channel_id] = [datetime.now(), datetime.now()]
-
 # 구분
 
 @tasks.loop(minutes=1)
@@ -5005,7 +4950,6 @@ async def cal_subway_fair():
                 
                 hours = time_difference.seconds // 3600
                 minutes = (time_difference.seconds // 60) % 60
-                seconds = time_difference.seconds % 60
                 try:
                     # 노선 조회
                     c.execute("SELECT name FROM routes WHERE channel_id = ?", (channel_id,))

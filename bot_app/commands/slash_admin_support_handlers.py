@@ -339,7 +339,7 @@ async def run_developer_command_slash_command(
             try:
                 await channel.send(f"<@{guild.owner_id}>", embed=embed, view=context["enable_anti_nuke_button_temp"]())
                 print(f"서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) - 전송 성공")
-            except Exception as error:
+            except Exception:
                 try:
                     await channel.send(embed=embed, view=context["enable_anti_nuke_button_temp"]())
                     print(f"서버 {guild.name} ({server_id}) / 채널 {channel.name} ({channel_id}) - 무멘션 전송 성공")

@@ -102,25 +102,25 @@ async def process_attendance_reward(
         return AttendanceRewardResult(status="xp_disabled")
 
     settings = await repository.get_attendance_settings(server_id)
-    if settings["on_off"] is False:
+    if settings.on_off is False:
         return AttendanceRewardResult(status="attendance_disabled")
 
-    attendance_check, streak = repository.process_attendance(server_id, user_id)
-    if not attendance_check:
-        return AttendanceRewardResult(status="already_checked", streak=streak)
+    attendance_result = repository.process_attendance(server_id, user_id)
+    if not attendance_result.checked:
+        return AttendanceRewardResult(status="already_checked", streak=attendance_result.streak)
 
     streak_bonus = 0
     if server_id == using_server:
-        if streak > 1:
+        if attendance_result.streak > 1:
             streak_bonus = rng.randrange(50, 101, 10)
-        if streak >= 7:
+        if attendance_result.streak >= 7:
             streak_bonus += rng.randrange(50, 151, 10)
-        if streak >= 14:
+        if attendance_result.streak >= 14:
             streak_bonus += rng.randrange(100, 201, 10)
-        if streak >= 30:
+        if attendance_result.streak >= 30:
             streak_bonus += rng.randrange(300, 501, 10)
 
-    check_xp = rng.randrange(settings["minimum"], settings["maximum"] + 1, settings["step"])
+    check_xp = rng.randrange(settings.minimum, settings.maximum + 1, settings.step)
 
     if server_id == using_server and server_booster_role_id in user_role_ids:
         boost_check_xp = rng.randrange(300, 1001, 10)
@@ -134,7 +134,7 @@ async def process_attendance_reward(
     unit = setting.unit
     return AttendanceRewardResult(
         status="success",
-        streak=streak,
+        streak=attendance_result.streak,
         check_xp=check_xp,
         boost_check_xp=boost_check_xp,
         streak_bonus=streak_bonus,

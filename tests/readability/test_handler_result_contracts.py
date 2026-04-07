@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from bot_app.types.readability_contracts import (
+    AttendanceProcessResult,
     AttendanceRewardResult,
+    AttendanceSettings,
     AutomodExecutionResult,
     AutomodExemptionResult,
     ErrorTrackedSlashCommandResult,
@@ -10,6 +12,8 @@ from bot_app.types.readability_contracts import (
     ModerationCommandResult,
     SlashCommandResult,
     UserBlockState,
+    UserClassificationResult,
+    WarningMutationSnapshot,
 )
 
 
@@ -77,6 +81,21 @@ def test_message_handler_result_contracts_are_named_and_readable():
 
     assert attendance_reward.status == "success"
     assert attendance_reward.total_xp == 120
+
+    attendance_settings = AttendanceSettings(
+        on_off=True,
+        minimum=100,
+        maximum=200,
+        step=10,
+    )
+    attendance_process = AttendanceProcessResult(checked=True, streak=3)
+    warning_mutation = WarningMutationSnapshot(old_count=1, delta=2, new_count=3)
+    classification = UserClassificationResult(status="premium", label="프리미엄 유저")
+
+    assert attendance_settings.maximum == 200
+    assert attendance_process.checked is True
+    assert warning_mutation.new_count == 3
+    assert classification.label == "프리미엄 유저"
 
 
 def test_main_connection_points_use_named_handler_results():

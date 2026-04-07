@@ -1,4 +1,5 @@
 from commands.database import add_blockhistory, add_warning, get_warn_max, load_warning, remove_warning, set_warning, update_warn_max
+from bot_app.types.readability_contracts import WarningMutationSnapshot
 
 
 class ModerationRepository:
@@ -6,10 +7,12 @@ class ModerationRepository:
         return get_warn_max(server_id)
 
     async def add_warning(self, server_id: int, user_id: int, amount: int):
-        return await add_warning(server_id, user_id, amount)
+        old_count, delta, new_count = await add_warning(server_id, user_id, amount)
+        return WarningMutationSnapshot(old_count=old_count, delta=delta, new_count=new_count)
 
     async def remove_warning(self, server_id: int, user_id: int, amount: int):
-        return await remove_warning(server_id, user_id, amount)
+        old_count, delta, new_count = await remove_warning(server_id, user_id, amount)
+        return WarningMutationSnapshot(old_count=old_count, delta=delta, new_count=new_count)
 
     async def reset_warning(self, server_id: int, user_id: int):
         return await set_warning(server_id, user_id, 0)

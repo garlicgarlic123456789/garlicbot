@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import discord
 
 from bot_app.services.settings_service import update_guild_log_channels

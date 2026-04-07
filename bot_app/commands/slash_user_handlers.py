@@ -193,7 +193,7 @@ async def run_user_profile_slash_command(
         xp_settings=context["xp_setting"],
     )
     warning_count = await get_user_warning_count(server_id=interaction.guild.id, user_id=target_user.id)
-    classification_status, classification_label = get_user_classification(
+    classification = get_user_classification(
         user=target_user,
         block_checker=context["is_blocked"],
     )
@@ -210,8 +210,8 @@ async def run_user_profile_slash_command(
             joined_at_label=None,
             warning_count=warning_count,
             restriction_status_label=await _resolve_ban_status_label(interaction.guild, target_user),
-            classification_status=classification_status,
-            classification_label=classification_label,
+            classification_status=classification.status,
+            classification_label=classification.label,
         )
     else:
         profile_snapshot = build_user_profile_snapshot(
@@ -223,8 +223,8 @@ async def run_user_profile_slash_command(
             joined_at_label=_format_datetime_label(resolved_member.joined_at, kst),
             warning_count=warning_count,
             restriction_status_label=_resolve_timeout_status_label(resolved_member),
-            classification_status=classification_status,
-            classification_label=classification_label,
+            classification_status=classification.status,
+            classification_label=classification.label,
         )
 
     await interaction.followup.send(embed=_build_user_profile_embed(profile_snapshot))

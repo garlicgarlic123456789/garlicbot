@@ -7,6 +7,7 @@ from bot_app.services.user_service import (
     get_user_money_lookup,
 )
 from bot_app.types.readability_contracts import DisplayedXpSnapshot, UserMoneyLookupResult, UserProfileSnapshot
+from bot_app.types.readability_contracts import UserClassificationResult
 
 
 class FakeUserRepository:
@@ -53,17 +54,17 @@ def test_get_user_classification_prefers_blocked_then_premium_then_general():
         user=blocked_user,
         block_checker=lambda user: (True, "2099-01-01", "테스트"),
         repository=FakeUserRepository(premium=True),
-    ) == ("blocked", "이용제한 유저 (2099-01-01까지, 사유: 테스트)")
+    ) == UserClassificationResult(status="blocked", label="이용제한 유저 (2099-01-01까지, 사유: 테스트)")
     assert get_user_classification(
         user=premium_user,
         block_checker=lambda user: (False, None, None),
         repository=FakeUserRepository(premium=True),
-    ) == ("premium", "프리미엄 유저")
+    ) == UserClassificationResult(status="premium", label="프리미엄 유저")
     assert get_user_classification(
         user=general_user,
         block_checker=lambda user: (False, None, None),
         repository=FakeUserRepository(premium=False),
-    ) == ("general", "일반 유저")
+    ) == UserClassificationResult(status="general", label="일반 유저")
 
 
 def test_get_displayed_profile_xp_snapshot_preserves_legacy_month_display():
