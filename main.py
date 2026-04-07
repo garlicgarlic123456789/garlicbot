@@ -4951,86 +4951,92 @@ async def cal_subway_fair():
                 hours = time_difference.seconds // 3600
                 minutes = (time_difference.seconds // 60) % 60
                 try:
-                    # 노선 조회
-                    c.execute("SELECT name FROM routes WHERE channel_id = ?", (channel_id,))
-                    rows = c.fetchall()
-                    
-                    if rows:
-                        route_names = [row[0] for row in rows]
+                    with sqlite3.connect("garlicbot.db", isolation_level=None) as conn:
+                        route_cursor = conn.cursor()
+
+                        # 노선 조회
+                        route_cursor.execute("SELECT name FROM routes WHERE channel_id = ?", (channel_id,))
+                        rows = route_cursor.fetchall()
                         
-                        # 랜덤 노선 선택
-                        route_name = random.choice(route_names)
-                        
-                        # 운임 계산 및 지급 로직
-                        c.execute("SELECT dispatch_interval, train FROM routes WHERE name = ? AND channel_id = ?", (route_name, channel_id))
-                        route_info = c.fetchone()
-                        
-                        if route_info:
-                            dispatch_interval, train_name = route_info
+                        if rows:
+                            route_names = [row[0] for row in rows]
+                            
+                            # 랜덤 노선 선택
+                            route_name = random.choice(route_names)
+                            
+                            # 운임 계산 및 지급 로직
+                            route_cursor.execute(
+                                "SELECT dispatch_interval, train FROM routes WHERE name = ? AND channel_id = ?",
+                                (route_name, channel_id),
+                            )
+                            route_info = route_cursor.fetchone()
+                            
+                            if route_info:
+                                dispatch_interval, train_name = route_info
 
-                            # 이동 시간을 랜덤하게 계산 (3분 기준)
-                            moved_time = hours * 60 + minutes  # 1~10분 사이의 이동 시간
+                                # 이동 시간을 랜덤하게 계산 (3분 기준)
+                                moved_time = hours * 60 + minutes  # 1~10분 사이의 이동 시간
 
-                            if train_name == "중전철" or train_name == "경전철":
-                                # 이동한 시간 기반으로 이동한 역의 개수를 계산
-                                station_cnt = moved_time // random.randint(1, 4)
+                                if train_name == "중전철" or train_name == "경전철":
+                                    # 이동한 시간 기반으로 이동한 역의 개수를 계산
+                                    station_cnt = moved_time // random.randint(1, 4)
 
-                                # 이동한 역의 개수를 기반으로 이동한 거리를 계산
-                                moved_distance = station_cnt * round(random.uniform(0.4, 2.5), 1)
+                                    # 이동한 역의 개수를 기반으로 이동한 거리를 계산
+                                    moved_distance = station_cnt * round(random.uniform(0.4, 2.5), 1)
 
-                                # 이동한 거리를 바탕으로 운임 계산하기 전에 어른, 청소년, 어린이 중 하나를 랜덤하게 지정
-                                temp = random.randint(1, 101)
+                                    # 이동한 거리를 바탕으로 운임 계산하기 전에 어른, 청소년, 어린이 중 하나를 랜덤하게 지정
+                                    temp = random.randint(1, 101)
 
-                                fair = 0 # 운임
+                                    fair = 0 # 운임
 
-                                if temp <= 85 : # 85% 확률로 성인 운임
-                                    moved_distance -= 10
-                                    fair += 1400 # 성인 기본운임 적용
-                                    if moved_distance > 40 :
-                                        fair += 800
-                                        moved_distance -= 40
-                                        fair += moved_distance // 8 * 100
-                                    elif moved_distance > 0 : 
-                                        fair += moved_distance // 5 * 100
-                                elif temp <= 92 : # 7% 확률로 청소년 운임
-                                    moved_distance -= 10
-                                    fair += 800 # 청소년 기본운임 적용
-                                    if moved_distance > 40 :
-                                        fair += 640
-                                        moved_distance -= 40
-                                        fair += moved_distance // 8 * 80
-                                    elif moved_distance > 0 : 
-                                        fair += moved_distance // 5 * 80
-                                elif temp <= 97 : # 5% 확률로 어린이 운임
-                                    moved_distance -= 10
-                                    fair += 500 # 어린이 기본운임 적용
-                                    if moved_distance > 40 :
-                                        fair += 400
-                                        moved_distance -= 40
-                                        fair += moved_distance // 8 * 50
-                                    elif moved_distance > 0 : 
-                                        fair += moved_distance // 5 * 50
-                                else : # 3% 확률로 만 65세 이상 운임
-                                    fair = 0
+                                    if temp <= 85 : # 85% 확률로 성인 운임
+                                        moved_distance -= 10
+                                        fair += 1400 # 성인 기본운임 적용
+                                        if moved_distance > 40 :
+                                            fair += 800
+                                            moved_distance -= 40
+                                            fair += moved_distance // 8 * 100
+                                        elif moved_distance > 0 : 
+                                            fair += moved_distance // 5 * 100
+                                    elif temp <= 92 : # 7% 확률로 청소년 운임
+                                        moved_distance -= 10
+                                        fair += 800 # 청소년 기본운임 적용
+                                        if moved_distance > 40 :
+                                            fair += 640
+                                            moved_distance -= 40
+                                            fair += moved_distance // 8 * 80
+                                        elif moved_distance > 0 : 
+                                            fair += moved_distance // 5 * 80
+                                    elif temp <= 97 : # 5% 확률로 어린이 운임
+                                        moved_distance -= 10
+                                        fair += 500 # 어린이 기본운임 적용
+                                        if moved_distance > 40 :
+                                            fair += 400
+                                            moved_distance -= 40
+                                            fair += moved_distance // 8 * 50
+                                        elif moved_distance > 0 : 
+                                            fair += moved_distance // 5 * 50
+                                    else : # 3% 확률로 만 65세 이상 운임
+                                        fair = 0
 
-                                # 노선 소유자 조회
-                                c.execute("""
-                                    SELECT owner_id
-                                    FROM routes
-                                    WHERE name = ? AND channel_id = ?
-                                """, (route_name, channel_id))
-                                
-                                result = c.fetchone()
+                                    # 노선 소유자 조회
+                                    route_cursor.execute("""
+                                        SELECT owner_id
+                                        FROM routes
+                                        WHERE name = ? AND channel_id = ?
+                                    """, (route_name, channel_id))
+                                    
+                                    result = route_cursor.fetchone()
 
-                                if result:
-                                    owner_id = result[0]
+                                    if result:
+                                        owner_id = result[0]
 
-                                    # 노선 소유자에게 운임 지급
-                                    c.execute("""
-                                        UPDATE users 
-                                        SET money = money + ? 
-                                        WHERE user_id = ?
-                                    """, (fair, owner_id))
+                                        # 노선 소유자에게 운임 지급
+                                        route_cursor.execute("""
+                                            UPDATE users 
+                                            SET money = money + ? 
+                                            WHERE user_id = ?
+                                        """, (fair, owner_id))
 
                         # 채팅 시간 기록 삭제
                         del chattime[user_id][channel_id]
