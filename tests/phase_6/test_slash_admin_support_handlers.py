@@ -847,6 +847,7 @@ async def test_main_developer_command_wrapper_passes_runtime_context_to_helper()
 
 def test_main_uses_admin_support_helpers_instead_of_direct_wave3_bodies():
     source = Path("main.py").read_text(encoding="utf-8")
+    archive = Path("bot_app/legacy/main_inactive_archive.md").read_text(encoding="utf-8")
     assert "from bot_app.commands.slash_admin_support_handlers import (" in source
     assert "await run_developer_command_slash_command(" in source
     assert "await run_resolve_post_slash_command(" in source
@@ -854,7 +855,9 @@ def test_main_uses_admin_support_helpers_instead_of_direct_wave3_bodies():
     assert "await run_role_info_slash_command(" in source
     assert "await run_set_invite_route_memo_slash_command(" in source
     assert "await run_check_invite_route_slash_command(" in source
-    assert "await run_delete_blockhistory_entry_slash_command(" in source
-    assert "await run_add_blockhistory_entry_slash_command(" in source
+    assert "await run_delete_blockhistory_entry_slash_command(" not in source
+    assert "await run_add_blockhistory_entry_slash_command(" not in source
+    assert "await run_delete_blockhistory_entry_slash_command(" in archive
+    assert "await run_add_blockhistory_entry_slash_command(" in archive
     assert '@bot.tree.command(name = "구분역할설정"' not in source
     assert '@bot.tree.command(name="채널백업"' not in source

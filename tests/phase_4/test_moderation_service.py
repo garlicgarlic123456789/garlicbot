@@ -577,12 +577,12 @@ def test_main_slash_moderation_commands_use_service_boundary():
     timeout_start = source.index('async def timeout(interaction: discord.Interaction, 사용자: discord.Member, 시간: int, 단위: str = "분", 사유: str = "None", 개인응답: str = "False"):')
     timeout_end = source.index('@bot.tree.command(name="타임아웃해제"', timeout_start)
     remove_timeout_start = source.index('async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Member, 사유: str = "None"):')
-    legacy_block_end = source.index("'''", remove_timeout_start)
 
     warn_source = source[warn_start:warn_end]
     unwarn_source = source[unwarn_start:unwarn_end]
     timeout_source = source[timeout_start:timeout_end]
-    remove_timeout_source = source[remove_timeout_start:legacy_block_end]
+    remove_timeout_end = source.index('@bot.tree.command(name="동일인여부확인"', remove_timeout_start)
+    remove_timeout_source = source[remove_timeout_start:remove_timeout_end]
 
     assert "from bot_app.commands.slash_moderation_handlers import (" in source
     assert "run_warn_slash_command(" in warn_source

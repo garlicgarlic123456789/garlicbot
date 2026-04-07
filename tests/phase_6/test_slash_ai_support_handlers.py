@@ -347,6 +347,7 @@ async def test_main_wave6_wrappers_delegate_to_ai_support_helpers():
 
 def test_phase6_inactive_legacy_commands_are_not_runtime_active():
     source = Path("main.py").read_text(encoding="utf-8")
+    archive = Path("bot_app/legacy/main_inactive_archive.md").read_text(encoding="utf-8")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", SyntaxWarning)
         module_ast = ast.parse(source)
@@ -363,16 +364,21 @@ def test_phase6_inactive_legacy_commands_are_not_runtime_active():
     assert "link_check" not in function_names
     assert "minecraft" not in function_names
 
-    for command_name in (
-        "권한회수",
-        "익명채팅설정",
-        "익명채팅",
-        "호감도확인",
-        "호감도추가",
-        "임베드출력",
-        "링크검사",
-    ):
-        assert command_name in source
+    assert '@bot.tree.command(name="권한회수"' not in source
+    assert '@bot.tree.command(name = "익명채팅설정"' not in source
+    assert '@bot.tree.command(name = "익명채팅"' not in source
+    assert '@bot.tree.command(name = "호감도확인"' not in source
+    assert '@bot.tree.command(name = "호감도추가"' not in source
+    assert '@bot.tree.command(name = "임베드출력"' not in source
+    assert '@bot.tree.command(name = "링크검사"' not in source
+
+    assert '@bot.tree.command(name="권한회수"' in archive
+    assert '@bot.tree.command(name = "익명채팅설정"' in archive
+    assert '@bot.tree.command(name = "익명채팅"' in archive
+    assert '@bot.tree.command(name = "호감도확인"' in archive
+    assert '@bot.tree.command(name = "호감도추가"' in archive
+    assert '@bot.tree.command(name = "임베드출력"' in archive
+    assert '@bot.tree.command(name = "링크검사"' in archive
 
 
 @pytest.mark.asyncio

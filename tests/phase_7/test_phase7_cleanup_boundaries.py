@@ -120,3 +120,41 @@ def test_phase7_main_drops_dead_handler_imports_from_removed_runtime_paths():
     assert "run_check_likeability_slash_command" not in import_block
     assert "run_embed_output_slash_command" not in import_block
     assert "run_link_check_slash_command" not in import_block
+
+
+def test_phase7_removed_low_value_legacy_blocks_do_not_return():
+    source = Path("main.py").read_text(encoding="utf-8")
+
+    assert 'model_name = "google/gemma-2-2b-it"' not in source
+    assert "def send_email(sender_name, sender_display_name, sender_id, content):" not in source
+    assert "VOICE_CHANNEL_IDS =" not in source
+    assert 'async def 이메일전송(interaction: discord.Interaction, 내용: str):' not in source
+    assert '@bot.tree.command(name = "광질"' not in source
+
+
+def test_phase7_main_collapses_duplicate_helpers_to_single_definition():
+    source = Path("main.py").read_text(encoding="utf-8")
+
+    assert source.count("def load_data():") == 1
+    assert source.count("def save_data(data):") == 1
+    assert source.count("def load_blocked_users():") == 1
+    assert source.count("def save_blocked_users(blocked_users):") == 1
+
+
+def test_phase7_archives_high_value_inactive_legacy_blocks_outside_main():
+    source = Path("main.py").read_text(encoding="utf-8")
+    archive = Path("bot_app/legacy/main_inactive_archive.md").read_text(encoding="utf-8")
+
+    assert 'elif 버전 == "v2"' not in source
+    assert '@bot.tree.command(name="권한회수"' not in source
+    assert '@bot.tree.command(name = "익명채팅설정"' not in source
+    assert '@bot.tree.command(name = "익명채팅"' not in source
+    assert '@bot.tree.command(name = "호감도확인"' not in source
+    assert '@bot.tree.command(name = "호감도추가"' not in source
+    assert '@bot.tree.command(name = "임베드출력"' not in source
+    assert '@bot.tree.command(name = "링크검사"' not in source
+
+    assert 'elif 버전 == "v2"' in archive
+    assert '@bot.tree.command(name="권한회수"' in archive
+    assert '@bot.tree.command(name = "익명채팅설정"' in archive
+    assert '@bot.tree.command(name = "익명채팅"' in archive
