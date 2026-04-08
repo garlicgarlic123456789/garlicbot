@@ -69,7 +69,7 @@ def get_displayed_profile_xp_snapshot(
         return None
 
     total_xp = xp_data_repository.get_xp(server_id, user_id)
-    displayed_month_xp = xp_data_repository.get_xp(server_id, user_id)
+    displayed_month_xp = xp_data_repository.get_month_xp(server_id, user_id)
     return DisplayedXpSnapshot(
         total_xp=total_xp,
         displayed_month_xp=displayed_month_xp,

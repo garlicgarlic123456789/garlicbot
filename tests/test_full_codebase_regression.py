@@ -126,8 +126,9 @@ os.environ.setdefault("OPENAI_API_KEY", "dummy-openai-key")
 os.environ.setdefault("train_timetable_api", "dummy-train-timetable-key")
 os.environ.setdefault("train_arrivals_api", "dummy-train-arrivals-key")
 
+warnings.simplefilter("error")
 warnings.filterwarnings("ignore", category=DeprecationWarning, module=r"discord\\.player")
-warnings.filterwarnings("ignore", category=FutureWarning, module=r"google\\.generativeai(\\..*)?")
+warnings.filterwarnings("ignore", category=FutureWarning, message=r"[\\s\\S]*google\\.generativeai[\\s\\S]*")
 
 module_names = []
 for package_name in ("bot_app", "commands"):
@@ -175,6 +176,7 @@ async def test_main_user_profile_wrapper_reaches_real_handler_and_services(monke
         ),
     )
     monkeypatch.setattr(xp_repository, "get_xp", lambda server_id, user_id: 1200)
+    monkeypatch.setattr(xp_repository, "get_month_xp", lambda server_id, user_id: 450)
 
     namespace = {
         "discord": discord,
@@ -206,8 +208,9 @@ async def test_main_user_profile_wrapper_reaches_real_handler_and_services(monke
     assert embed.title == "양파님의 정보"
     assert embed.fields[0].value == "`20`"
     assert embed.fields[3].value == "<@&2>, <@&1>"
-    assert embed.fields[4].value == f"{return_level(1200)} 레벨 (월간 레벨: {return_level(1200)} 레벨)"
+    assert embed.fields[4].value == f"{return_level(1200)} 레벨 (월간 레벨: {return_level(450)} 레벨)"
     assert "1200 XP" in embed.fields[5].value
+    assert "450 XP" in embed.fields[5].value
     assert "- 부여된 경고: 3개" in embed.fields[8].value
     assert "타임아웃 중 (" in embed.fields[8].value
     assert embed.fields[9].value == "프리미엄 유저"

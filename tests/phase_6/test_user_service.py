@@ -28,13 +28,18 @@ class FakeXpSettingRepository:
 
 
 class FakeXpDataRepository:
-    def __init__(self, *, xp: int):
+    def __init__(self, *, xp: int, month_xp: int):
         self.xp = xp
+        self.month_xp = month_xp
         self.calls = []
 
     def get_xp(self, server_id: int, user_id: int) -> int:
-        self.calls.append((server_id, user_id))
+        self.calls.append(("get_xp", server_id, user_id))
         return self.xp
+
+    def get_month_xp(self, server_id: int, user_id: int) -> int:
+        self.calls.append(("get_month_xp", server_id, user_id))
+        return self.month_xp
 
 
 def test_get_user_money_lookup_returns_found_and_missing_statuses():
@@ -67,8 +72,8 @@ def test_get_user_classification_prefers_blocked_then_premium_then_general():
     ) == UserClassificationResult(status="general", label="일반 유저")
 
 
-def test_get_displayed_profile_xp_snapshot_preserves_legacy_month_display():
-    xp_data_repository = FakeXpDataRepository(xp=1200)
+def test_get_displayed_profile_xp_snapshot_reads_distinct_month_xp():
+    xp_data_repository = FakeXpDataRepository(xp=1200, month_xp=450)
 
     result = get_displayed_profile_xp_snapshot(
         server_id=1,
@@ -81,12 +86,12 @@ def test_get_displayed_profile_xp_snapshot_preserves_legacy_month_display():
 
     assert result == DisplayedXpSnapshot(
         total_xp=1200,
-        displayed_month_xp=1200,
+        displayed_month_xp=450,
         total_level=12,
-        displayed_month_level=12,
+        displayed_month_level=4,
         unit="XP",
     )
-    assert xp_data_repository.calls == [(1, 20), (1, 20)]
+    assert xp_data_repository.calls == [("get_xp", 1, 20), ("get_month_xp", 1, 20)]
 
 
 def test_build_user_profile_snapshot_returns_named_contract():

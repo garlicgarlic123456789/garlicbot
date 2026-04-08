@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import copy
 import warnings
 from pathlib import Path
@@ -14,7 +15,7 @@ from bot_app.commands.slash_ai_high_risk_handlers import (
     run_same_person_check_slash_command,
 )
 from bot_app.services.ai_high_risk_service import build_mining_help_response
-from bot_app.types.readability_contracts import SlashCommandResult
+from bot_app.types.readability_contracts import ErrorTrackedSlashCommandResult, SlashCommandResult
 
 
 class FakeResponse:
@@ -37,6 +38,14 @@ class FakeFollowup:
         self.sent.append({"content": content, "embed": embed, "ephemeral": ephemeral, "view": view})
 
 
+class FakeMessage:
+    def __init__(self):
+        self.replies = []
+
+    async def reply(self, content=None, *, embed=None, mention_author=False):
+        self.replies.append({"content": content, "embed": embed, "mention_author": mention_author})
+
+
 class FakeUser:
     def __init__(self, user_id: int, *, display_name: str = "사용자"):
         self.id = user_id
@@ -48,8 +57,13 @@ class FakeInteraction:
     def __init__(self, *, user, guild):
         self.user = user
         self.guild = guild
+        self.channel = SimpleNamespace(id=55)
         self.response = FakeResponse()
         self.followup = FakeFollowup()
+        self._original_response = FakeMessage()
+
+    async def original_response(self):
+        return self._original_response
 
 
 def _extract_main_wrapper(function_name: str):
@@ -66,41 +80,51 @@ def _extract_main_wrapper(function_name: str):
 
 
 @pytest.mark.asyncio
-async def test_same_person_helper_delegates_to_service(monkeypatch):
+async def test_same_person_helper_executes_bot_app_owned_flow():
     interaction = FakeInteraction(user=FakeUser(10), guild=SimpleNamespace(id=1))
-    first_user = FakeUser(20, display_name="유저1")
-    second_user = FakeUser(30, display_name="유저2")
-    captured = {}
 
-    async def fake_delegate(**kwargs):
-        captured.update(kwargs)
-        return SlashCommandResult(status="completed", reason_code="same_person_delegated")
-
-    monkeypatch.setattr(handlers_module, "delegate_same_person_check", fake_delegate)
+    class FakeModel:
+        def generate_content(self, prompt: str):
+            assert "유저1" in prompt and "유저2" in prompt
+            return SimpleNamespace(text="동일인 가능성: 42")
 
     result = await run_same_person_check_slash_command(
         interaction,
-        first_user=first_user,
-        second_user=second_user,
-        context={"same_person_handler": object()},
+        first_user=FakeUser(20, display_name="유저1"),
+        second_user=FakeUser(30, display_name="유저2"),
+        context={
+                "developer": 10,
+                "bot": object(),
+                "load_user_messages": lambda bot, first_id, second_id, guild_id: (
+                asyncio.sleep(0, result=("메시지" * 10, "테스트" * 10))
+            ),
+                "two_five_lite_model": FakeModel(),
+                "error_state": {"count": 3},
+        },
     )
 
-    assert result == SlashCommandResult(status="completed", reason_code="same_person_delegated")
-    assert captured["interaction"] is interaction
-    assert captured["first_user"] is first_user
-    assert captured["second_user"] is second_user
+    assert result == ErrorTrackedSlashCommandResult(status="completed", error_count=3, reason_code="same_person_completed")
+    assert interaction.response.sent == [{"content": "처리 중입니다.", "embed": None, "ephemeral": False}]
+    assert interaction._original_response.replies[0]["embed"].title == "성공"
 
 
 @pytest.mark.asyncio
-async def test_judge_helper_delegates_to_service(monkeypatch):
+async def test_judge_helper_dispatches_to_version_specific_runner(monkeypatch):
     interaction = FakeInteraction(user=FakeUser(10), guild=SimpleNamespace(id=1))
     captured = {}
 
-    async def fake_delegate(**kwargs):
-        captured.update(kwargs)
-        return SlashCommandResult(status="completed", reason_code="judge_delegated")
+    async def fake_v4(interaction_arg, *, start_message_link, end_message_link, context):
+        captured.update(
+            {
+                "interaction": interaction_arg,
+                "start_message_link": start_message_link,
+                "end_message_link": end_message_link,
+                "context": context,
+            }
+        )
+        return ErrorTrackedSlashCommandResult(status="completed", error_count=7, reason_code="judge_completed")
 
-    monkeypatch.setattr(handlers_module, "delegate_judge_command", fake_delegate)
+    monkeypatch.setattr(handlers_module, "_run_judge_v4", fake_v4)
 
     result = await run_judge_slash_command(
         interaction,
@@ -108,42 +132,61 @@ async def test_judge_helper_delegates_to_service(monkeypatch):
         end_message_link="end",
         private_reply="True",
         version="v4",
-        context={"judge_handler": object()},
+        context={"error_state": {"count": 7}},
     )
 
-    assert result == SlashCommandResult(status="completed", reason_code="judge_delegated")
+    assert result == ErrorTrackedSlashCommandResult(status="completed", error_count=7, reason_code="judge_completed")
+    assert interaction.response.deferred == [{"ephemeral": True}]
+    assert captured["interaction"] is interaction
     assert captured["start_message_link"] == "start"
     assert captured["end_message_link"] == "end"
-    assert captured["private_reply"] == "True"
-    assert captured["version"] == "v4"
 
 
 @pytest.mark.asyncio
-async def test_generative_ai_helper_delegates_to_service(monkeypatch):
+async def test_generative_ai_helper_executes_model_branch_without_main_callback():
     interaction = FakeInteraction(user=FakeUser(10), guild=SimpleNamespace(id=1))
-    fake_attachment = SimpleNamespace(filename="sample.png", url="https://example.com/sample.png")
-    captured = {}
 
-    async def fake_delegate(**kwargs):
-        captured.update(kwargs)
-        return SlashCommandResult(status="completed", reason_code="generative_ai_delegated")
-
-    monkeypatch.setattr(handlers_module, "delegate_generative_ai_command", fake_delegate)
+    class FakeModel:
+        def generate_content(self, prompt: str):
+            assert prompt == "질문"
+            return SimpleNamespace(text="답변")
 
     result = await run_generative_ai_slash_command(
         interaction,
         prompt_text="질문",
-        model_name="GPT-5.1",
-        attachment=fake_attachment,
+        model_name="Gemini 2.5 Flash Lite",
+        attachment=None,
         reasoning_effort="medium",
-        context={"generative_ai_handler": object()},
+        context={
+            "is_blocked": lambda user: (False, None, None),
+            "developer": 999,
+            "get_premium": lambda user_id: False,
+            "ai_cooldowns": {},
+            "o3_cooldowns": {},
+            "gpt_4_1_cooldowns": {},
+            "COOLDOWN_DURATION": 15,
+            "o3_cooldowns_d": 60,
+            "gpt_4_1_cooldowns_d": 60,
+            "model": object(),
+            "two_model": object(),
+            "two_lite_model": object(),
+            "two_five_lite_model": FakeModel(),
+            "gemini_client": object(),
+            "cute_model": object(),
+            "judge_model": object(),
+            "cute_model3": object(),
+            "gpt_chat_threads": {},
+            "get_gpt_chat_thread": lambda user_id: None,
+            "update_gpt_chat_thread": lambda user_id, response_id: None,
+            "client": object(),
+            "gpt_client": object(),
+            "error_state": {"count": 5},
+        },
     )
 
-    assert result == SlashCommandResult(status="completed", reason_code="generative_ai_delegated")
-    assert captured["prompt_text"] == "질문"
-    assert captured["model_name"] == "GPT-5.1"
-    assert captured["attachment"] is fake_attachment
-    assert captured["reasoning_effort"] == "medium"
+    assert result == ErrorTrackedSlashCommandResult(status="completed", error_count=5, reason_code="generative_ai_completed")
+    assert interaction.response.deferred == [{"ephemeral": False}]
+    assert interaction.followup.sent[0]["embed"].title == "성공"
 
 
 @pytest.mark.asyncio
@@ -217,32 +260,20 @@ def test_mining_help_service_preserves_legacy_active_text():
     )
 
 
-def test_wave7_helper_source_keeps_service_boundary_calls():
+def test_ai_high_risk_helper_source_owns_runtime_logic():
     source = Path("bot_app/commands/slash_ai_high_risk_handlers.py").read_text(encoding="utf-8")
-    module_ast = ast.parse(source)
 
-    expected_calls = {
-        "run_same_person_check_slash_command": "delegate_same_person_check",
-        "run_judge_slash_command": "delegate_judge_command",
-        "run_generative_ai_slash_command": "delegate_generative_ai_command",
-        "run_mining_help_slash_command": "build_mining_help_response",
-    }
-
-    function_nodes = {
-        node.name: node for node in module_ast.body if isinstance(node, ast.AsyncFunctionDef)
-    }
-    for function_name, callee_name in expected_calls.items():
-        function_node = function_nodes[function_name]
-        called_names = {
-            call.func.id
-            for call in ast.walk(function_node)
-            if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
-        }
-        assert callee_name in called_names
+    assert "delegate_same_person_check" not in source
+    assert "delegate_judge_command" not in source
+    assert "delegate_generative_ai_command" not in source
+    assert "load_user_messages" in source
+    assert "create_judge4_chain1" in source
+    assert "client\"].responses.create" in source
+    assert "build_mining_help_response" in source
 
 
 @pytest.mark.asyncio
-async def test_main_wave7_wrappers_delegate_to_ai_high_risk_helpers():
+async def test_main_wave7_wrappers_build_runtime_context_without_legacy_callbacks():
     source = Path("main.py").read_text(encoding="utf-8")
     wrappers = {
         "oritest": _extract_main_wrapper("oritest"),
@@ -252,22 +283,49 @@ async def test_main_wave7_wrappers_delegate_to_ai_high_risk_helpers():
     }
     captured = {}
 
-    async def fake_helper(*args, **kwargs):
+    async def fake_tracked_helper(*args, **kwargs):
         captured["args"] = args
         captured["kwargs"] = kwargs
-        return SlashCommandResult(status="completed", reason_code="delegated")
+        return ErrorTrackedSlashCommandResult(status="completed", error_count=99, reason_code="delegated")
 
     namespace = {
         "discord": SimpleNamespace(Interaction=object, User=object, Attachment=object),
-        "run_same_person_check_slash_command": fake_helper,
-        "run_judge_slash_command": fake_helper,
-        "run_generative_ai_slash_command": fake_helper,
-        "run_mining_help_slash_command": fake_helper,
-        "_legacy_same_person_check": object(),
-        "_legacy_judgement_command": object(),
-        "_legacy_generative_ai_command": object(),
-        "using_server": 1,
+        "run_same_person_check_slash_command": fake_tracked_helper,
+        "run_judge_slash_command": fake_tracked_helper,
+        "run_generative_ai_slash_command": fake_tracked_helper,
+        "run_mining_help_slash_command": fake_tracked_helper,
+        "developer": 1,
+        "bot": object(),
+        "load_user_messages": object(),
+        "two_five_lite_model": object(),
         "is_blocked": object(),
+        "get_server_rules": object(),
+        "fetch_messages": object(),
+        "create_chain1": object(),
+        "create_chain2": object(),
+        "create_judge4_chain1": object(),
+        "create_judge4_chain2": object(),
+        "get_premium": object(),
+        "ai_cooldowns": {},
+        "o3_cooldowns": {},
+        "gpt_4_1_cooldowns": {},
+        "COOLDOWN_DURATION": 15,
+        "o3_cooldowns_d": 60,
+        "gpt_4_1_cooldowns_d": 60,
+        "model": object(),
+        "two_model": object(),
+        "two_lite_model": object(),
+        "gemini_client": object(),
+        "cute_model": object(),
+        "judge_model": object(),
+        "cute_model3": object(),
+        "gpt_chat_threads": {},
+        "get_gpt_chat_thread": object(),
+        "update_gpt_chat_thread": object(),
+        "client": object(),
+        "gpt_client": object(),
+        "using_server": 1,
+        "error": 5,
     }
 
     for wrapper_module in wrappers.values():
@@ -277,16 +335,22 @@ async def test_main_wave7_wrappers_delegate_to_ai_high_risk_helpers():
 
     interaction = FakeInteraction(user=FakeUser(10), guild=SimpleNamespace(id=1))
     await namespace["oritest"](interaction, FakeUser(20), FakeUser(30))
-    assert captured["kwargs"]["first_user"].id == 20
-    assert captured["kwargs"]["context"]["same_person_handler"] is namespace["_legacy_same_person_check"]
+    assert captured["kwargs"]["context"]["developer"] == 1
+    assert captured["kwargs"]["context"]["load_user_messages"] is namespace["load_user_messages"]
+    assert "same_person_handler" not in captured["kwargs"]["context"]
+    assert namespace["error"] == 99
 
     await namespace["judgement_"](interaction, "start", "end", "True", "v4")
-    assert captured["kwargs"]["start_message_link"] == "start"
-    assert captured["kwargs"]["context"]["judge_handler"] is namespace["_legacy_judgement_command"]
+    assert captured["kwargs"]["context"]["create_judge4_chain1"] is namespace["create_judge4_chain1"]
+    assert captured["kwargs"]["context"]["fetch_messages"] is namespace["fetch_messages"]
+    assert "judge_handler" not in captured["kwargs"]["context"]
+    assert namespace["error"] == 99
 
     await namespace["generative_ai"](interaction, "질문", "GPT-5.1", None, "medium")
-    assert captured["kwargs"]["prompt_text"] == "질문"
-    assert captured["kwargs"]["context"]["generative_ai_handler"] is namespace["_legacy_generative_ai_command"]
+    assert captured["kwargs"]["context"]["client"] is namespace["client"]
+    assert captured["kwargs"]["context"]["gpt_chat_threads"] is namespace["gpt_chat_threads"]
+    assert "generative_ai_handler" not in captured["kwargs"]["context"]
+    assert namespace["error"] == 99
 
     await namespace["mine_help"](interaction)
     assert captured["kwargs"]["context"]["using_server"] == 1

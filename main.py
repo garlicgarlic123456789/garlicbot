@@ -2217,14 +2217,21 @@ async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Me
 
 @bot.tree.command(name="동일인여부확인", description = "두 유저의 말투 비교를 통해 두 유저 간 말투를 비교하여 두 유저가 동일인일 가능성을 분석합니다.")
 async def oritest(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
-    await run_same_person_check_slash_command(
+    global error
+    same_person_context = {
+        "developer": developer,
+        "bot": bot,
+        "load_user_messages": load_user_messages,
+        "two_five_lite_model": two_five_lite_model,
+        "error_state": {"count": error},
+    }
+    same_person_result = await run_same_person_check_slash_command(
         interaction,
         first_user=유저명1,
         second_user=유저명2,
-        context={
-            "same_person_handler": _legacy_same_person_check,
-        },
+        context=same_person_context,
     )
+    error = same_person_result.error_count
 
 async def _legacy_same_person_check(interaction: discord.Interaction, 유저명1: discord.User, 유저명2: discord.User):
     if interaction.user.id != developer : 
@@ -2560,16 +2567,29 @@ def create_judge4_chain2(message, rule, rule_guide) :
     ]
 )
 async def judgement_(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v4"):
-    await run_judge_slash_command(
+    global error
+    judge_context = {
+        "developer": developer,
+        "is_blocked": is_blocked,
+        "get_server_rules": get_server_rules,
+        "bot": bot,
+        "fetch_messages": fetch_messages,
+        "create_chain1": create_chain1,
+        "create_chain2": create_chain2,
+        "create_judge4_chain1": create_judge4_chain1,
+        "create_judge4_chain2": create_judge4_chain2,
+        "two_five_lite_model": two_five_lite_model,
+        "error_state": {"count": error},
+    }
+    judge_result = await run_judge_slash_command(
         interaction,
         start_message_link=시작,
         end_message_link=끝,
         private_reply=개인응답,
         version=버전,
-        context={
-            "judge_handler": _legacy_judgement_command,
-        },
+        context=judge_context,
     )
+    error = judge_result.error_count
 
 async def _legacy_judgement_command(interaction: discord.Interaction, 시작: str, 끝: str = None, 개인응답: str = "False", 버전: str = "v4"):
     if 개인응답 == "False" : 
@@ -3459,16 +3479,41 @@ gpt_4_1_cooldowns_d = 60 * 15
     사고깊이 = "이 값은 모델이 얼마나 사고하고 답할지를 정합니다. 추론 모델에서만 효과가 있습니다. (선택)"
 )
 async def generative_ai(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, 사고깊이: str = "medium"):
-    await run_generative_ai_slash_command(
+    global error
+    generative_ai_context = {
+        "is_blocked": is_blocked,
+        "developer": developer,
+        "get_premium": get_premium,
+        "ai_cooldowns": ai_cooldowns,
+        "o3_cooldowns": o3_cooldowns,
+        "gpt_4_1_cooldowns": gpt_4_1_cooldowns,
+        "COOLDOWN_DURATION": COOLDOWN_DURATION,
+        "o3_cooldowns_d": o3_cooldowns_d,
+        "gpt_4_1_cooldowns_d": gpt_4_1_cooldowns_d,
+        "model": model,
+        "two_model": two_model,
+        "two_lite_model": two_lite_model,
+        "two_five_lite_model": two_five_lite_model,
+        "gemini_client": gemini_client,
+        "cute_model": cute_model,
+        "judge_model": judge_model,
+        "cute_model3": cute_model3,
+        "gpt_chat_threads": gpt_chat_threads,
+        "get_gpt_chat_thread": get_gpt_chat_thread,
+        "update_gpt_chat_thread": update_gpt_chat_thread,
+        "client": client,
+        "gpt_client": gpt_client,
+        "error_state": {"count": error},
+    }
+    generative_ai_result = await run_generative_ai_slash_command(
         interaction,
         prompt_text=프롬프트,
         model_name=모델,
         attachment=파일,
         reasoning_effort=사고깊이,
-        context={
-            "generative_ai_handler": _legacy_generative_ai_command,
-        },
+        context=generative_ai_context,
     )
+    error = generative_ai_result.error_count
 
 async def _legacy_generative_ai_command(interaction: discord.Interaction, 프롬프트: str, 모델: str = "GPT-5.1", 파일: discord.Attachment = None, 사고깊이: str = "medium"):
     # API 요청 보내기
