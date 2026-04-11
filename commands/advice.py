@@ -4,10 +4,9 @@
 # 3. 프롬프트 개선
 
 import discord
-from discord.ext import commands
-import google.generativeai as genai
-from google.genai import types
 import asyncio
+
+from bot_app.ai.gemini_runtime import genai
 
 async def collect_message(bot, interaction, start_message_link, end_message_link):
     start_message_channel = start_message_link.split("/")[-2]
@@ -109,7 +108,6 @@ async def advice_main(bot, interaction, original_message, message_provide, start
         embed = discord.Embed(title="완료", description=f"인공지능의 조언은 다음과 같습니다: \n\n{response}", color=int("a5f0ff", 16))
         await original_message.reply(embed = embed, mention_author=False)
         return
-
 
 
 
