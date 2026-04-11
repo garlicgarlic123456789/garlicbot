@@ -123,6 +123,8 @@ from bot_app.services.xp_service import (
     apply_message_xp,
 )
 
+from commands import add_remove_blockhistory
+
 from zoneinfo import ZoneInfo
 
 parser = argparse.ArgumentParser()
@@ -4944,6 +4946,7 @@ async def 유입경로확인(interaction: discord.Interaction, 사용자: discor
         },
     )
 
+'''
 @bot.tree.command(name="선로신설", description="해당 채널에 선로를 새로 건설합니다.")
 @app_commands.describe(name = "노선명", rail_cnt="선로 수 (예: 1은 단선, 2는 복선, 4는 복복선)")
 async def make_rail(interaction: discord.Interaction, name: str, rail_cnt: int):
@@ -5088,13 +5091,16 @@ async def cal_subway_fair():
                 
                 except Exception as e:
                     print(f"운임 계산 중 오류 발생: {e}")
+'''
 
+'''
 @bot.tree.command(name="정보", description="특정 사용자의 정보를 확인합니다.")
 async def info(interaction: discord.Interaction, 사용자: discord.Member):
     await run_info_slash_command(
         interaction,
         target_user=사용자,
     )
+'''
 register_log_events(
     bot,
     {
@@ -5162,6 +5168,8 @@ register_ready_events(
     },
 )
 register_known_commands(bot)
+
+add_remove_blockhistory.setup(bot)
 
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
