@@ -57,17 +57,14 @@ class xp_import_export(app_commands.Group) :
             await interaction.followup.send(embed = embed)
             return
         
-
-        await import_xp(interaction.guild.id, file, 옵션)
-
-        embed = discord.Embed(
-            title = "완료",
-            description = f"완료되었습니다.",
-            color = int("a5f0ff", 16)
-        )
-        '''
         try : 
             await import_xp(interaction.guild.id, file, option)
+            embed = discord.Embed(
+                title = "완료",
+                description = f"완료되었습니다.",
+                color = int("a5f0ff", 16)
+            )
+            await interatcion.followup.send(embed = embed)
         except Exception as e : 
             embed = discord.Embed(
                 title = "오류",
@@ -75,7 +72,6 @@ class xp_import_export(app_commands.Group) :
                 color = discord.Color.red()
             )
             await interaction.followup.send(embed = embed)
-            '''
 
     @app_commands.command(name = "내보내기", description = "경험치 데이터를 내보냅니다.")
     @app_commands.default_permissions(administrator = True)
