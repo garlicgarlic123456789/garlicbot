@@ -58,13 +58,14 @@ class xp_import_export(app_commands.Group) :
             return
         
         try : 
-            await import_xp(interaction.guild.id, file, option)
+            await import_xp(interaction.guild.id, file, 옵션)
             embed = discord.Embed(
                 title = "완료",
                 description = f"완료되었습니다.",
                 color = int("a5f0ff", 16)
             )
-            await interatcion.followup.send(embed = embed)
+            await interaction.followup.send(embed = embed)
+        
         except Exception as e : 
             embed = discord.Embed(
                 title = "오류",
