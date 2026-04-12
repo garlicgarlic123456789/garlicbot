@@ -1858,9 +1858,6 @@ async def attendance(interaction: discord.Interaction):
         },
     )
 
-
-
-
 @bot.tree.command(name="경험치확인", description = "특정 사용자의 경험치를 조회합니다.")
 async def check_exp(interaction: discord.Interaction, 사용자: discord.User = None):
     await run_check_xp_slash_command(
