@@ -26,6 +26,7 @@ from commands.mention_delay import mention_delay
 from commands.phrase import phrase
 from commands.summarize_command import summarize_command
 from commands.train_command import train_command
+from commands.xp_import_export import xp_import_export
 
 
 SETUP_COMMAND_MODULES = (
@@ -56,6 +57,7 @@ GROUP_COMMAND_FACTORIES = (
     autorole,
     phrase,
     chat_analyze,
+    xp_import_export,
 )
 
 
