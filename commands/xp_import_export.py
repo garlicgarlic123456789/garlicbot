@@ -21,7 +21,7 @@ class xp_import_export(app_commands.Group) :
     @app_commands.default_permissions(administrator = True)
     @app_commands.choices(
         옵션 = [
-            app_commands.Choice(name = "기존 경험치 데이터를 삭제하고 새 데이터를 추가 (권장)", value = "add"),
+            app_commands.Choice(name = "기존 경험치 데이터에 새 데이터를 추가", value = "add"),
             app_commands.Choice(name = "기존 경험치 데이터를 삭제하고 새 데이터로 대체", value = "overwrite"),
         ]
     )
