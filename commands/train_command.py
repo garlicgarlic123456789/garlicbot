@@ -12,6 +12,7 @@ import datetime
 import holidays
 from discord.ui import View, Button
 import base64
+from itertools import groupby
 
 class train_command(app_commands.Group) : 
     def __init__(self):
@@ -36,7 +37,7 @@ class train_command(app_commands.Group) :
 
         try : 
             transfer_info = fast_transfer[노선]
-        except Exception as e :
+        except Exception:
             await interaction.followup.send("**[오류!]** 노선 정보를 가져오는 도중 오류가 발생했습니다. 등록되지 않은 노선이거나 노선명이 유효하지 않은 경우 일반적으로 이 오류가 표시됩니다.")
             return
 
@@ -54,7 +55,7 @@ class train_command(app_commands.Group) :
             error += 1
             return
     
-    '''
+    r'''
     @app_commands.command(name = "도착정보", description = "수도권 전철 역의 전철 도착 정보를 확인합니다.")
     @app_commands.describe(역명 = "역명 (뒤에 \'역\' 자 제외)", 열차종류 = "확인할 열차의 종류 (선택 사항)", 행선지 = "확인할 열차의 행선지 (선택 사항)")
     @app_commands.choices(열차종류 = [app_commands.Choice(name="전체", value="전체"), app_commands.Choice(name="특급", value="특급"), app_commands.Choice(name="급행", value="급행"), app_commands.Choice(name="일반", value="일반")])
@@ -264,6 +265,71 @@ class train_command(app_commands.Group) :
         )
         await interaction.followup.send(embed=embed)
     '''
+
+    @app_commands.command(name = "수도권전철경로", description = "출발역과 도착역을 입력하고 수도권 전철 경로를 탐색합니다.")
+    @app_commands.choices(탐색옵션 = [
+        app_commands.Choice(name = "최소 시간", value = "duration"),
+        app_commands.Choice(name = "최소 환승", value = "transfer"),
+    ])
+    @app_commands.describe(
+        출발역 = "출발역 역명 (\'역\' 자 제외하고 입력)",
+        도착역 = "도착역 역명 (\'역\' 자 제외하고 입력)",
+        출발시각 = "출발 시각 (YYYY-MM-DD HH:MM:SS 형식)",
+        탐색옵션 = "경로 옵션",
+        개발자용 = "개발자용 옵션. 기본값은 False이며, 개발자의 확인 없이 활성화하지 않는 것을 권장합니다.",
+    )
+    async def find_way(self, interaction: discord.Interaction, 출발역: str, 도착역: str, 출발시각: str, 탐색옵션: str, 개발자용: bool = False) : 
+        await interaction.response.defer()
+
+        입력출발역 = 출발역
+        입력도착역 = 도착역
+
+        if 출발역 == "지하서울역" : 
+            출발역 = "서울역"
+        elif 출발역 == "지하수원" : 
+            출발역 = "수원"
+        elif 출발역 == "서울" : 
+            출발역 = "서울역"
+        elif 출발역 == "지하청량리" : 
+            출발역 = "청량리"
+        elif 출발역 == "지제" : 
+            출발역 = "평택지제"
+        
+        if 도착역 == "지하서울역" : 
+            도착역 = "서울역"
+        elif 도착역 == "지하수원" : 
+            도착역 = "수원"
+        elif 도착역 == "서울" : 
+            도착역 = "서울역"
+        elif 도착역 == "지하청량리" : 
+            도착역 = "청량리"
+        elif 도착역 == "지제" : 
+            도착역 = "평택지제"
+        try : 
+            result = await lookup_seoul_route(출발역, 도착역, 탐색옵션, 출발시각)
+        except Exception as e : 
+            embed = discord.Embed(
+                title = "오류",
+                description = "오류가 발생하였습니다. 올바르지 않은 역명을 입력했거나 지원되지 않는 노선(GTX-A)의 경로를 탐색하려 했을 수 있습니다.",
+                color = discord.Color.red()
+            )
+            await interaction.followup.send(embed = embed)
+            return
+
+        total_time = result["total_time"]
+        path = result["path"]
+        transfer_time = result["transfer_time"]
+
+        if 개발자용 : 
+            print(f"디버그 정보: {interaction.user.id}가 {입력출발역} → {입력도착역} 경로 탐색\n- 소요시간: {total_time}\n- 환승 횟수: {transfer_time}\n- 경로: 하단 참고\n\n{path}\n")
+        
+        embed = discord.Embed(
+            title = f"{입력출발역} → {입력도착역} 경로",
+            description = f"참고: 현재 API 제공자 사정으로 인해 GTX 경로는 제공되지 않습니다.\n\n- 소요시간: {total_time}\n- 환승 횟수: {transfer_time}\n- 경로: 하단 참고\n\n{path}",
+            color = int("a5f0ff", 16)
+        )
+        await interaction.followup.send(embed = embed)
+        return
     
     @app_commands.command(name = "레일블루정책확인", description = "철도 관련 명령어 중 레일블루 사이트에서 정보를 가져와서 제공되는 기능들에 대해 관련 정책을 확인합니다.")
     async def railblue_accept_command(self, interaction: discord.Interaction) : 
@@ -278,7 +344,7 @@ class train_command(app_commands.Group) :
             return
         embed = discord.Embed(
             title = "레일블루에서 제공되는 정보에 대한 정책",
-            description = "마늘이 봇의 철도 관련 기능 중 열차정보를 포함한 일부 기능은 레일블루 사이트의 허가 하에 레일블루 사이트의 정보를 가져오는 방식으로 제공되고 있습니다.\n\n레일블루 사이트 링크: <https://rail.blue/>\n\n1. 레일블루 사이트를 통해 마늘봇에서 출력되는 정보는 __실시간 정보가 아니며, 참고용으로만 사용하시기 바랍니다.__\n2. 제공되는 정보는 정보의 정확성, 신뢰성, 최신성을 보장하지 않습니다. 이 정보를 근거로 또는 이 정도에 관하여 철도 운영기관에 민원을 접수하지 마시기 바랍니다.\n3. 이 기능의 지원은 레일블루 사이트의 사정 등으로 인해 예고없이 중단될 수 있습니다.\n\n귀하께서는 이 동의를 거부할 권리가 있으나, 거부 시 관련 기능 이용이 제한될 수 있습니다. 이 사항에 동의하시는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의 의사를 표시할 수 있으며, 추후 동의를 철회하려는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의를 철회할 수 있습니다.",
+            description = "마늘이 봇의 철도 관련 기능 중 열차정보를 포함한 일부 기능은 레일블루 사이트의 허가 하에 레일블루 사이트의 정보를 가져오는 방식으로 제공되고 있습니다.\n\n레일블루 사이트 링크: <https://rail.blue/>\n\n1. 레일블루 사이트를 통해 마늘봇에서 출력되는 정보는 __실시간 정보임이 보장되지 않습니다. 참고용으로만 사용하시기 바랍니다.__\n2. 제공되는 정보는 정보의 정확성, 신뢰성, 최신성을 보장하지 않습니다. 이 정보를 근거로 또는 이 정도에 관하여 철도 운영기관에 민원을 접수하지 마시기 바랍니다.\n3. 레일블루 사이트의 허가 하에 레일블루 사이트의 정보를 불러와서 제공되는 기능이므로, 레일블루 사이트의 사정에 따라 예고없이 정보 제공이 중단될 수 있습니다.\n  - 별도의 허가 없이 레일블루 사이트 측의 정보를 활용하여 다른 서비스를 이용하는 것은 금지됩니다. [자세히 알아보기](https://rail.blue/railroad/logis/bbs/view.aspx?id=faq&no=8&lang=ko)\n\n귀하께서는 이 동의를 거부할 권리가 있으나, 거부 시 관련 기능 이용이 제한될 수 있습니다. 이 사항에 동의하시는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의 의사를 표시할 수 있으며, 추후 동의를 철회하려는 경우 </철도 레일블루정책동의:1391677509111644200> 명령어를 사용하여 동의를 철회할 수 있습니다.",
             color = int("a5f0ff", 16)
         )
         await interaction.followup.send(embed = embed)
@@ -424,7 +490,7 @@ class train_command(app_commands.Group) :
         down_list = train_list[1]
         link = train_list[2]
 
-        des = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n"
+        des = f"**__중요: 이 정보는 실시간 정보임이 보장되지 않습니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n"
 
         des += f"정보 출처: [레일블루 전철도착정보]({link})\n\n"
 
@@ -539,7 +605,6 @@ class train_command(app_commands.Group) :
             기준시각 = await today_to_text2()
             위치, 지연, 지연업데이트시각 = await get_train_info_railblue(열차번호, 날짜, interaction.user.id)
             timetable, delay = await get_train_timetable_railblue(열차번호, 날짜, interaction.user.id)
-            delay_old = 지연 # 레거시 방식의 지연시분 표시 방식대로 지연 정보 저장 (except문에서 사용)
             try : 
                 if delay is not None : 
                     timetable_delay_input_type = delay[1]
@@ -593,10 +658,10 @@ class train_command(app_commands.Group) :
                         정보출처 = f"레일블루 - {timetable_delay_input_type} (약 {str(int(total_minutes // 60))}시간 전 업데이트됨)"
                 else : 
                     정보출처 = "레일블루 - *(알 수 없음)*"
-            except Exception as e : 
+            except Exception:
                 embed2 = discord.Embed(
                     title = f"열차 #{열차번호} 정보",
-                    description = f"오류: 새로 업데이트된 열차 정보 표시 방식대로 열차 정보를 표시하는 도중 문제가 발생하여 레거시 방식으로 표시합니다.\n\n**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
+                    description = f"오류: 새로 업데이트된 열차 정보 표시 방식대로 열차 정보를 표시하는 도중 문제가 발생하여 레거시 방식으로 표시합니다.\n\n**__중요: 이 정보는 실시간 정보임이 보장되지 않습니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!)\n\n- 위치: {위치}\n- 지연: {지연}",
                     color = discord.Color.yellow(),
                 )
                 embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
@@ -606,7 +671,7 @@ class train_command(app_commands.Group) :
                 return
             embed2 = discord.Embed(
                 title = f"열차 #{열차번호} 정보",
-                description = f"**__중요: 이 정보는 실시간 정보가 아닙니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!), [레일블루 열차 시각표 정보](https://rail.blue/railroad/logis/scheduleinfo.aspx?date={날짜}&train={열차번호}#!)\n\n- 위치: {위치}\n- 지연: {지연}\n- 정보 출처: {정보출처}",
+                description = f"**__중요: 이 정보는 실시간 정보임이 보장되지 않습니다. 모든 정보는 참고용으로만 이용하시기 바랍니다.__**\n\n정보 출처: [레일블루 들머리 운행정보](https://rail.blue/railroad/logis/Default.aspx?company=&train={열차번호}&date={날짜}#!), [레일블루 열차 시각표 정보](https://rail.blue/railroad/logis/scheduleinfo.aspx?date={날짜}&train={열차번호}#!)\n\n- 위치: {위치}\n- 지연: {지연}\n- 정보 출처: {정보출처}",
                 color = int("a5f0ff", 16),
             )
             embed2.set_footer(text=f"정보 업데이트 시각: {기준시각}")
@@ -1087,8 +1152,6 @@ async def get_train_info_railblue(train, date, user_id):
         else : 
             pattern = r'(\d+)(분|시간)'
             match = re.search(pattern, default_page_delay)
-            result_seconds_int = 0
-
             amount = match.group(1)
             unit = match.group(2)
 
@@ -1219,6 +1282,111 @@ async def get_train_timetable(trainnum, date, updown) :
     except Exception as e : 
         print(e)
         return [False, date, None, e]
+
+async def get_seoul_route(출발, 도착, 옵션, 시각):
+    url = f"https://apis.data.go.kr/B553766/path/getShtrmPath?serviceKey={seoul_subway_find_route_api}&dataType=JSON&dptreStnNm={출발}&arvlStnNm={도착}&searchDt={시각}&searchType={옵션}&schInclYn=Y"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad status codes
+        data = response.json()
+        
+        return data  # Returning JSON response for further processing
+    
+    except requests.exceptions.RequestException as e:
+        print("Request failed:", e)
+        return None
+
+async def lookup_seoul_route(출발, 도착, 옵션, 시각):
+    json_data = await get_seoul_route(출발, 도착, 옵션, 시각)
+
+    # print(json_data) # 디버깅용
+
+    total_time = json_data["body"]["totalreqHr"] # 총 소요시간 (초)
+    transfer_time = json_data["body"]["trsitNmtm"] # 환승 횟수
+
+    json_paths = json_data["body"]["paths"]
+
+    paths = json_data.get("body", {}).get("paths", [])
+    if not paths:
+        paths_result = []
+    else : 
+        paths_result = []
+        
+        for train_no, group in groupby(paths, key=lambda x: x["trainno"]):
+            group_list = list(group)
+            
+            first_segment = group_list[0] # 이 열차의 첫 구간
+            last_segment = group_list[-1] # 이 열차의 마지막 구간
+
+            if first_segment["dptreStn"]["stnNm"] != last_segment["arvlStn"]["stnNm"] : 
+                segment_duration = sum(item["reqHr"] + item["wtngHr"] for item in group_list)
+            else : 
+                segment_duration = first_segment["reqHr"]
+            
+            paths_result.append({
+                "열차번호": train_no,
+                "행선지": first_segment["tmnlStnNm"],
+                "노선명": first_segment["dptreStn"]["lineNm"],
+                "출발역": first_segment["dptreStn"]["stnNm"],
+                "도착역": last_segment["arvlStn"]["stnNm"],
+                "출발시각": first_segment["trainDptreTm"],
+                "도착시각": last_segment["trainArvlTm"],
+                "소요시간": segment_duration,
+                "대기시간": first_segment["wtngHr"]
+            })
+    
+    # print(paths_result) # 디버깅용
+    
+    text = ""
+    num = 1
+
+    wait_time = None
+    transfer_walk_time = None
+
+    arrive_time = None
+
+    for i in range(len(paths_result)) : 
+        current_path = paths_result[i]
+        if i > 0 : 
+            previous_path = paths_result[i-1]
+        if not (i+1 == len(paths_result)) : 
+            next_path = paths_result[i+1]
+
+        current_path["소요+대기시간"] = await format_seconds(current_path["소요시간"] + current_path["대기시간"])
+        
+        current_path["소요시간"] = await format_seconds(current_path["소요시간"])
+        current_path["대기시간"] = await format_seconds(current_path["대기시간"])
+        
+        if current_path["출발역"] == current_path["도착역"] : 
+            text += f"**{num}. {arrive_time} - {current_path["출발역"]}역 도착 후 {next_path["노선명"]} 승강장으로 이동**\n- 환승 도보 소요 시간: {current_path["소요시간"]}\n- 환승 시간: {current_path["소요+대기시간"]}\n\n"
+        else : 
+            text += f"**{num}. {current_path["출발시각"]} - {current_path["노선명"]} {current_path["출발역"]} → {current_path["도착역"]} 이동**\n- 노선/행선지: {current_path["노선명"]} {current_path["행선지"]}행\n- 소요시간: {current_path["소요시간"]}\n- 열차번호: #{current_path["열차번호"]}\n\n"
+            arrive_time = current_path["도착시각"]
+            
+        num += 1
+    
+    text += f"**{num}. {arrive_time} - {paths_result[len(paths_result) - 1]["도착역"]} 도착**"
+
+    print(text) # 디버깅용
+
+    total_time = await format_seconds(total_time)
+
+    return {
+        "transfer_time": transfer_time,
+        "total_time": total_time,
+        "path": text,
+    }
+
+async def format_seconds(total_seconds):
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    
+    if hours == 0 : 
+        return f"{minutes}분 {seconds}초"
+    else : 
+        return f"{hours}시간 {minutes}분 {seconds}초"
+
 
 def get_subway_info(station_name):
     url = f"http://swopenapi.seoul.go.kr/api/subway/{train_arrivals_api_key}/json/realtimeStationArrival/1/25/{station_name}"
