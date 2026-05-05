@@ -6,9 +6,8 @@ import re
 import discord
 import asyncio
 from discord import app_commands
-import json
 import os
-import io
+import json
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import ObsoleteFunctionError
