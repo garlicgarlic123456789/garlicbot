@@ -6,6 +6,8 @@ import re
 import discord
 import asyncio
 from discord import app_commands
+import os
+import json
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import ObsoleteFunctionError
@@ -248,6 +250,108 @@ def init_dict() :
     }
 
 init_dict()
+
+async def import_xp(server_id: int, file: discord.Attachment, option) : 
+    valid_option = ["add", "overwrite"]
+    if option not in valid_option : 
+        raise ValueError("invalid_option")
+
+    if file.size > 1024 * 1024:
+        raise ValueError("file_too_large")
+    
+    if not file.filename.endswith('.json'):
+        raise ValueError("invalid_file_type")
+    
+    file_bytes = await file.read()
+    raw_data = json.loads(file_bytes.decode('utf-8'))
+
+    import_result = {}
+
+    if "data" not in raw_data:
+        raise ValueError("invalid_file")
+    
+    if raw_data.get("file_version") == 1 : 
+        import_result["version"] = 1
+        valid_data = []
+        for entry in raw_data["data"]:
+            u_id = entry.get("user_id")
+            xp_val = entry.get("xp")
+            
+            # 데이터 타입 검증: id와 xp가 모두 정수인지 확인
+            if isinstance(u_id, int) and isinstance(xp_val, int):
+                valid_data.append({"user_id": u_id, "xp": xp_val})
+            else:
+                continue # 이상한 데이터는 무시
+
+        # 5. DB 작업 (정제된 valid_data만 사용)
+        if valid_data:
+            import_result["data"] = valid_data
+        else:
+            raise ValueError("no_data")
+    else : 
+        raise ValueError("invalid_file_version")
+    
+    if import_result["version"] == 1 :
+        conn = sqlite3.connect("garlicbot.db")
+        c = conn.cursor()
+        try : 
+            if option == "add" : 
+                for i in import_result["data"] : 
+                    user_id = i["user_id"]
+                    xp = i["xp"]
+                    c.execute("SELECT 1 FROM xp WHERE server_id = ? AND user_id = ?", (server_id, u_id))
+
+                    if c.fetchone():
+                        c.execute("UPDATE xp SET xp = xp + ? WHERE server_id = ? AND user_id = ?", 
+                                (xp, server_id, user_id))
+                    else:
+                        c.execute("INSERT INTO xp (server_id, user_id, xp) VALUES (?, ?, ?)", 
+                                (server_id, user_id, xp))
+                conn.commit()
+            elif option == "overwrite" : 
+                c.execute("DELETE FROM xp WHERE server_id = ?", (server_id,))
+                
+                for i in import_result["data"] : 
+                    u_id = i["user_id"]
+                    xp_val = i["xp"]
+
+                    if isinstance(u_id, int) and isinstance(xp_val, int):
+                        c.execute("INSERT INTO xp (server_id, user_id, xp) VALUES (?, ?, ?)", 
+                                (server_id, u_id, xp_val))
+                
+                # 모든 작업이 성공했을 때만 실제 반영
+                conn.commit()
+        except Exception as e : 
+            conn.rollback()
+            raise e
+        finally : 
+            conn.close()
+
+async def export_xp(server_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+
+    query = "SELECT user_id, xp FROM xp WHERE server_id = ?"
+    c.execute(query, (server_id,))
+
+    rows = c.fetchall()
+    user_data_list = [{"user_id": row[0], "xp": row[1]} for row in rows]
+
+    final_structure = {
+        "file_version": 1,
+        "data": user_data_list
+    }
+
+    file_path = f'export_{server_id}.json'
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(final_structure, f, indent=4, ensure_ascii=False)
+
+    conn.close()
+
+    return file_path
 
 async def get_server_join_route_memo(server_id: int, invite_link: str) : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
