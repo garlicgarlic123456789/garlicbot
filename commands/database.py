@@ -1926,9 +1926,21 @@ def remove_blockhistory(id) :
     c.execute("DELETE FROM blockhistory WHERE id = ?", (id,))
     c.close()
 
+def decode_match(match):
+    # 매칭된 텍스트를 확인
+    matched_text = match.group(0)
+
+    if matched_text == "\\\\n":
+        return "\\n"  # 사용자가 \\n을 입력했다면 -> 텍스트 '\n'으로 변경
+    else:
+        return "\n"  # 사용자가 \n을 입력했다면 -> 진짜 줄바꿈으로 변경
+
 def add_blockhistory(user_id: int, admin_id, reason: str, blocktype: str, addinfo: int, server_id: int):
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
+
+    reason2 = re.sub(r"\\\\n|\\n", decode_match, reason)
+    reason = reason2
     
     c.execute("""
         INSERT INTO blockhistory (user_id, admin_id, reason, type, addinfo, server_id)
