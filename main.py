@@ -7671,7 +7671,7 @@ async def check_moderation_log(interaction: discord.Interaction, 사용자: disc
                     content += f"\n- 기간: *(알 수 없음)*"
 
 
-            if len(reason) > 1000 : 
+            if len(reason) > 3000 : 
                 content += f"\n- 사유: *(파일 참고)*"
                 embed.title = title
                 embed.description = content
