@@ -1614,8 +1614,11 @@ async def on_message(message):
                 사유 = "*(사유 입력되지 않음)*"
             
             사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+            if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+            else : 사유3 = 사유2
             
-            add_blockhistory(사용자.id, message.author.id, 사유, "warn", 개수, message.guild.id)
+            add_blockhistory(사용자.id, message.author.id, 사유2, "warn", 개수, message.guild.id)
             
             embed = discord.Embed(title="경고", color=discord.Color.red(), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
@@ -1624,7 +1627,7 @@ async def on_message(message):
                 embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]}) / {warn_max}개", inline=False)
             else : 
                 embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]})", inline=False)
-            embed.add_field(name="사유", value=사유2, inline=False)
+            embed.add_field(name="사유", value=사유3, inline=False)
             
             channel = await bot.fetch_channel(get_block_log_channel(message.guild.id))
             if channel:
@@ -1724,6 +1727,9 @@ async def on_message(message):
                 사유 = "*(사유 입력되지 않음)*"
             
             사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+            if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+            else : 사유3 = 사유2
             
             embed = discord.Embed(title="경고 차감", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
@@ -1732,7 +1738,7 @@ async def on_message(message):
                 embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]}) / {warn_max}개", inline=False)
             else : 
                 embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]})", inline=False)
-            embed.add_field(name="사유", value=사유2, inline=False)
+            embed.add_field(name="사유", value=사유3, inline=False)
             
             channel = await bot.fetch_channel(get_block_log_channel(message.guild.id))
             if channel:
@@ -1743,7 +1749,7 @@ async def on_message(message):
                 if log_channel:
                     await log_channel.send(embed=embed)
 
-            add_blockhistory(사용자.id, message.author.id, 사유, "unwarn", 개수, message.guild.id)
+            add_blockhistory(사용자.id, message.author.id, 사유2, "unwarn", 개수, message.guild.id)
             
             await message.reply(embed=embed, mention_author=False)
             return
@@ -1847,20 +1853,23 @@ async def on_message(message):
             if reason is None :
                 reason = "*(사유 입력되지 않음)*"
             
-            add_blockhistory(member.id, message.author.id, reason, "timeout", duration, message.guild.id)
+            reason2 = re.sub(r"\\\\n|\\n", decode_match, reason)
+            
+            add_blockhistory(member.id, message.author.id, reason2, "timeout", duration, message.guild.id)
 
             if duration > 0 :
                 time = print_time(duration)
             else :
                 time = str(duration) + "초"
-            
-            reason2 = re.sub(r"\\\\n|\\n", decode_match, reason)
+
+            if len(reason2) > 1000 : 사유3 = reason2[:1000] + " *...*"
+            else : 사유3 = reason2
             
             embed = discord.Embed(title="타임아웃", color=discord.Color.red(), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
             embed.add_field(name="기간", value=f"{time}", inline=False)
-            embed.add_field(name="사유", value=reason2, inline=False)
+            embed.add_field(name="사유", value=사유3, inline=False)
 
             channel = await bot.fetch_channel(get_block_log_channel(message.guild.id))
             if channel:
@@ -1933,11 +1942,14 @@ async def on_message(message):
                 reason = "*(사유 입력되지 않음)*"
             
             reason2 = re.sub(r"\\\\n|\\n", decode_match, reason)
+
+            if len(reason2) > 1000 : 사유3 = reason2[:1000] + " *...*"
+            else : 사유3 = reason2
             
             embed = discord.Embed(title="타임아웃 해제", color=int("a5f0ff", 16), timestamp=discord.utils.utcnow())
             embed.add_field(name="사용자", value=f"{member.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
-            embed.add_field(name="사유", value=reason2, inline=False)
+            embed.add_field(name="사유", value=사유3, inline=False)
 
             channel = await bot.fetch_channel(get_block_log_channel(message.guild.id))
             if channel:
@@ -1948,7 +1960,7 @@ async def on_message(message):
                 if log_channel:
                     await log_channel.send(embed=embed)
 
-            add_blockhistory(member.id, message.author.id, reason, "untimeout", 0, message.guild.id)
+            add_blockhistory(member.id, message.author.id, reason2, "untimeout", 0, message.guild.id)
             
             await message.reply(embed=embed, mention_author=False)
             return
@@ -3006,6 +3018,8 @@ async def on_member_remove(member):
                 사유= "*(사유 입력되지 않음)*"
             
             사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+            if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+            else : 사유3 = 사유2
             # Send embed to record channel
             embed = discord.Embed(
                 title="추방",
@@ -3014,7 +3028,7 @@ async def on_member_remove(member):
             )
             embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{관리자.mention}", inline=False)
-            embed.add_field(name="사유", value=사유2, inline=False)
+            embed.add_field(name="사유", value=사유3, inline=False)
 
             channel = await bot.fetch_channel(get_block_log_channel(guild.id))
             if channel:
@@ -3024,7 +3038,7 @@ async def on_member_remove(member):
                 log_channel = bot.get_channel(message_log)
                 await log_channel.send(embed=embed)
 
-            add_blockhistory(사용자.id, 관리자.id, 사유, "kick", 0, guild.id)
+            add_blockhistory(사용자.id, 관리자.id, 사유2, "kick", 0, guild.id)
             
             await process_anti_nuke_ban(guild.id, 관리자.id, guild)
 
@@ -3038,8 +3052,10 @@ async def on_member_ban(guild, user):
             return
         if 사유 is None :
             사유= "*(사유 입력되지 않음)*"
-        add_blockhistory(사용자.id, 관리자.id, 사유, "ban", 0, guild.id)
-        사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유2)
+        사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+        add_blockhistory(사용자.id, 관리자.id, 사유2, "ban", 0, guild.id)
+        if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+        else : 사유3 = 사유2
         # Send embed to record channel
         embed = discord.Embed(
             title="차단",
@@ -3048,7 +3064,7 @@ async def on_member_ban(guild, user):
         )
         embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
         embed.add_field(name="관리자", value=f"{관리자.mention}", inline=False)
-        embed.add_field(name="사유", value=사유2, inline=False)
+        embed.add_field(name="사유", value=사유3, inline=False)
 
         channel = await bot.fetch_channel(get_block_log_channel(guild.id))
         if channel:
@@ -3074,7 +3090,9 @@ async def on_member_unban(guild, user):
             if 사유 is None :
                 사유== "*(사유 입력되지 않음)*"
             사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
-            add_blockhistory(사용자.id, 관리자.id, 사유, "unban", 0, guild.id)
+            if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+            else : 사유3 = 사유2
+            add_blockhistory(사용자.id, 관리자.id, 사유2, "unban", 0, guild.id)
             # Send embed to record channel
             embed = discord.Embed(
                 title="차단 해제",
@@ -3083,7 +3101,7 @@ async def on_member_unban(guild, user):
             )
             embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
             embed.add_field(name="관리자", value=f"{관리자.mention}", inline=False)
-            embed.add_field(name="사유", value=사유2, inline=False)
+            embed.add_field(name="사유", value=사유3, inline=False)
 
             channel = await bot.fetch_channel(get_block_log_channel(guild.id))
             if channel:
@@ -3435,6 +3453,10 @@ async def on_member_update(before, after):
                 if entry.user.id == 1316579106749681664 :
                     return
                 reason = entry.reason or "*(사유 입력되지 않음)*"
+
+                reason2 = re.sub(r"\\\\n|\\n", decode_match, reason)
+                if len(reason2) > 1000 : 사유3 = reason2[:1000] + " *...*"
+                else : 사유3 = reason2
                 
                 embed = discord.Embed(
                     title="타임아웃 해제",
@@ -3443,10 +3465,10 @@ async def on_member_update(before, after):
                 )
                 embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
                 embed.add_field(name="관리자", value=f"{moderator.mention}", inline=False)
-                embed.add_field(name="사유", value=reason, inline=False)
+                embed.add_field(name="사유", value=사유3, inline=False)
                 
                 await channel.send(embed=embed)
-                add_blockhistory(after.id, moderator.id, reason, "untimeout", 0, after.guild.id)
+                add_blockhistory(after.id, moderator.id, reason2, "untimeout", 0, after.guild.id)
                 if after.guild.id == using_server :
                     log_channel = bot.get_channel(message_log)
                     await log_channel.send(embed=embed)
@@ -3465,6 +3487,9 @@ async def on_member_update(before, after):
                     timeout_duration = after.timed_out_until - discord.utils.utcnow() # + timedelta(seconds=1)
 
                     reason2 = re.sub(r"\\\\n|\\n", decode_match, reason)
+
+                    if len(reason2) > 1000 : 사유3 = reason2[:1000] + " *...*"
+                    else : 사유3 = reason2
                     
                     embed = discord.Embed(
                         title="타임아웃",
@@ -3474,9 +3499,9 @@ async def on_member_update(before, after):
                     embed.add_field(name="사용자", value=f"{after.mention}", inline=False)
                     embed.add_field(name="관리자", value=f"{moderator.mention}", inline=False)
                     embed.add_field(name="기간", value=format_duration(timeout_duration), inline=False)
-                    embed.add_field(name="사유", value=reason2, inline=False)
+                    embed.add_field(name="사유", value=사유3, inline=False)
 
-                    add_blockhistory(after.id, moderator.id, reason, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
+                    add_blockhistory(after.id, moderator.id, reason2, "timeout", int(timeout_duration.total_seconds()), after.guild.id)
                     
                     await channel.send(embed=embed)
                     if after.guild.id == using_server :
@@ -4348,6 +4373,11 @@ async def 경고(interaction: discord.Interaction, 사용자: discord.User, 개�
     # 경고 추가
     result = await add_warning(interaction.guild.id, 사용자.id, 개수)
 
+    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
+
     # 로그 출력
     embed = discord.Embed(
         title="경고",
@@ -4360,7 +4390,7 @@ async def 경고(interaction: discord.Interaction, 사용자: discord.User, 개�
         embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]}) / {warn_max}개", inline=False)
     else : 
         embed.add_field(name="경고 개수", value=f"{result[2]}개 (+{result[1]})", inline=False)
-    embed.add_field(name="사유", value=사유, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
     
     channel = await bot.fetch_channel(get_block_log_channel(interaction.guild.id))
     if channel:
@@ -4370,7 +4400,7 @@ async def 경고(interaction: discord.Interaction, 사용자: discord.User, 개�
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
 
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "warn", 개수, interaction.guild.id)
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "warn", 개수, interaction.guild.id)
 
     await interaction.followup.send(embed=embed)
 
@@ -4475,6 +4505,11 @@ async def 경고차감(interaction: discord.Interaction, 사용자: discord.User
     # 경고 추가
     result = await remove_warning(interaction.guild.id, 사용자.id, 개수)
 
+    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
+
     # 로그 출력
     embed = discord.Embed(
         title="경고 차감",
@@ -4487,7 +4522,7 @@ async def 경고차감(interaction: discord.Interaction, 사용자: discord.User
         embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]}) / {warn_max}개", inline=False)
     else : 
         embed.add_field(name="경고 개수", value=f"{result[2]}개 (-{result[1]})", inline=False)
-    embed.add_field(name="사유", value=사유, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
 
     channel = await bot.fetch_channel(get_block_log_channel(interaction.guild.id))
     if channel:
@@ -4497,7 +4532,7 @@ async def 경고차감(interaction: discord.Interaction, 사용자: discord.User
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
 
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "unwarn", 개수, interaction.guild.id)
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "unwarn", 개수, interaction.guild.id)
 
     await interaction.followup.send(embed=embed)
 
@@ -4616,7 +4651,10 @@ async def kick(interaction: discord.Interaction, 사용자: discord.Member, 사�
     if 사유 is None :
         사유 = "*(사유 입력되지 않음)*"
     
-    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유2)
+    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
 
     # Send embed to record channel
     embed = discord.Embed(
@@ -4626,7 +4664,7 @@ async def kick(interaction: discord.Interaction, 사용자: discord.Member, 사�
     )
     embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
-    embed.add_field(name="사유", value=사유2, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
 
     channel = await bot.fetch_channel(get_block_log_channel(interaction.guild.id))
     if channel:
@@ -4641,7 +4679,7 @@ async def kick(interaction: discord.Interaction, 사용자: discord.Member, 사�
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
 
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "kick", 0, interaction.guild.id)
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "kick", 0, interaction.guild.id)
 
     await interaction.followup.send(embed = embed)
 
@@ -4748,6 +4786,8 @@ async def ban(interaction: discord.Interaction, 사용자: discord.User, 사유:
     
     사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
 
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
     # Send embed to record channel
     embed = discord.Embed(
         title="차단",
@@ -4756,7 +4796,7 @@ async def ban(interaction: discord.Interaction, 사용자: discord.User, 사유:
     )
     embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
-    embed.add_field(name="사유", value=사유2, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
 
     if 제재내역공개여부 == "공개" : 
         channel = await bot.fetch_channel(get_block_log_channel(interaction.guild.id))
@@ -4772,7 +4812,7 @@ async def ban(interaction: discord.Interaction, 사용자: discord.User, 사유:
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
 
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "ban", 0, interaction.guild.id)
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "ban", 0, interaction.guild.id)
 
     await interaction.followup.send(embed = embed)
 
@@ -4827,20 +4867,28 @@ async def bulk_ban(interaction: discord.Interaction, 사용자_리스트: str, �
         )
         await interaction.response.send_message(embed=embed, ephemeral=False)
         return
+    
+    if 사유 is None : 
+        사유2temp = "*(사유 입력되지 않음)*"
+    else : 
+        사유2temp = 사유
+    
+    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유2temp)
 
     for user_id in 사용자_id_리스트:
         try:
             user = await bot.fetch_user(int(user_id))  # 사용자 객체 가져오기
             await interaction.guild.ban(user, reason=사유, delete_message_seconds=0)
             성공한_사용자.append(f"<@{user.id}>")
-            add_blockhistory(user_id, interaction.user.id, 사유, "ban", 0, interaction.guild.id)
+            add_blockhistory(user_id, interaction.user.id, 사유2, "ban", 0, interaction.guild.id)
         except Exception as e:
             실패한_사용자.append(f"<@{user_id}>")
 
     if 사유 is None :
         사유 = "*(사유 입력되지 않음)*"
-    
-    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
     
     # 차단 결과 임베드 생성
     사용자_결과 = ", ".join(성공한_사용자)
@@ -4856,7 +4904,7 @@ async def bulk_ban(interaction: discord.Interaction, 사용자_리스트: str, �
         inline=False
     )
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
-    embed.add_field(name="사유", value=사유2, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
 
     # 제재 로그 채널로 전송
     if 제재내역공개여부 == "공개" : 
@@ -4937,6 +4985,9 @@ async def unban(interaction: discord.Interaction, 사용자: discord.User, 사�
 
     사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
 
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
+
     # Send embed to record channel
     embed = discord.Embed(
         title="차단 해제",
@@ -4945,7 +4996,7 @@ async def unban(interaction: discord.Interaction, 사용자: discord.User, 사�
     )
     embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
-    embed.add_field(name="사유", value=사유2, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
     
     if 제재내역공개여부 == "공개" : 
         channel = bot.get_channel(get_block_log_channel(interaction.guild.id))
@@ -4961,7 +5012,7 @@ async def unban(interaction: discord.Interaction, 사용자: discord.User, 사�
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
 
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "unban", 0, interaction.guild.id)
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "unban", 0, interaction.guild.id)
 
     # 명령어 실행 결과 전송
     await interaction.followup.send(embed=embed)
@@ -5006,21 +5057,26 @@ async def bulk_unban(interaction: discord.Interaction, 사용자_리스트: str,
     # 차단 사유 기본값 설정
     if 사유 == "None":
         사유 = None
-
-    for user_id in 사용자_id_리스트:
-        try:
-            user = await bot.fetch_user(int(user_id))  # 사용자 객체 가져오기
-            await interaction.guild.unban(user, reason=사유)
-            성공한_사용자.append(f"<@{user.id}>")
-            add_blockhistory(user.id, interaction.user.id, 사유, "unban", 0, interaction.guild.id)
-        except Exception as e:
-            실패한_사용자.append(f"<@{user_id}>")
-
+    
+    입력사유 = 사유
+    
     if 사유 is None :
         사유 = "*(사유 입력되지 않음)*"
     
     사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    for user_id in 사용자_id_리스트:
+        try:
+            user = await bot.fetch_user(int(user_id))  # 사용자 객체 가져오기
+            await interaction.guild.unban(user, reason=입력사유)
+            성공한_사용자.append(f"<@{user.id}>")
+            add_blockhistory(user.id, interaction.user.id, 사유2, "unban", 0, interaction.guild.id)
+        except Exception as e:
+            실패한_사용자.append(f"<@{user_id}>")
     
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
+
     # 차단 결과 임베드 생성
     사용자_결과 = ", ".join(성공한_사용자)
 
@@ -5035,7 +5091,7 @@ async def bulk_unban(interaction: discord.Interaction, 사용자_리스트: str,
         inline=False
     )
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
-    embed.add_field(name="사유", value=사유2, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
 
     # 제재 로그 채널로 전송
     if 제재내역공개여부 == "공개" : 
@@ -5207,14 +5263,17 @@ async def timeout(interaction: discord.Interaction, 사용자: discord.Member, �
     if 사유 is None :
         사유 = "*(사유 입력되지 않음)*"
     
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "timeout", 시간, interaction.guild.id)
+    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
+    
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "timeout", 시간, interaction.guild.id)
 
     if 시간 > 0 :
         time = print_time(시간)
     else :
         time = str(시간) + "초"
-    
-    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
 
     # Send embed to record channel
     embed = discord.Embed(
@@ -5225,7 +5284,7 @@ async def timeout(interaction: discord.Interaction, 사용자: discord.Member, �
     embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
     embed.add_field(name="기간", value=f"{time}", inline=False)
-    embed.add_field(name="사유", value=사유2, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
 
     
     channel = bot.get_channel(get_block_log_channel(interaction.guild.id))
@@ -5288,6 +5347,11 @@ async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Me
 
     if 사유 == None :
         사유 = "*(사유 입력되지 않음)*"
+    
+    사유2 = re.sub(r"\\\\n|\\n", decode_match, 사유)
+
+    if len(사유2) > 1000 : 사유3 = 사유2[:1000] + " *...*"
+    else : 사유3 = 사유2
 
     # Send embed to record channel
     embed = discord.Embed(
@@ -5297,7 +5361,7 @@ async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Me
     )
     embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
     embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
-    embed.add_field(name="사유", value=사유, inline=False)
+    embed.add_field(name="사유", value=사유3, inline=False)
     
     channel = await bot.fetch_channel(get_block_log_channel(interaction.guild.id))
     if channel:
@@ -5307,7 +5371,7 @@ async def remove_timeout(interaction: discord.Interaction, 사용자: discord.Me
         log_channel = bot.get_channel(message_log)
         await log_channel.send(embed=embed)
 
-    add_blockhistory(사용자.id, interaction.user.id, 사유, "untimeout", 0, interaction.guild.id)
+    add_blockhistory(사용자.id, interaction.user.id, 사유2, "untimeout", 0, interaction.guild.id)
 
     await interaction.followup.send(embed = embed)
 
