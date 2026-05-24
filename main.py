@@ -67,6 +67,7 @@ from openai import AsyncOpenAI
 
 from commands import encode
 from commands import manage_timeout
+from commands.invite_link_memo import *
 from commands import bulk_cancel
 from commands.define import *
 from commands import define
@@ -8540,6 +8541,7 @@ TICKET_MESSAGE_FILE = "ticket_message_id.txt"
 async def on_ready():
     aiocron.crontab('* * * * *', func=chat_analyze_save_to_db)
     bot.tree.add_command(train_command())
+    bot.tree.add_command(invite_link_memo())
     bot.tree.add_command(xp_import_export())
     bot.tree.add_command(summarize_command())
     bot.tree.add_command(mention_delay())
@@ -9768,27 +9770,6 @@ async def 구분역할확인(interaction: discord.Interaction, 입력1: discord.
     await interaction.followup.send(embed=embed)
     return
 '''
-
-@bot.tree.command(name = "초대링크메모", description = "특정 초대 링크에 대해 메모를 설정합니다.")
-@app_commands.default_permissions(administrator = True)
-@app_commands.describe(초대링크 = "생성한 초대 링크 (discord.gg/나 discord.com/invite/는 생략하고 입력)", 메모 = "메모 내용")
-async def 초대링크메모(interaction: discord.Interaction, 초대링크: str, 메모: str = None) : 
-    await interaction.response.defer(ephemeral=True)
-    status, until, reason = is_blocked(interaction.user)
-    # 차단중이면 차단 사유와 종료 날짜를, 아니면 차단 상태가 아님을 알려줌
-    if status:
-        msg = f"**[오류!]** {interaction.user.id}님은 `{reason}` 사유로 {until}까지 차단 중입니다."
-        await interaction.followup.send(msg)
-        return
-    
-    await update_server_join_route_memo(interaction.guild.id, 초대링크, 메모)
-
-    embed = discord.Embed(
-        title = "완료",
-        description = f"완료되었습니다.",
-        color = int("a5f0ff", 16)
-    )
-    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name = "유입경로확인", description = "특정 사용자가 유입된 초대 링크를 확인하고, 해당 초대 링크에 메모가 설정된 경우 메모도 확인합니다.")
 @app_commands.default_permissions(administrator = True)
