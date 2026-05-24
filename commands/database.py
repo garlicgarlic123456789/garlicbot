@@ -380,6 +380,29 @@ async def update_server_join_route_memo(server_id: int, invite_link: str, memo: 
         c.execute("INSERT INTO server_join_route_memo (server_id, invite_link, memo) VALUES (?, ?, ?)", (server_id, invite_link, memo))
         return memo
 
+async def delete_server_join_route_memo(server_id: int, invite_link: str) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("DELETE FROM server_join_route_memo WHERE server_id = ? AND invite_link = ?", (server_id, invite_link,))
+
+async def list_server_join_route_memo(server_id: int) : 
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    c.execute("SELECT invite_link, memo FROM server_join_route_memo WHERE server_id = ?", (server_id,))
+
+    rows = c.fetchall()
+    
+    result = []
+    for row in rows:
+        result.append(
+            {
+                "link": row[0],
+                "memo": row[1],
+            }
+        )
+        
+    return result
+
 async def add_chat_analyze_data(server_id: int, dt: int, chat_count: int, user_count: int) : 
     dt2 = datetime.strptime(dt, "%Y-%m-%d %H:%M")
     dt2 = {

@@ -165,6 +165,11 @@ class autorole(app_commands.Group) :
         else:
             embed.description = f"자동 역할 설정이 {len(autoroles)}건 있습니다.\n\n"
             for autorole in autoroles:
+                try : 
+                    role = await interaction.guild.fetch_role(role_id = autorole['role_id'])
+                except discord.NotFound:
+                    continue
+                
                 if autorole['bot_user'] == "all":
                     bot_user = "모든 계정"
                 elif autorole['bot_user'] == "user":
