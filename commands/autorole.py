@@ -11,7 +11,7 @@ class autorole(app_commands.Group) :
     @app_commands.command(name="추가", description="자동역할 설정을 추가합니다.")
     @app_commands.describe(역할="추가할 역할", 계정유형="역할을 추가할 계정의 유형")
     @app_commands.choices(계정유형=[app_commands.Choice(name="모든 계정", value="all"), app_commands.Choice(name="유저 계정", value="user"), app_commands.Choice(name="봇 계정", value="bot")])
-    @app_commands.default_permissions(administrator=True)
+    @app_commands.default_permissions(manage_roles=True)
     async def add_autorole(self, interaction: discord.Interaction, 역할: discord.Role, 계정유형: str, 강제: bool = False):
         await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
@@ -85,7 +85,7 @@ class autorole(app_commands.Group) :
 
     @app_commands.command(name="제거", description="자동역할 설정을 제거합니다.")
     @app_commands.describe(역할="제거할 역할")
-    @app_commands.default_permissions(administrator=True)
+    @app_commands.default_permissions(manage_roles=True)
     async def remove_autorole(self, interaction: discord.Interaction, 역할: discord.Role):
         await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
@@ -136,7 +136,7 @@ class autorole(app_commands.Group) :
             await interaction.followup.send(embed=embed)
     
     @app_commands.command(name="목록", description="자동역할 설정 목록을 확인합니다.")
-    @app_commands.default_permissions(administrator=True)
+    @app_commands.default_permissions(manage_roles=True)
     async def list_autorole(self, interaction: discord.Interaction):
         await interaction.response.defer()
         status, until, reason = is_blocked(interaction.user)
@@ -166,7 +166,7 @@ class autorole(app_commands.Group) :
             embed.description = f"자동 역할 설정이 {len(autoroles)}건 있습니다.\n\n"
             for autorole in autoroles:
                 try : 
-                    role = await interaction.guild.fetch_role(role_id = autorole['role_id'])
+                    role = await interaction.guild.fetch_role(autorole['role_id'])
                 except discord.NotFound:
                     continue
                 
