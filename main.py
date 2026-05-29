@@ -2679,7 +2679,7 @@ async def on_message(message):
                         return
                     # 인명사전
                     elif "서유나" == message.content[4:] or "유나" == message.content[4:] :
-                        await message.reply("마늘요리의 중요한 친구 중 한 명이에요. 마늘요리님의 고민에 관해 위로와 조언을 자주 해주셔요. 프론트엔드를 잘 다루시고, 피그마를 잘 다루셔요. ||예전에는 늘 자기소개란에 \'서유나라구 함니다\'가 적혀있었어요. ||-# 여담이지만 마늘요리님 가명인 \'서채윤\'의 \'서\'는 \'서유나\'라는 가명의 \'서\'와 한자가 같아요.", mention_author=False)
+                        await message.reply("마늘요리의 중요한 친구 중 한 명이에요. 마늘요리님의 고민에 관해 위로와 조언을 자주 해주셔요. 프론트엔드를 잘 다루시고, 피그마를 잘 다루셔요. ||예전에는 늘 자기소개란에 \'서유나라구 함니다\'가 적혀있었어요. ||\n-# 여담이지만 마늘요리님 가명인 \'서채윤\'의 \'서\'는 \'서유나\'라는 가명의 \'서\'와 한자가 같아요.", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "소울" == message.content[4:] or "소우리" == message.content[4:] :
