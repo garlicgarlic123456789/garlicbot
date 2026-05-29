@@ -2678,29 +2678,21 @@ async def on_message(message):
                         add_likeability(str(message.author.id), 2)
                         return
                     # 인명사전
-                    elif "세유" == message.content[4:] or "나세유" == message.content[4:] or "루카" == message.content[4:] :
-                        await message.reply("개발과 마크, 발로란트를 무지 잘하시고 귀여우신 분이에용! 이 서버 주인과 많이 친하고 많은 사적인 도움과 서버 운영에 대해 조언도 해주었구요! 이 서버 주인 마늘요리님이 매우매우매우매우매우 고마워 하시는 분 중 한 명이에요.", mention_author=False)
+                    elif "서유나" == message.content[4:] or "유나" == message.content[4:] :
+                        await message.reply("마늘요리의 중요한 친구 중 한 명이에요. 마늘요리님의 고민에 관해 위로와 조언을 자주 해주셔요. 프론트엔드를 잘 다루시고, 피그마를 잘 다루셔요. ||예전에는 늘 자기소개란에 \'서유나라구 함니다\'가 적혀있었어요. ||-# 여담이지만 마늘요리님 가명인 \'서채윤\'의 \'서\'는 \'서유나\'라는 가명의 \'서\'와 한자가 같아요.", mention_author=False)
+                        add_likeability(str(message.author.id), 5)
+                        return
+                    elif "소울" == message.content[4:] or "소우리" == message.content[4:] :
+                        await message.reply("마늘요리의 중요한 친구 중 한 명이에요. ||소울샌드가 생각나는 닉네임이에요. ||마늘요리님이 힘드실 때 위로를 많이 해주시는 분이에요.", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "하불" == message.content[4:] or "퓨리" == message.content[4:] :
-                        await message.reply("하불님은 이 서버에 2025년 6월 쯤에 오셔서 지금까지 계속 이 서버에서만 활동하신 고정 멤버십니다! 이 서버 주인 마늘요리님이 정말 매우매우매우매우매우 고마워 하시는 분 중 한 명이에요.", mention_author=False)
-                        add_likeability(str(message.author.id), 5)
-                        return
-                    elif "조랭이" == message.content[4:] :
-                        await message.reply("조랭이님은 조랭이떡ㄱ.. 아니 이 서버의 전직 운영진이세요! 가끔 이 서버에 놀러 오십니다. ||오시면 조랭이떡국님이라고 부르시면 돼요!||", mention_author=False)
+                        await message.reply("하불님은 이 서버에 2025년 6월 쯤에 오셔서 지금까지 계속 이 서버에서만 활동하신 고정 멤버십니다! 마늘요리님이 정말 매우매우매우매우매우 고마워 하시는 분 중 한 명이고, 마늘요리님의 중요한 친구이며, 마늘요리님이 힘들 때 가장 먼저 마늘요리님을 찾아가 주는 분이에요!", mention_author=False)
                         add_likeability(str(message.author.id), 5)
                         return
                     elif "챠무" == message.content[4:] :
                         await message.reply("챠무님은 이 서버에서, 그리고 사적으로 이 서버 주인에게 많은 도움을 주고 있어용!", mention_author=False)
                         add_likeability(str(message.author.id), 5)
-                        return
-                    elif "감쟈" == message.content[4:] :
-                        await message.reply("수학과 과학을 무지 잘하시는 분이에용! 이 서버에 2025년 1월 말에 오신 매우 초창기 멤버이시기도 하구 전직 운영진이시기도 해요!", mention_author=False)
-                        add_likeability(str(message.author.id), 3)
-                        return
-                    elif "여의대로" == message.content[4:] :
-                        await message.reply("여의대로님은 이 서버에서 관리자시고 서버 주인에게 사적으로 많은 도움을 주셨어요!", mention_author=False)
-                        add_likeability(str(message.author.id), 2)
                         return
                     elif "나르" == message.content[4:] :
                         await message.reply("나르님은 이 서버에서 가끔 활동 중이신 분이에요! 가끔 \'우우...\'라고 쓰시는게 특징입니다.", mention_author=False)
