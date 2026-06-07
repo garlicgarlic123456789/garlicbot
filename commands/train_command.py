@@ -13,6 +13,9 @@ import holidays
 from discord.ui import View, Button
 import base64
 from itertools import groupby
+from selenium.common import TimeoutException, NoSuchElementException, ElementClickInterceptedException
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import Select
 
 class train_command(app_commands.Group) : 
     def __init__(self):
@@ -422,7 +425,7 @@ class train_command(app_commands.Group) :
         app_commands.Choice(name = "대전 1호선", value = "DJET"),
     ])
     @app_commands.describe(역명 = "역명", 노선 = "노선", 통과열차표시여부 = "통과 열차 표시 여부", 개인응답 = "개인응답 사용 여부")
-    async def arrival_info_railblue(self, interaction: discord.Interaction, 역명: str, 노선: str, 통과열차표시여부: bool = False, 개인응답: bool = False) : 
+    async def arrival_info_railblue(self, interaction: discord.Interaction, 역명: str, 노선: str, 통과열차표시여부: bool = True, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
         status, until, reason = is_blocked(interaction.user)
@@ -462,15 +465,6 @@ class train_command(app_commands.Group) :
                 )
                 await interaction.followup.send(embed = embed)
                 return
-        
-        if 통과열차표시여부 : 
-            embed = discord.Embed(
-                title = "오류",
-                description = "통과 열차 표시 여부 활성화는 현재 지원되지 않습니다.",
-                color = discord.Color.red()
-            )
-            await interaction.followup.send(embed = embed)
-            return
         
         기준시각 = await today_to_text2()
 
@@ -551,8 +545,8 @@ class train_command(app_commands.Group) :
         app_commands.Choice(name = "대전 1호선", value = "대전 1호선"),
         app_commands.Choice(name = "광주 1호선", value = "광주 1호선"),
     ])
-    @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 개인응답 = "개인응답 사용 여부")
-    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 머리글자: str, 날짜: str = None, 개인응답: bool = False) : 
+    @app_commands.describe(열차번호 = "열차 번호", 머리글자 = "열차 머리글자", 날짜 = "해당 열차의 날짜 (입력 형식: YYYYMMDD)", 통과역표시여부 = "통과 역 통과 시각 표시 여부", 개인응답 = "개인응답 사용 여부")
+    async def train_info(self, interaction: discord.Interaction, 열차번호: str, 머리글자: str, 날짜: str = None, 통과역표시여부: bool = True, 개인응답: bool = False) : 
         await interaction.response.defer(ephemeral=개인응답)
 
         if not define.railblue_onoff : 
@@ -604,7 +598,7 @@ class train_command(app_commands.Group) :
         if True : 
             기준시각 = await today_to_text2()
             위치, 지연, 지연업데이트시각 = await get_train_info_railblue(열차번호, 날짜, interaction.user.id)
-            timetable, delay = await get_train_timetable_railblue(열차번호, 날짜, interaction.user.id)
+            timetable, delay = await get_train_timetable_railblue(열차번호, 날짜, interaction.user.id, 통과역표시여부)
             try : 
                 if delay is not None : 
                     timetable_delay_input_type = delay[1]
@@ -818,7 +812,7 @@ class Paginator(View):
         else:
             await interaction.response.defer()
 
-async def get_train_timetable_railblue(train, date, user_id) : 
+async def get_train_timetable_railblue(train, date, user_id, pass_visible) : 
     options = webdriver.FirefoxOptions()
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
@@ -908,6 +902,8 @@ async def get_train_timetable_railblue(train, date, user_id) :
                     "정차유형": "종착",
                 })
             elif arrival_sched == "" or arrival_sched is None or arrival_sched == " " : 
+                if pass_visible == False : 
+                    continue
                 data_list.append({
                     "역명": station_name,
                     "도착예정": arrival_sched,
@@ -1498,9 +1494,20 @@ async def get_arrival_info_railblue(station_name, line, pass_train: bool, user_i
     options.add_argument("--headless")
     driver = webdriver.Firefox(options=options)
     railblue_last_time[user_id] = datetime.datetime.now()
-    link = f"https://rail.blue/railroad/logis/metroarriveinfo.aspx?q={station_name_base64}&c={line}&base=1#!"
+    link = f"https://rail.blue/railroad/logis/metroarriveinfo.aspx"
     driver.get(link)
-    await asyncio.sleep(2.5)
+    await asyncio.sleep(1)
+    line_dropdown = driver.find_element(by = By.ID, value = "cmbDir")
+    line_dropdown = Select(line_dropdown)
+    line_dropdown.select_by_value(line)
+    station_input = driver.find_element(by = By.ID, value = "txtStation")
+    station_input.send_keys(station_name)
+    if pass_train : 
+        chkSkip = driver.find_element(by = By.ID, value = "chkSkip")
+        chkSkip.click()
+    submit = driver.find_element(by = By.ID, value = "btnSubmit")
+    submit.click()
+    await asyncio.sleep(1.5)
     arrival_info_up = driver.find_element(by = By.ID, value = "tblTrainListU")
     arrival_info_down = driver.find_element(by = By.ID, value = "tblTrainListD")
     arrival_info_up = await parse_arrival_info_railblue(arrival_info_up)
