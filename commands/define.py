@@ -47,7 +47,10 @@ xp_setting = {}
 
 railblue_last_time = {}
 
-gpt_chat_threads = {}
+gpt_chat_threads = {} # 마늘아
+maneul_chat_threads = {} # 마느라
+
+maneul_chat_limit = 5 # 마느라 대화 한도
 
 railblue_accept_ready = []
 
