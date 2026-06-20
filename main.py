@@ -1519,6 +1519,9 @@ async def on_message(message):
             await message.reply("**[오류!]** 원본 메시지를 찾을 수 없습니다.", mention_author=False)
             return
         
+        원본메시지유저 = original_message.author
+        원본메시지유저 = await message.guild.fetch_member(원본메시지유저.id)
+        
         사용자 = original_message.author
         링크 = original_message.jump_url
         사유 = f"긴급 타임아웃 | {original_message.jump_url}"
@@ -1532,7 +1535,7 @@ async def on_message(message):
             await message.reply(embed = embed, mention_author=False)
             return
         
-        if original_message.author.top_role >= message.author.top_role:
+        if 원본메시지유저.top_role >= message.author.top_role:
             embed = discord.Embed(
                 title="오류",
                 description="타임아웃 적용 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
@@ -1542,7 +1545,7 @@ async def on_message(message):
             return
 
         try : 
-            await manage_timeout.add_timeout(사용자, 2419197, 사유)
+            await manage_timeout.add_timeout(원본메시지유저, 2419197, 사유)
         except discord.Forbidden:
             embed = discord.Embed(
                 title="오류",
