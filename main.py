@@ -1509,6 +1509,75 @@ async def on_message(message):
         pass
     else :
         return
+    if message.content.startswith("!긴급타임아웃") or message.content.startswith("!긴급차단") :
+        if message.author.bot:
+            return
+        # 답장된 원본 메시지를 가져옴
+        try:
+            original_message = await message.channel.fetch_message(message.reference.message_id)
+        except (discord.NotFound, AttributeError):
+            await message.reply("**[오류!]** 원본 메시지를 찾을 수 없습니다.", mention_author=False)
+            return
+        
+        사용자 = original_message.author
+        링크 = original_message.jump_url
+        사유 = f"긴급 타임아웃 | {original_message.jump_url}"
+
+        if not message.author.guild_permissions.moderate_members:
+            embed = discord.Embed(
+                title="오류",
+                description="권한이 부족합니다. 다음 권한이 필요합니다: `타임아웃 멤버`",
+                color=discord.Color.red()
+            )
+            await message.reply(embed = embed, mention_author=False)
+            return
+        
+        if original_message.author.top_role >= message.author.top_role:
+            embed = discord.Embed(
+                title="오류",
+                description="타임아웃 적용 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
+                color=discord.Color.red()
+            )
+            await message.reply(embed = embed, mention_author=False)
+            return
+
+        try : 
+            await manage_timeout.add_timeout(사용자, 2419197, 사유)
+        except discord.Forbidden:
+            embed = discord.Embed(
+                title="오류",
+                description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `타임아웃 멤버` 권한이 있는지 확인해 주세요.\n- 타임아웃 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같지는 않은지 확인해 주세요.",
+                color=discord.Color.red()
+            )
+            await message.reply(embed = embed, mention_author=False)
+            return
+
+        add_blockhistory(사용자.id, message.author.id, 사유, "timeout", 2419200, message.guild.id)
+
+        time = "28일"
+
+        # Send embed to record channel
+        embed = discord.Embed(
+            title="타임아웃",
+            color=discord.Color.red(),
+            timestamp=discord.utils.utcnow()
+        )
+        embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
+        embed.add_field(name="관리자", value=f"{message.author.mention}", inline=False)
+        embed.add_field(name="기간", value=f"{time}", inline=False)
+        embed.add_field(name="사유", value=사유, inline=False)
+
+        
+        channel = bot.get_channel(get_block_log_channel(message.guild.id))
+        if channel:
+            await channel.send(embed=embed)
+        
+        if message.guild.id == using_server : 
+            log_channel = bot.get_channel(message_log)
+            await log_channel.send(embed=embed)
+
+        await message.reply(embed = embed, mention_author=False)
+
     if message.content.startswith("!메시지삭제") or message.content.startswith("!메세지삭제") :
         if message.author.bot:
             return
@@ -8247,6 +8316,69 @@ async def 프로필사진(interaction: discord.Interaction, 사용자: discord.U
     embed.set_footer(text=f"요청자: {interaction.user.id}")
 
     await interaction.followup.send(embed=embed)
+
+@bot.tree.context_menu(name="긴급 타임아웃")
+async def message_info(interaction: discord.Interaction, message: discord.Message):
+    await interaction.response.defer()
+
+    사용자 = message.author
+    링크 = message.jump_url
+    사유 = f"긴급 타임아웃 | {message.jump_url}"
+
+    if not interaction.user.guild_permissions.moderate_members:
+        embed = discord.Embed(
+            title="오류",
+            description="권한이 부족합니다. 다음 권한이 필요합니다: `타임아웃 멤버`",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(embed = embed)
+        return
+    
+    if 사용자.top_role >= interaction.user.top_role:
+        embed = discord.Embed(
+            title="오류",
+            description="타임아웃 적용 대상의 최상위 역할이 명령어를 사용한 사용자의 최상위 역할보다 높거나 같습니다.",
+            color=discord.Color.red()
+        )
+        await interaction.response.send_message(embed = embed)
+        return
+
+    try : 
+        await manage_timeout.add_timeout(사용자, 2419197, 사유)
+    except discord.Forbidden:
+        embed = discord.Embed(
+            title="오류",
+            description="봇에게 권한이 부족합니다. 아래 사항을 확인해 주세요.\n\n- 봇에게 `타임아웃 멤버` 권한이 있는지 확인해 주세요.\n- 타임아웃 대상의 최상위 역할이 봇의 최상위 역할보다 높거나 같지는 않은지 확인해 주세요.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=False)
+        return
+
+    add_blockhistory(사용자.id, interaction.user.id, 사유, "timeout", 2419200, interaction.guild.id)
+
+    time = "28일"
+
+    # Send embed to record channel
+    embed = discord.Embed(
+        title="타임아웃",
+        color=discord.Color.red(),
+        timestamp=discord.utils.utcnow()
+    )
+    embed.add_field(name="사용자", value=f"{사용자.mention}", inline=False)
+    embed.add_field(name="관리자", value=f"{interaction.user.mention}", inline=False)
+    embed.add_field(name="기간", value=f"{time}", inline=False)
+    embed.add_field(name="사유", value=사유, inline=False)
+
+    
+    channel = bot.get_channel(get_block_log_channel(interaction.guild.id))
+    if channel:
+        await channel.send(embed=embed)
+    
+    if interaction.guild.id == using_server : 
+        log_channel = bot.get_channel(message_log)
+        await log_channel.send(embed=embed)
+
+    await interaction.followup.send(embed = embed)
 
 @bot.tree.context_menu(name="티켓 생성")
 async def message_info(interaction: discord.Interaction, message: discord.Message):

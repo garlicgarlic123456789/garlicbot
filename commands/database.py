@@ -11,7 +11,7 @@ import json
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import ObsoleteFunctionError
-from commands.define import gpt_chat_threads, chat_analyze_onoff_cache
+from commands.define import gpt_chat_threads, chat_analyze_onoff_cache, maneul_chat_threads, maneul_chat_limit
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -82,6 +82,8 @@ def init_db() :
             step INTEGER
         )
     """)
+    c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_limit (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, date INTEGER, unlimited INTEGER, usage INTEGER)") # 마느라 한도
+    c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # 마느라
     c.execute("CREATE TABLE IF NOT EXISTS gpt_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # GPT 채팅 스레드
     c.execute("""
         CREATE TABLE IF NOT EXISTS vote (
@@ -1054,6 +1056,69 @@ def get_gpt_chat_thread(user_id: int):
     c = conn.cursor()
     
     c.execute("SELECT thread_id FROM gpt_chat_threads WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    conn.close()
+    if row:
+        return row[0]
+    return None
+
+'''
+c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_limit (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, date INTEGER, unlimited INTEGER, usage INTEGER)") # 마느라 한도
+c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # 마느라
+'''
+
+def add_maneul_chat_usage(user_id: int) : # 마느리 대화 기능 한도 도달했는지 확인 및 도달 안했으면 이용량 +1
+    now = datetime.now()
+    year = now.year
+    month = now.month
+    day = now.day
+
+    date = f"{year}{month:02d}{day:02d}"
+
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+
+    c.execute("SELECT date, usage, unlimited FROM maneul_chat_limit WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row : 
+        if row[2] == 1 : 
+            return True
+        elif row[2] == 0 : 
+            if row[0] == date : 
+                if row[1] >= maneul_chat_limit : 
+                    return False
+                new_usage = row[1] + 1
+                c.execute("UPDATE maneul_chat_limit SET usage = ? WHERE user_id = ?", (new_usage, user_id))
+                return True
+            else : 
+                if 0 >= maneul_chat_limit : 
+                    return False
+                c.execute("UPDATE maneul_chat_limit SET usage = 1, date = ? WHERE user_id = ?", (date, user_id))
+                return True
+    else : 
+        if maneul_chat_limit <= 0 : 
+            return False
+        c.execute("INSERT INTO maneul_chat_limit (user_id, date, unlimited, usage) VALUES (?, ?, 0, 1)", (user_id, date))
+        return True
+
+def update_maneul_chat_thread(user_id: int, thread_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT id FROM maneul_chat_threads WHERE user_id = ?", (user_id,))
+    row = c.fetchone()
+    if row:
+        c.execute("UPDATE maneul_chat_threads SET thread_id = ? WHERE user_id = ?", (thread_id, user_id))
+    else:
+        c.execute("INSERT INTO maneul_chat_threads (user_id, thread_id) VALUES (?, ?)", (user_id, thread_id))
+    
+    conn.close()
+
+def get_maneul_chat_thread(user_id: int):
+    conn = sqlite3.connect("garlicbot.db", isolation_level = None)
+    c = conn.cursor()
+    
+    c.execute("SELECT thread_id FROM maneul_chat_threads WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     conn.close()
     if row:
