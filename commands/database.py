@@ -11,7 +11,7 @@ import json
 
 from commands.define import anti_raid_settings_cache, xp_setting
 from commands.define import ObsoleteFunctionError
-from commands.define import gpt_chat_threads, chat_analyze_onoff_cache, manuel_chat_threads, maneul_chat_limit
+from commands.define import gpt_chat_threads, chat_analyze_onoff_cache, maneul_chat_threads, maneul_chat_limit
 
 def init_db() : 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
@@ -82,7 +82,7 @@ def init_db() :
             step INTEGER
         )
     """)
-    c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_limit (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, date INTEGER, unlimited INTEGER, limit INTEGER, usage INTEGER)") # 마느라 한도
+    c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_limit (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, date INTEGER, unlimited INTEGER, usage INTEGER)") # 마느라 한도
     c.execute("CREATE TABLE IF NOT EXISTS maneul_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # 마느라
     c.execute("CREATE TABLE IF NOT EXISTS gpt_chat_threads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, thread_id INTEGER)") # GPT 채팅 스레드
     c.execute("""
