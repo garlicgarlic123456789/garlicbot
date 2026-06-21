@@ -1073,22 +1073,21 @@ def add_maneul_chat_usage(user_id: int) : # 마느리 대화 기능 한도 도�
     month = now.month
     day = now.day
 
-    date = f"{year}{month:02d}{day:02d}"
+    date = int(f"{year}{month:02d}{day:02d}")
 
     conn = sqlite3.connect("garlicbot.db", isolation_level = None)
     c = conn.cursor()
 
-    c.execute("SELECT date, usage, unlimited FROM maneul_chat_limit WHERE user_id = ?", (user_id,))
+    c.execute("SELECT date, unlimited, usage FROM maneul_chat_limit WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     if row : 
-        if row[2] == 1 : 
+        if row[1] == 1 : 
             return True
-        elif row[2] == 0 : 
+        elif row[1] == 0 : 
             if row[0] == date : 
-                if row[1] >= maneul_chat_limit : 
+                if row[2] >= maneul_chat_limit : 
                     return False
-                new_usage = row[1] + 1
-                c.execute("UPDATE maneul_chat_limit SET usage = ? WHERE user_id = ?", (new_usage, user_id))
+                c.execute("UPDATE maneul_chat_limit SET usage = usage + 1 WHERE user_id = ?", (user_id,))
                 return True
             else : 
                 if 0 >= maneul_chat_limit : 
