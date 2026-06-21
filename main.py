@@ -2341,72 +2341,74 @@ async def on_message(message):
                 )
                 await message.reply(embed = embed, mention_author=False)
                 return
-        
-        if message.guild is None and ((message.author.id not in no_support_fuction["마느라"]["dm"]) or no_support_fuction["마느라"]["dm"][message.author.id] == False) : 
-            embed = discord.Embed(
-                title = "오류",
-                description = "현재 `마느라` 대화 기능의 지원은 종료되었습니다.\n\n**__지원이 종료된 기능은 봇 취약점에 관한 긴급 업데이트를 포함한 모든 기능 업데이트를 더 이상 진행하지 않으며, 기능을 지속 사용하는 것은 권장되지 않습니다.__ 따라서 현재 이 서버에서 해당 기능의 사용은 중지되었습니다.**",
-                color = discord.Color.red()
-            )
-            await message.reply(embed = embed, view = legacy_maneul_chat_info(), mention_author=False)
-            return
-        
-        if message.guild is not None and ((message.guild.id not in no_support_fuction["마느라"]["guild"]) or no_support_fuction["마느라"]["guild"][message.guild.id] == False) : 
-            embed = discord.Embed(
-                title = "오류",
-                description = "현재 `마느라` 대화 기능의 지원은 종료되었습니다.\n\n**__지원이 종료된 기능은 봇 취약점에 관한 긴급 업데이트를 포함한 모든 기능 업데이트를 더 이상 진행하지 않으며, 기능을 지속 사용하는 것은 권장되지 않습니다.__ 따라서 현재 이 서버에서 해당 기능의 사용은 중지되었습니다.**",
-                color = discord.Color.red()
-            )
-            await message.reply(embed = embed, view = legacy_maneul_chat_info(), mention_author=False)
-            return
+            
+            usage_left = add_maneul_chat_usage(message.author.id)
 
-        if not check_call_limit(message.author.id)[0]:
-            await message.reply(f"**[오류!]** 일일 사용량 한도에 도달하였습니다. 사용 한도를 확인하고 다시 시도하세요.\n\n사용 한도: {check_call_limit(message.author.id)[1]}", mention_author=False)
-            return
+            if not usage_left :
+                embed = discord.Embed(
+                    title = f"오류",
+                    description = f"대화 기능 사용 한도에 도달했습니다.",
+                    color = discord.Color.red()
+                )
+                await message.reply(embed = embed, mention_author=False)
+                return
+            
+            user_id = 1
+            user_id2 = message.author.id
+            
+            if message.attachments is None or len(message.attachments) == 0 : 
+                message_content = [
+                    {"type": "input_text", "text": f"사용자 이름: {message.author.display_name} ({message.author.id})\n사용자의 입력: {message.content[4:]}"},
+                ]
+            else : 
+                image_list = []
+                for attachment in message.attachments:
+                    image_list.append({"type": "input_image", "image_url": attachment.url})
+                message_content = [
+                    {"type": "input_text", "text": f"사용자 이름: {message.author.display_name} ({message.author.id})\n사용자의 입력: {message.content[4:]}"},
+                    *image_list,
+                ]
+            
+            if user_id not in gpt_chat_threads : 
+                gpt_chat_threads[user_id] = await asyncio.to_thread(get_maneul_chat_thread, user_id)
+                if gpt_chat_threads[user_id] is None : 
+                    response = await client.responses.create(
+                        model="gpt-5-mini",
+                        instructions=maneul_chat_system,
+                        input=[{
+                            "role": "user",
+                            "content": message_content,
+                        }],
+                        reasoning={"effort": "minimal"},
+                    )
+                else : 
+                    response = await client.responses.create(
+                        model="gpt-5-mini",
+                        instructions=maneul_chat_system,
+                        previous_response_id=gpt_chat_threads[user_id],
+                        input=[{
+                            "role": "user",
+                            "content": message_content,
+                        }],
+                        reasoning={"effort": "minimal"},
+                    )
+            else : 
+                response = await client.responses.create(
+                    model="gpt-5-mini",
+                    instructions=maneul_chat_system,
+                    previous_response_id=gpt_chat_threads[user_id],
+                    input=[{
+                        "role": "user",
+                        "content": message_content,
+                    }],
+                    reasoning={"effort": "minimal"},
+                )
+            
+            result = response.output_text
+            gpt_chat_threads[user_id] = response.id
+            await asyncio.to_thread(update_maneul_chat_thread, user_id, response.id)
         
-        if True : 
-            '''
-            temp = await prompt_detect(message.content[4:])
-            if temp is None :
-                embed = discord.Embed(
-                    title = f"오류",
-                    description = f"시스템 프롬프트를 출력하려 하는지 여부를 판단하지 못했습니다.",
-                    color = discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            if temp < 60 :
-                '''
-            if True : 
-                if True : 
-                    if chat_dict.get(1) is not None :
-                        response = await asyncio.to_thread(
-                            chat_dict[1].send_message,
-                            f"사용자명: {message.author.display_name} ({message.author.id})\n사용자의 입력: {message.content[4:]}",
-                            generation_config=genai.types.GenerationConfig(
-                                temperature=2.0,
-                            ),
-                        )
-                    else :
-                        chat_dict[1] = await asyncio.to_thread(
-                            cute_model9.start_chat,
-                        )
-                        response = await asyncio.to_thread(
-                            chat_dict[1].send_message,
-                            f"사용자명: {message.author.display_name} ({message.author.id})\n사용자의 입력: {message.content[4:]}",
-                            generation_config=genai.types.GenerationConfig(
-                                temperature=2.0,
-                            ),
-                        )
-            else :
-                embed = discord.Embed(
-                    title = f"오류",
-                    description = f"시스템 프롬프트를 출력하려 합니다.",
-                    color = discord.Color.red()
-                )
-                await message.reply(embed = embed, mention_author=False)
-                return
-            response_before_edit = response.text
+            response_before_edit = result
             match = re.search(r"응답:\s*(.*?)\s*\n호감도:\s*([+-]?\d+)", response_before_edit, re.MULTILINE)
             if match:
                 response = match.group(1)  # {1} 문자열
