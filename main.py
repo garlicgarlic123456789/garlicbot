@@ -2342,6 +2342,15 @@ async def on_message(message):
                 await message.reply(embed = embed, mention_author=False)
                 return
             
+            if True : 
+                embed = discord.Embed(
+                    title = f"오류",
+                    description = f"몇 가지 문제로 인해 당분간 마느리 대화 기능 지원을 일시 중단합니다.",
+                    color = discord.Color.red()
+                )
+                await message.reply(embed = embed, mention_author=False)
+                return
+            
             usage_left = add_maneul_chat_usage(message.author.id)
 
             if not usage_left :
@@ -2379,6 +2388,21 @@ async def on_message(message):
                             "role": "user",
                             "content": message_content,
                         }],
+                        text={
+                            "format": {
+                                "type": "json_schema",
+                                "name": "reply",
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "응답": {"type": "string"},
+                                        "호감도": {"type": "integer"}
+                                    },
+                                    "required": ["응답", "호감도"],
+                                    "additionalProperties": False
+                                }
+                            }
+                        },
                         reasoning={"effort": "minimal"},
                     )
                 else : 
@@ -2401,24 +2425,36 @@ async def on_message(message):
                         "role": "user",
                         "content": message_content,
                     }],
+                    text={
+                        "format": {
+                            "type": "json_schema",
+                            "name": "reply",
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "응답": {"type": "string"},
+                                    "호감도": {"type": "integer"}
+                                },
+                                "required": ["응답", "호감도"],
+                                "additionalProperties": False
+                            }
+                        }
+                    },
                     reasoning={"effort": "minimal"},
                 )
-            
-            result = response.output_text
+
+            result = json.loads(response.output_text)
+
             gpt_chat_threads[user_id] = response.id
             await asyncio.to_thread(update_maneul_chat_thread, user_id, response.id)
         
-            response_before_edit = result
-            match = re.search(r"응답:\s*(.*?)\s*\n호감도:\s*([+-]?\d+)", response_before_edit, re.MULTILINE)
-            if match:
-                response = match.group(1)  # {1} 문자열
-                favorability = int(match.group(2))  # {2} 정수
-                add_likeability(str(message.author.id), favorability)
-            else : 
-                return
+            response = result["응답"]
+            favorability = result["호감도"]
+            add_likeability(str(message.author.id), favorability)
+
             response = response.replace("@everyone", "`@ everyone`")
             response = response.replace("@here", "`@ here`")
-            response = response.replace("{user}", message.author.display_name)
+            # response = response.replace("{user}", message.author.display_name)
             pattern = r'<@([^>]+)>'
 
             # re.sub로 해당 패턴 앞뒤에 ` 붙이기
@@ -2428,7 +2464,7 @@ async def on_message(message):
                 description = f"{response}",
                 color = int("a5f0ff", 16)
             )
-            print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n수정 전 출력: {response_before_edit}\n출력: {response}\n----------")
+            print(f"마느리 사용: \n유저: {message.author.display_name} ({message.author.id})\n프롬프트: {message.content}\n출력: {response}\n호감도: {favorability}\n----------")
             # await message.reply(embed = embed, mention_author=False)
             await message.reply(response, mention_author=False)
     # 정규표현식으로 메시지 분석
