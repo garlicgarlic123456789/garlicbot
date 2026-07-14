@@ -928,24 +928,11 @@ async def on_raw_message_delete(payload) :
     if log_id is None : 
         return
     
-    guild = bot.get_guild(payload.guild_id)
-    
     if cached_message is None : 
         log_channel = bot.get_channel(log_id)
         if log_channel:
             content = "*(알 수 없음)*"
             author = "*(알 수 없음)*"
-
-            time_obj = datetime.now(kst) - timedelta(seconds=10)
-
-            logs = []
-
-            async for log in guild.audit_logs(after=time_obj, action=discord.AuditLogAction.message_delete, oldest_first=False):
-                logs.append(log)
-            
-            if len(logs) > 0 : 
-                for i in logs : 
-                    print(i)
 
             embed = discord.Embed(
                 title="메시지 삭제 로그",
@@ -1610,23 +1597,23 @@ async def on_message(message):
             user = original_message.author.id
             await original_message.delete()  # 원본 메시지 삭제
             await message.reply("처리되었습니다.", mention_author=False)
-
-            log_channel = bot.get_channel(get_log_channel(interaction.guild.id)["editdelete"])
-            if (log_channel is None) or (not log_channel) :
+            
+            if temp != using_server :
                 return
-
             embed = discord.Embed(
-                title="메시지 삭제 로그",
+                title="메시지 삭제",
                 color=discord.Color.red(),
                 timestamp=discord.utils.utcnow()
             )
             embed.add_field(name="대상 채널", value=f"<#{message.channel.id}>", inline=False)
             embed.add_field(name="관리자", value=f"<@{message.author.id}>", inline=False)
+            embed.add_field(name="개수", value=f"1개", inline=False)
             embed.add_field(name="대상 사용자", value=f"<@{user}>", inline=False)
             if len(message.content) >= 7 :
                 embed.add_field(name="사유", value=message.content[7:], inline=False)
             else: 
                 embed.add_field(name="사유", value="*(사유 입력되지 않음)*", inline=False)
+            log_channel = bot.get_channel(message_log)
             await log_channel.send(embed=embed)
     if not message.author.bot : 
         timeout_pattern = re.match(r"마늘아 타임아웃 <@!?(\d+)> (-?\d+)(초|분|시간|일|주)(?: (.+))?", message.content)
