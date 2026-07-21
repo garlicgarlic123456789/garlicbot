@@ -9555,6 +9555,7 @@ async def 격리역할설정(interaction: discord.Interaction, 격리역할: dis
     return
 
 @bot.tree.command(name="격리", description="특정 사용자를 격리하고 조사용 채널로 보냅니다.")
+@app_commands.default_permissions(manage_roles=True)
 async def 격리(interaction: discord.Interaction, 사용자: discord.User):
     await interaction.response.defer()
 
@@ -9592,28 +9593,6 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
         )
         await interaction.followup.send(embed=embed, ephemeral=False)
         return
-
-    # 명령어 실행 권한 확인
-    if interaction.guild.id == using_server : 
-        author = interaction.user
-        author_member = guild.get_member(author.id)
-        if author_member is None or discord.utils.get(author_member.roles, id=admin_id) is None:
-            embed = discord.Embed(
-                title="오류",
-                description="권한이 부족합니다. 다음 권한이 필요합니다: `관리자` 또는 `부관리자`",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=False)
-            return
-    else : 
-        if not interaction.user.guild_permissions.manage_roles:
-            embed = discord.Embed(
-                title="오류",
-                description="권한이 부족합니다. 다음 권한이 필요합니다: `역할 관리하기`",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=False)
-            return
     
     role = interaction.guild.get_role(get_quarantine_role(interaction.guild.id)) # 조사격리역할
     if role is None : 
