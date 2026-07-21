@@ -9594,8 +9594,8 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
         await interaction.followup.send(embed=embed, ephemeral=False)
         return
     
-    role = interaction.guild.get_role(get_quarantine_role(interaction.guild.id)) # 조사격리역할
-    if role is None : 
+    isolate_role = interaction.guild.get_role(get_quarantine_role(interaction.guild.id)) # 조사격리역할
+    if isolate_role is None : 
         embed = discord.Embed(
             title="오류",
             description="격리 역할의 값이 올바르지 않습니다.",
@@ -9605,13 +9605,9 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
         return
     
     try:
-        # 역할 제거
-        roles = member.roles[1:]  # @everyone 역할 제외
-        for role in roles:
-            await member.remove_roles(role, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
-
-        role = interaction.guild.get_role(get_quarantine_role(interaction.guild.id)) # 조사격리역할
-        await member.add_roles(role, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
+        roles_to_remove = [role for role in member.roles if role != interaction.guild.default_role]
+        await member.add_roles(isolate_role, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
+        await member.remove_roles(*roles_to_remove, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
 
         embed = discord.Embed(
             title=f"완료", # name
@@ -9624,11 +9620,12 @@ async def 격리(interaction: discord.Interaction, 사용자: discord.User):
         print(f"오류 #{error}: {e}")
         embed = discord.Embed(
             title="오류",
-            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.",
+            description=f"오류 #{error}\n\n마늘봇 서포트 서버에 문의하시기 바랍니다.\n\n일부 역할은 오류 발생 전 이미 정상적으로 추가 또는 제거되었을 수 있습니다.",
             color=discord.Color.red()
         )
         await interaction.followup.send(embed=embed)
         error += 1
+        await member.add_roles(isolate_role, reason = f"사용자 {interaction.user.display_name}({interaction.user.id})의 /격리 명령어 사용")
         return
 
 @bot.tree.command(name="테러방지설정", description="이 서버의 테러 방지 설정을 변경합니다.")
