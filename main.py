@@ -85,6 +85,7 @@ from commands import remove_all_roles
 from commands import xp_setup
 from commands.invite_log_check import *
 from commands.train_command import *
+from commands.expressway_command import *
 from commands.summarize_command import *
 from commands.xp_import_export import *
 from commands import security_check
@@ -8744,6 +8745,7 @@ async def on_ready():
     bot.tree.add_command(xp_import_export())
     bot.tree.add_command(summarize_command())
     bot.tree.add_command(mention_delay())
+    bot.tree.add_command(expressway_command())
     bot.tree.add_command(autorole())
     bot.tree.add_command(phrase())
     bot.tree.add_command(chat_analyze())
