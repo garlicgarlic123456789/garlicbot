@@ -111,7 +111,14 @@ async def get_expressway_time(begin_id: str, end_id: str, tmtype: int) :
         data = response.json()
         
         if data['count'] == 0 : 
-            raise ValueError(f"한국도로공사 api의 반환값이 유효하지 않습니다. 나중에 다시 시도하세요.\n\n요청 URL: `https://data.ex.co.kr/openapi/odhour/upDownTrafficTime?key=[마스킹]&type=json&startUnitCode={begin_id}&endUnitCode={end_id}&tmType=2&carType=1`")
+            timeAvg = '-1'
+            timeMax = '0'
+            timeMin = '0'
+            return {
+                'Avg': timeAvg,
+                'Max': timeMax,
+                'Min': timeMin,
+            }
         else : 
             data = data['list'][0]
             print(data)
