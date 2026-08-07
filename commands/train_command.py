@@ -17,8 +17,6 @@ from selenium.common import TimeoutException, NoSuchElementException, ElementCli
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
-railblue_user_agent = os.getenv()
-
 class train_command(app_commands.Group) : 
     def __init__(self):
         super().__init__(name="철도", description="철도 관련 명령어")
