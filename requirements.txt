@@ -10,7 +10,7 @@ aiofiles==23.2.1
 aiohttp==3.9.4
 aiosqlite==0.21.0
 matplotlib==3.8.4
-pandas==2.2.2
+pandas==2.2.3
 langchain==0.1.20
 langchain-core==0.1.52
 langsmith==0.1.91
