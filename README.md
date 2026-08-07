@@ -54,11 +54,11 @@ Python 3.13 버전 사용을 권장합니다. 3.14 버전 이상 환경 및 다�
 
 # 실행 방법
 
-[Releases](https://github.com/garlicfood1234/garlicbot/releases) 페이지에서 최신 버전의 Source Code를 다운로드 받습니다.
-
-requirements.txt의 모든 라이브러리를 pip를 통해 설치하고 main.py를 실행합니다.
-
-라이브러리 설치 시 주의사항: google-genai 라이브러리로 개발한 코드와 google-generativeai 라이브러리로 개발한 코드가 혼용되어 있습니다. 두 라이브러리를 requirements.txt를 통해 한번에 설치하였는데 `GenerativeModel.__init__() got an unexpected keyword argument 'system_instruction'`와 같은 오류가 발생한다면, 두 라이브러리 모두 pip uninstall (설치 제거) 후, google-generativeai 라이브러리 설치 -> google-genai 라이브러리 설치 순서로 다시 설치해주세요.
+1. [Releases](https://github.com/garlicfood1234/garlicbot/releases) 페이지에서 최신 버전의 Source Code를 다운로드 받습니다.
+2. 설치하지 않은 경우 Visual Studio C++ Build Tools를 설치합니다.
+    - Visual Studio Installer에서 'C++를 사용한 데스크톱 개발' 설치. 설치 시 MSVC와 Windows 11 SDK를 포함하여 설치하세요.
+3. requirements.txt의 모든 라이브러리를 pip를 통해 설치하고 main.py를 실행합니다.
+    - 주의사항: google-genai 라이브러리로 개발한 코드와 google-generativeai 라이브러리로 개발한 코드가 혼용되어 있습니다. 두 라이브러리를 requirements.txt를 통해 한번에 설치하였는데 `GenerativeModel.__init__() got an unexpected keyword argument 'system_instruction'`와 같은 오류가 발생한다면, 두 라이브러리 모두 pip uninstall (설치 제거) 후, google-generativeai 라이브러리 설치 -> google-genai 라이브러리 설치 순서로 다시 설치해주세요.
 
 # 실행 시 주의 사항
 `/철도 열차정보`, `/철도 도착정보` 기능은 [레일블루](https://rail.blue/) 사이트에서 정보를 가져와서 사용합니다.

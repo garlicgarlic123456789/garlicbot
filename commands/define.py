@@ -27,6 +27,8 @@ import asyncio
 # API KEY 정보로드
 load_dotenv()
 
+railblue_user_agent = os.getenv("railblue_user_agent")
+
 class ObsoleteFunctionError(Exception): # 오래되었고, 더 이상 현재 버전에서 사용되지 않는 기능
     pass
 
