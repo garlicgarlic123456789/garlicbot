@@ -813,9 +813,9 @@ class Paginator(View):
             await interaction.response.defer()
 
 async def get_train_timetable_railblue(train, date, user_id, pass_visible) : 
-    options = webdriver.FirefoxOptions()
+    options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Chrome(options=options)
     railblue_last_time[user_id] = datetime.datetime.now()
     driver.get(f"https://rail.blue/railroad/logis/magiainfo.aspx?train={train}&date={date}#!")
     await asyncio.sleep(2.5)
@@ -1074,9 +1074,9 @@ async def parse_train_info(text):
     return None
 
 async def get_train_info_railblue(train, date, user_id):
-    options = webdriver.FirefoxOptions()
+    options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Chrome(options=options)
     railblue_last_time[user_id] = datetime.datetime.now()
     driver.get(f"https://rail.blue/railroad/logis/Default.aspx?company=&train={train}&date={date}#!")
     await asyncio.sleep(2.5)
@@ -1490,9 +1490,9 @@ async def parse_arrival_info_railblue(arrival_info):
 
 async def get_arrival_info_railblue(station_name, line, pass_train: bool, user_id) : 
     station_name_base64 = await encode_railblue_station(station_name)
-    options = webdriver.FirefoxOptions()
+    options = webdriver.ChromeOptions()
     options.add_argument("--headless")
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Chrome(options=options)
     railblue_last_time[user_id] = datetime.datetime.now()
     link = f"https://rail.blue/railroad/logis/metroarriveinfo.aspx"
     driver.get(link)
